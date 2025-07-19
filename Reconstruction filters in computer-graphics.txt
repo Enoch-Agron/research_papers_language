@@ -1,0 +1,448 @@
+# Reconstruction filters in computer-graphics.pdf
+# Converted: 2025-07-18 12:58:59
+# Method: pdfplumber
+# Domain: pixel2physics
+# Source: /home/user/vekt/papers/pixel2physics/pdfs/layer1/Reconstruction filters in computer-graphics.pdf
+# Output: /home/user/vekt/papers/pixel2physics/dot_txt/layer1/Reconstruction filters in computer-graphics.txt
+
+
+--- Page 1 ---
+
+~
+Computer Graphics, Volume 22, Number 4, August 1988
+Reconstruction Filters in Computer Graphics
+Don P. Mitchell
+Arun N. Netravali
+AT&T Bell Laboratories
+Murray Hill, New Jersey 07974
+ABSTRACT Many conversions between continuous and discrete representations may
+occur in the course of generating an image. For example when ray trac-
+ing a texture-mapped surface, a photograph may be sampled by a digi-
+Problems of signal processing arise in image tizer to define the texture, then the texture samples are inteqxilated and
+synthesis because of tlansformations between resampled when a ray strikes the textured surface, the ray samples are
+continuous and discrete representations of 2D interpolated and resampled to generate pixel values, and the pixels are
+images. Aliasing introduced by sampling has interpolated by a display and finally resampled by retinal cells when the
+received much attention in graphics, but recon- image is viewed. Resampling may be more explicit, as in enlarging or
+struction of samples into a continuous reducing a digital image or warping an image (e.g., with Catmull and
+representation can also cause aliasing as well Smith's algorithm CAT80). Each of these conversions can introduce
+as other defects in image quality. The prob- conspicuous errors into an image.
+lem of designing a filter for use on images is
+discussed, and a new family of piecewise Errors introduced by sampling (e.g., aliasing) have received considerable
+cubic filters are investigated as a practical attention in the graphics community since Crow identified this as the
+demonstration. Two interesting cubic filters cause of certain unwanted artifacts in synthetic images CRO77. Alias-
+are found, one having good antialiasing pro- ing in images was discussed in the classic 1934 paper by Mertz and Gray
+perties and the other having good image- MER34. Their discussion contains a description of artifacts well-
+quality properties. It is also shown that recon- known to graphics researchers today and shows that the condition for
+struction using derivative as well as amplitude preventing aliasing was known, as a rule of thumb, long before
+values can greatly reduce aliasing. Shannon's proof of the sampling theorem:
+CR Categories and Subject Descriptions: 1.3.3 Computer Graphics :
+PictureImage Generation; 1.4.1 Image Processing : Digitization The interference usually manifests itself in the form of serra-
+tions on diagonal lines and occasional moir6 effects in the
+General Terms: Algorithms received picture. Confusion in the signal may be practically
+eliminated by using an aperture of such a nature that it cuts
+Additional Keywords and Phrases: Antialiasing, Cubic Filters, Filters, off all Fourier components with n numbers greater than
+Derivative Reconstruction, Reconstruction, Sampling N/2 half the scanning rate ....
+1. Introduction By comparison, the problems introduced by reconstruction have been
+The issues of signal processing arise in image synthesis because of somewhat neglected in the graphics literature. Reconstruction can be
+transformation between continuous and discrete representations of responsible for aliasing and other types of distortion that mar the subjec-
+images. A continuous signal is converted to a discrete one by sampling, tive quality of an image. This paper will focus on the effects of recon-
+and according to the sampling theorem SHA49, all the information in struction and how to design filters for graphics applications.
+the continuous signal is preserved in the samples if they are evenly
+spaced and the frequency of sampling is twice that of the highest fre- 2. Aliasing Caused by Reconstruction
+quency contained in the signal. A discrete signal can be converted to a Aliasing in synthetic images is a serious problem and still not completely
+continuous one by interpolating between samples, a process referred to in solved. In other digital-signal-processing applications, aliasing is elim-
+the signal-processing literature as reconstruction. inated by prefiltering signals before sampling, as illustrated in Figure l.
+Note that it is the prefiltered signal that is reconstructed in this ease.
+,screte
+reconstructed
+sig° s,gnal- I filter I signal
+Permission to copy without fee all or part of this material is granted
+provided that the copies are not made or distributed for direct
+commercial advantage, the ACM copyright notice and the title of the sampling
+publication and its date appear, and notice is given that copying is by pulses
+permission of the Association for Computing Machinery. To copy
+otherwise, or to republish, requires a fee and/or specific permission.
+Figure I. Sampling and Reconstruction
+While prefi/lering is the classic solution to a/iasing problems, there is a
+special problem encountered in computer graphics. Many synthetic
+©1988 ACM-O-89791-275-6/88/O08/0221 $00.75 images originate from what we will call procedural signals, in which the
+221
+
+--- Page 2 ---
+
+¢
+SIGGRAPH '88, Atlanta, August 1-5, 1988
+signal is only implicitly defined by an algorithm for computing point centered at the location of an impulse in the comb. Equation (,4) states
+samples. Operations that require an explicit representation of the signal that, in the frequency domain, reconstruction can be interpreted as the
+cannot be performed, and in particular, prefiltering is impractical. This multiplication by K (v) which is intended to eliminate all the extraneous
+difficulty is unique to computer graphics, and ray tracing is the clearest replicas of the signal's spectrum and keep the original base-band cen-
+example of it wHIgo}. tered at the origin. K(v) is indicated by the dashed curve in Figure 2.
+To explain the role that reconstruction plays in aliasing, it will be helpful However, Figure 2 also demonstrates a problem. The replicas of the sig-
+to review briefly the theory of sampling and define the operations of nal spectrum overlap, aad the reconstruction filter can not isolate a pure
+sampling and reconstruction more precisely, tn one dimension, a signal version of the base-band signal. When part of the energy in a replica of
+can be represented by a continuous function f(x). Producing a discrete the spectrum leaks into the reconstructed signal, aliasing results. If the
+signal by sampling is equivalent to multiplying by an infinite train of bandwidth of the signal were narrower or the sampling rate higher, the
+impulses known as a comb function: copies would not overlap, and exact reconstruction would be possible.
+Even if the replicated spectra do not overlap, alining can result from
+£(x) = f (x)" comb(x) (1)
+poor reconstruction, as illustrated in Figure 3. When aliasing is a conse-
+where quence of undersampling (or lack of prefiltering), it is referred to as
+prealiasing, and when it results from poor reconstruction, it is called
+comb(x) = ~ ~(x-n) (lb) postaliasing.
+Unit spacing between samples is assumed in equation (lb), and ~x) is
+the Dirac delta function. In this case, the sampling theorem states that K(v)
+f(x) can be reconstructed exacdy from its samples if it contains no fre- r- - ........... -~ F~(V)
+quencies greater than 0.5 cycles per sample. This critical frequency is
+called the Nyquist frequency.
+Reconstruction is accomplished by convolving (indicated by *) the
+V
+discrete signal with a reconstruction filter kernel, k(x): VN
+f,(x) = ./~(x)* k(x) (2)
+Figure 3. Postaliasing Resulting from Poor Reconstruction Filter
+= ~ f,(u )" k (x - u)du (2b)
+Figure 4 shows an extreme example of aliasing in an image. In this fig-
+ure, the two-dimensional signal, f(x,y) = sin(x 2 +y2), was sampled on a
+= ~ f(n)'k(x-n) (2c) 128 x 128 pixel grid. Then, these samples were reconstructed with a
+cubic filter (to be described later in the paper) and resampled to 512 x
+512 pixels.
+Except in the mathematically ideal case, some error is introduced in the
+process of sampling and reconstruction, and f(x) will be somewhat dif- The rings on the left side of the image are part of the actual signal, but
+ferent from fr(X). To analyze this error, it is useful to view the problem the rings on the right side are Moit~ patterns due to prealiasing. In the
+in the frequency domain. The Fourier transform of the signal is its spec- center of the image is a fainter set of concentric rings resulting from pos-
+trum F(v), and the Fourier transform of the filter is its frequency taliasing. Postaliasing occurred when the discrete image of 128 x 128
+response K(v). Since multiplication in the spatial domain is equivalent pixels was enlarged to 512 x 5t2 pixels by resampling. Note that this
+to convolution in the ffrequency domain (and vice versa), sampling can conspicuous postaliasing pattern results from "treating" between the sig-
+be described by: nal and its alias. This can also be understood from Figure 3, where it
+can be seen that at the Nyquist frequency (indicated by VN) the signal's
+spectrum and its nearest replica come close together. Power in the spec-
+F~(v) = F(v)* Comb(v) (3) trum very near the Nyquist frequency is thus the cause of the most diffi-
+and reconstruction by: cdt type of aliasing to remove from an image. This problem has been
+noted by other graphics researchers COO87 and by Mertz et al.
+F,(v) = F,(V) .K(v) (4) MER34.
+The Fourier transform of a comb function is also a comb function (with Using the same set of samples as in Figure 4, a much better reconstruc-
+reciprocal spacing between impulses). tion filter can be applied (a 30-unit-wide windowed sine filter). Figure 5
+demonstrates a dramatic reduction of the postaliasing pattern, but the
+prealiasing is unaffected. The spectrum of this reconstruction filter is
+very close to the ideal step shape shown in Figures 2 and 3.
+K(v)
+3. Other Image Defects Caused by Reconstruction
+Notice in Figure 2, that a reconstruction filter K(v) has two tasks. First
+it must remove the extraneous replicas of the signal spectrum (to prevent
+aliasing). Second, it should pass the original signal base band, but the
+signal can be distorted if this is not done perfectly. This second type of
+reconstruction error will be referred to as base-band attenuation.
+From the previous section, one might assume that the literature of signal
+Figure 2. Sampling and Reconstruction in Frequency Domain processing provides a complete solution to the reconstruction problem in
+graphics; however, there is a serious difficulty with the ideal sine filter
+that is not obvious from studying its frequency response. Figure 6
+Figure 2 illustrates the consequences of the convolution in equation (3).
+shows a simple figure reconstructed with the same filter used in Figure
+The spectrum of a sampled signal F,(V) is the sum of an infinite
+5. The rippling pattern radiating from the edges is called ringing. Ring-
+sequence of shifted replicas of the original signal's spectrum, each
+ing is strongly suggested by the form of the impulse response of the sinc
+222
+
+--- Page 3 ---
+
+@ *
+Computer Graphics, Volume 22, Number 4, August 1988
+fiher, as shown in Figure 7: number of free parameters. First, the filter should be smooth in the
+sense that its value and first derivative are continuous everywhere.
+Discontinuities in k(x) will lead to high-frequency leakage in the fre-
+quency response of the filter which can allow aliasing. In addition, the
+1 - problem of sample-frequency ripple can be designed out of the filter by
+requiring (for all x):
+0.5-
+k(x-n) = 1 (7)
+0-
+This means that if all the samples are a constant value, the reconstruction
+will be a fiat constant signal. Figure 8 demonstrates this defect by using
+I I I
+an unnormalized Gaussian filter to reconstruct a 512 x 512 image from
+-5 0 5
+64 x 64 samples. In the frequency domain, sample ripple can be viewed
+as an alias of the image's DC component. It can be shown that the con-
+dition given by equation (7) means that the frequency response of these
+Figure 7. mpulse Response of Ideal Sinc Filter
+cubic filters will be zero at all integer multiples of the sampling fre-
+quency except zero, eliminating all extraneous replicas of the DC com-
+Classical digital filter design places a heavy emphasis on the frequency ponent.
+response of a filter. That works well in the audio domain, but when con-
+sidering the appearance of images, it is important to also pay attention to With these constraints, the number of free parameters are reduced from
+the shape of the impulse response. eight to two, resulting in the following family of cubic filters;
+The response of human viewers to various spatial effects of filters is not (12-9B - 6C) Ixl 3 + if Ixl<l
+yet a well-understoed science and is largely subjective in nature. Filters I (_18+i2B+6C)Ix12+(6_2B)
+that have some aliasing problems or certain types of base-band attenua-
+1 J(-B-6C)Ixl 3 +(6B +30C)IxI 2 + if 1<_ Ixl <2 (8)
+tion may turn out to give visually-pleasing results. Schreiber and Troxel
+have discussed the spatial effects of reconstruction filters SCH85, and k(x) = 6 /0(-12B-48C)1xl +(8B+24C)
+they mention some of the important defects that can occur when judging otherwise
+the quality of an image subjectively: sample-frequency ripple, anisotro-
+pic effects, ringing, blurring, and aliasing. Each of these effects will be
+Some values of (B, C) correspond to well-known cubic splines. (1,0) is
+considered in detail in the following section.
+the cubic B-spliue, (0, C) is the one-parameter family of cardinal cubits
+with (0, 0.5) being the Catmull-Rom spline, and (B, 0) are Duff's ten-
+Unfortunately, it is often necessary to trade off one type of distortion for
+sinned B-splines DLrF86.
+another, and the design of a single filter perfect for all applications is
+almost certainly impossible. As Figure 6 illustrated, perfect antialiasing
+In two or more dimensions, visible artifacts can be caused by angle-
+resulted in the serious defect of ringing. However, Brown realized that a
+dependent behavior or anisotropic effects. Figure 9 illustrates this prob-
+moderate amount of ringing can improve the subjective quality of an
+lem by reconstructing with the separable filter k(x)k(y) using parameter
+image by enhancing the appearance of shaqmess BRO69. He found
+values of (0,0). Even though sample-frequency ripple has been designed
+that a single transient lobe of ringing was effective at sharpening, but
+out of k(x), in two dimensions the pixel structure is highly conspicuous
+multiple transients (as in Figure 6) always degrade image quality.
+because the impulse response and the sampling lattice are not radially
+symmetric,
+Many of the concepts presented so far have been illustrated in one
+dimension for simplicity. However, image reconstruction takes place in
+The phenomenon of ringing has already been seen in Figure 6. Filters
+two dimensions and involves the convolution of a 2D lattice of samples
+with a filter k(x,y). In this paper, we will consider only separable in the cubic filter family can also exhibit this problem as seen in Figure
+filters, where the samples are convolved with the product k(x)kty). 10, where parameter values of (0,1) were used. Ringing results when
+k(x) has negative side lobes, and although some ringing can enhance
+Separable filters are compurationally more efficient than nonseparable
+shaqaness, a filter that becomes negative is problematic. In Figure 10, a
+because the filtering operation can be performed in separate passes verti-
+typical problem is seen where portions of the image near an edge have
+cally and horizontally. If the filter kernel is N samples wide, the recon-
+struction can be performed with O(N 2) multiplications for the general become negative and have been damped to zero. This results in pro-
+filter k(x,y) but with O(N) if the filter is separable. nounced black spots (e.g., at the top of the statue's head). Similar
+clamping occurs to white, but is less noticeable because of the eye's non-
+linear response to contrast. Schreiber and Troxel have suggested that
+4. Piecewise Cubic Reconstruction Filters
+subjectively even sharpening can only be produced by introducing ting-
+Rather than discuss the issues of filter design abstractly, this paper will ing transients in a suitably nonlinear fashion SCH85. These conspicu-
+apply them to the study of a family of filters defined by piecewise cubic ous clamping effects could also be eliminated by reducing the dynamic
+polynomials. Cubic filters ate sufficiently complex to have a broad range of the image or raising the DC level of the image.
+range of behaviors, but they are simple enough to be compntationally
+attractive. Hou and Andrews have studied the fikering properties of the Parameter values of (3/2, -1/4) result in an image that is unnecessarily
+cubic B-spline HOU78, and two studies have been made of the one- blurry, as seen in Figure 11. The cubic B-spline also suffers from this
+parameter family of cardinal cubic splines KEYSI,PAR83. problem. In viewing many reconstructions with filters in this family,
+ringing, anisotropy, and blurring are the dominant behaviors, and in a
+The general form for a symmetric cubic filter is: small region of the parameter space, a satisfactory compromise seems to
+exist which is seen in Figure 12, using parameter values of (1/3, 1/3).
+Plxl3+Qlxl2+RIxI+S if Ixl<l This is quite good, considering that the image is being magnified from
+x 64 pixels. There is some degree 0f sharpening, and almost no visi-
+k(x)= ~Tlxl3+UIxIZ+VIxI+W ifl_<lxl<2 (6)
+ble evidence of the sampling lattice.
+to otherwise
+To get a better idea of which regions of the parameter space yield which
+type of behavior, a simple subjective test was designed. On a neutral
+Several obvious constraints can be placed on this function to reduce the background, four images were displayed typifying the effects of ringing,
+223
+
+--- Page 4 ---
+
+SIGGRAPH '88, Atlanta, August 1-5, 1988
+blurring, anisotropy, and an example of die most satisfactory behavior. in Figure 13), quadratic convergence of fit is achieved. This line con-
+In the center of the display, images reconsuucted fxom filters with ran- tains the cubic B-spline and the Catmull-Rom spline (which actually has
+dom values of (B, C) were displayed, and the test subject was asked to cubic convergence). Within the interval of B = 5,33 to B = 0, good sub-
+choose which of the four behaviors it exemplified. Nine expert jective behavior is found with a simple trade-off between blurring and
+observers (researchers working in graphics or image processing) took tinging. Outside this interval, k(x) becomes bimodal or exhibits extreme
+part and over 500 samples were taken. It would not be credible to sug- ringing. The filter (1/3, 1/3) used to generate Figure 12 is recommended
+gest that a single ideal parameter pair can be deduced from subjective by the authors, but other observers may prefer more or less ringing.
+testing. The motivation for this experiment was simply to draw approxi-
+mate boundaries between regions of differing behavior as shown in Fig- 5. Postaliasing Revisited
+ure 13. The test subjects were quite consistent with one another in their A systematic consideration of subjective appearance along with quantita-
+judgements. tive analysis has yielded an excellent piecewise cubic filter. However,
+the issue of postaliasing, defined in section 2, has been ignored. In fact
+the (1/3, 1/3) filter has only fair antialiasing properties and was used to
+generate Figure 4. Postaliasing is usually not strong enough to cause
+'""'........ visible "jaggies" on edges unless a very poor filter is used (e.g., a box
+filter); however, an image with periodic patterns can have conspicuous
+postalias Moire effects unless careful precautions are taken. Synthetic
+0.8-
+images that contain brick walls, ocean waves, or the ubiquitous checker-
+board pattern are examples of images that might have this difficulty.
+There are several approaches to fixing this problem.
+0.6-
+B If the signal is bandlimited and samples carry information about the
+parameter derivative as well as about signal amplitude, a better job of reconstruc-
+tion can be done PET64. Given samples (at unit spacing) of a signal
+0.4-
+and of its derivative, a reconstruction can be done in the following form:
+0.2- f(x)= n~= ~ If~g(x-n)+f,h(x-n) (1o)
+x \ \ In an extension of the sampling theorem, if the signal contains no energy
+0
+I I I above the sampling frequency (twice the allowed bandwidth of sampling
+0 0.2 0.4 0.6 0.8 without derivatives), then it can be perfectly reconstructed by the filter
+C parameter kernels:
+Figure 13. Regions of Dominant Subjective Behavior sinZ~
+g(x)= n2x2 (ll)
+sin2
+To help choose a good filter rom the two-parameter space, some quanti- h(x) = (llb)
+tative analysis can be done to remove one more degree of freedom. ~x
+Keys and Park et al. studied the cardinal cubic splines because these
+cubics exactly interpolate at the sample positions KEYSI,PAR83.
+Using standard numerical analysis, Keys concluded that the Catmull- This is analogous to the ideal sine reconstruction formula in the standard
+Rom spline was best. Park et al. reached the same conclusion using an case where no derivative information is present. A common approxima-
+equivalent analysis in the frequency domain. Figure 14 illustrates this tion to these ideal reconstruction formulae is Hermite cubic interpolation:
+technique;
+/ (cid:127)
+lxl3-31xl2+l if Ixl_<l
+g (x) = otherwise (12)
+{ (cid:127)
+3-2x Ixl +x if Ixl~l
+h (x) = otherwise (12b)
+f (x)
+Figure 15 shows the aliasing test pattern (stir starting with 128 x 128
+samples) reconstructed with the Hermite cubic postfilter. The effect is
+2J" X
+~--- h --.-~. dramatic when compared to Figure 4, The postaliasing artifact in the
+middle of the image is nearly gone, and the prealiasing paltern on the
+right is less intense.
+Figure 14. f(x) andf~(x)
+The theory of derivative reconstruction may have some practical value in
+computer graphics. For example, it may be possible to extend Whitted's
+As the sample spacing h diminishes, the function and its reconstruction
+ray-tracing shading model WHI80 to generate derivatives with respect
+become closer. The difference f (x) -f,(x) can be expanded into a power
+to the screen coordinates. This is not an easy problem, but we have
+series in h to study how parameters affect various orders of behavior.
+demonstrated the feasibility of this extension by deriving the formulae
+Details of this type of analysis can be found in Keys' paper, and when
+for Lambert and Phong shading on quadric surfaces. It is possible that
+applied to the two-parameter family, the following is obtained:
+the density of rays used to reconstruct an image could be reduced in this
+manner by gathering more useful information from each visible surface
+f (x)-f,(x) = (2C+B-1)hfr(x) + O(h 2) (9) calculation.
+A second approach to improving postaliasing properties is suggested by
+r(x) is a polynomial factor. When 2C +B = I (indicated by dotted line
+the success of stochastic sampling on the prealiasing problem
+224
+
+--- Page 5 ---
+
+'~' Computer Graphics, Volume 22, Number 4, August 1988
+COO86,DIPg5,MIT87. However, preliminary experiments conducted A new family of cubic filters has been analyzed, and two interesting
+by the authors with stochastic-phase reconstructfon have yielded very filters have been found. The (113, 1/3) filter yields excellent image qual-
+poor results. The amount of noise needed to obscure postaliasing seri- ity, and the notch filter (3/2, -1/4) strongly suppresses postaliasing pat-
+ously degraded image q?ality. terns.
+Finally, it was observed in section 2 that signal energy very near the If derivative values can be generated by a procedural signal, an image
+Nyquist frequency is most responsible for conspicuous Moire patterns. It with less aliasing is possible by reconstruction with Hermite intelpolation
+is possible to cut out this component by notch-filter reconstruction. The or some other suitable filter.
+frequency response of the two-parameter cubic filter in equation (8) is:
+More work remains to be done. While the authors do not believe simple
+filters will be found that improve much on the cubic filters derived here,
+x(v) = -3~-3B- Isinc2(v)_sinc(2v) (13) there aae other avenues for progress. Adaptive filters might allow good
+image quality with strong antialiasing only where it is needed in problem
+areas. The effects of the reconstruction in the display and eye might be
+2C _3sinc2(2v)+ 2sinc(2v)+sinc(4v)
+allowed for given models of the visual system NET88.
++ B sinca(v) Finally, the problem of reconstruction from nonuniform sampling is not
+entirely solved. Reasonable filters have been proposed MIT87, but
+more analysis could be done: "Ideal" nonuniform reconstruction filters
+am known which are analogous to the sinc filter used witli uniform sam-
+This function goes to zero at v = 1/22 when B = 3/2. In fact, the fre-
+pies. A greater challenge will be to understand the subjective issues
+quency response is zero at all integer and half-integer multiples of the
+involved in designing filters that are well suited to computer graphics.
+sampling rate except zero. The filter (3/2, -1/4) is quadratically conver-
+gent, and the result of reconstruction with it can be seen in Figure 16, in
+7. Acknowledgements
+which the postaliasing artifact is almost completely eliminated. Unfor-
+tunately, this filter is quite blurry as was seen in Figure 11. The We would like to thank our colleagues who volunteered to help with
+behavior of this notch filter can be seen in its frequency response in Fig- subjective testing. We would also like to thank Jim Bergen from the
+ure 17 compared with the cubic B-spline filter (1, 0) in Figure 18. The David Sarnoff Laboratory, Jim Johnston from Bell Labs Signal Process-
+log magnitudes of the frequency responses are plotted below: ing Research Department., and William Schreiber from MIT's Advanced
+Television Research Program for their views on filter design. We would
+also like to thank Larry O'Gorman, Brace Naylor, Rob Pike, David Tho-
+mas and Pamela Zave and the SIGGRAPH reviewers for their helpful
+comments.
+0.1
+8. References
+0.01
+BRO69 Brown, Earl F., "Television: The Subjective Effects of
+Filter Ringing Transients", Journal of the SMPTE, Vol.
+0.001
+78, No. 4, April 1969, pp. 249-255.
+0,0001
+I i CAT80 Catmnll, Edwin, Alvy Ray Smith, "3-D Transformations
+0 1 2 of Images in Scardine Order", Computer Graphics, Vol.
+14, No. 3, pp. 279-285.
+COO86 Cook, Robert L., "Stochastic Sampling in Computer
+Figure 17. Frequency Response of Cubic Notch Filter
+Graphics", ACM Trans. Graphics, VoL 5, No. t, January
+1986.
+COO87 Cook, Robert L., personal communication, August, 1987.
+OH m CRO77 Crow, Franklin C., "The Aliasing Problem in Computer-
+Generated Shaded Images", Comm. ACM, Vol. 20, No. 1 l,
+0.01 - November 1977, pp. 799-805.
+0.~1 - DIP85 Dippe, Mark A. Z. and Erling Henry Wold, "Antialiasing
+Through Stochastic Sampling", Computer Graphics, Vol.
+0.0~1 19, No. 3, July 1985, pp. 69-78.
+I I
+1 2
+DIJF861 Duff, Tom, "Splines in Animation and Modeling", State of
+the Art in Image Synthesis, SIGGRAPH g6 Course Notes.
+Figure 18. Frequency Response of Cubic B-Spline Filter HOU78 Hou, Hsieh S., HaJ'ry C. Andrews, "Cubic Splines for
+Image Interpolation and Digital Filtering", IEEE Trans.
+Acoustics, Speech, and Signal Processing, Vol. ASSP-26,
+No. 6, December 1978, pp. 508-517.
+6. Conclusions
+Designing reconstruction filters for computer graphics applications
+KEY81 Keys, Robert, G, "Cubic Convolution Interpolation for
+requires a balanced analysis of formal quantitative properties and subjec-
+Digital Image Processing", 1EEE Trans. Acoustics, Speech,
+tive image quality. There are many trade-offs, arid it may be impossible
+and Signal Processing, Vol. ASSP-29, No. 6, December
+to find a filter that yields good image quality and has good antialiasing
+1981, pp. 1153-1160.
+properties.
+225
+
+--- Page 6 ---
+
+SIGGRAPH '88, Atlanta, August 1-5, 1988
+[MER84] Mettz, Pierre, and Frank Grey, "A Theory of Scanning and
+its Relation to the Characteristics of the Transmitted Sig-
+nal in Telephotography and Television," Bell System Tech.
+J., Vol. 13, pp. 464--515, July 193,4.
+[MIT87] Mitchell, Don P., "Generating Antialiased Images at Low
+Sampling Densities", Computer Graphics, Vol. 21, No. 4,
+July 1987, pp. 65-72.
+[NETg8] Nelravali, Arun N., Barry G. Haskell, Digital Pictures:
+Representation and Compression, New York, Plenum,
+1988.
+[PAR83] Park, Stephen K., Robert A. Schowengerdt, "Image
+Reconstruction by Parametric Cubic Convolution", Com-
+puter Vision, Graphics, and Image Processing, Vol. 23,
+No. 3, September 1983, pp. 258-272.
+[PET64] Petersen, Daniel P., David Middleton, "Reconsa'aetion of
+Multidimensional Stochastic Fields from Discrete Meas-
+urements of Amplitude and Gradient", Information and
+Control, Vol. 7, pp. 445-476.
+[SCH85] Schreiber, William F., Donald E. Troxel, "Transformation
+Between Continuous and Discrete Representations of
+Images: A Perceptual Approach", IEEE Trans. Pattern Figure 4. Prealiasing and Postaliasing Example
+Analysis and Machine Intelligence, Vol. PAMI-7, No. 2,
+March 1985, pp. 178-186.
+[SHA49] Shannon, Claude E., "Communication in the Presence of
+Noise.", Proc. IRE Vol. 37, 19,49, pp. 10-21.
+[wrn80] Whitted, Turner, "An Improved Illumination Model for
+Shaded Display", Comm. ACM, Vol. 23, No. 6, June 1980,
+pp. 343-349.
+Figure 5. Nearly Ideal Postfiltering
+226
+
+--- Page 7 ---
+
+~ ComputerG raphics, Volume 22, Number 4, August 1988
+Figure 6. Ringing Caused By Sinc Postfilter Figure 9. Anisotropic Artifacts
+Figure 8. Sample-Frequency Ripple Figure 10. Excessive Ringing and Clamping Artifacts
+227
+
+--- Page 8 ---
+
+¢
+SIGGRAPH '88, Atlanta, August 1-5, 1988
+Figure 11. Excessive Blumng Figure 15. Using Derivative Reconstruction
+Figure 12. Best-Looking Cubic Reconstruction Figure 16, Using Notch-Filter Reconstruction
+228

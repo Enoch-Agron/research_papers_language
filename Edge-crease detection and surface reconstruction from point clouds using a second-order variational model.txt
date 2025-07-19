@@ -1,0 +1,566 @@
+# Edge-crease detection and surface reconstruction from point clouds using a second-order variational model.pdf
+# Converted: 2025-07-19 12:45:29
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Edge-crease detection and surface reconstruction from point clouds using a second-order variational model.pdf
+# Output: ../layer2_completion/txt/Edge-crease detection and surface reconstruction from point clouds using a second-order variational model.txt
+
+
+--- Page 1 ---
+
+See discussions, stats, and author profiles for this publication at: https://www.researchgate.net/publication/267367007
+Edge-crease detection and surface reconstruction from point clouds using a
+second-order variational model
+Conference Paper  in  Proceedings of SPIE - The International Society for Optical Engineering · September 2014
+DOI: 10.1117/12.2069666
+CITATION
+1
+READS
+369
+2 authors:
+Massimo Zanetti
+Fondazione Bruno Kessler
+26 PUBLICATIONS   579 CITATIONS   
+SEE PROFILE
+Lorenzo Bruzzone
+University of Trento
+737 PUBLICATIONS   46,519 CITATIONS   
+SEE PROFILE
+All content following this page was uploaded by Massimo Zanetti on 26 March 2015.
+The user has requested enhancement of the downloaded file.
+
+
+--- Page 2 ---
+
+Edge-crease detection and surface reconstruction from point
+clouds using a second-order variational model
+Massimo Zanetti and Lorenzo Bruzzone
+University of Trento, Department of Information and Communication Technology,
+via Sommarive 5, Trento 38123, Italy
+ABSTRACT
+The automatic detection of geometric features, such as edges and creases, from objects represented by 3D point
+clouds (e.g., LiDAR measurements, Tomographic SAR) is a very important issue in diﬀerent application domains
+including urban monitoring and building reconstruction. A limitation of many methods in the literature is that
+they rely on rasterization or interpolation of the original grid, with consequent potential loss of detail. Recently,
+a second-order variational model for edge and crease detection and surface regularization has been presented
+in literature and succesfully applied to DSMs. In this paper we address the generalization of this model to
+unstructured grids. The model is based on the Blake-Zisserman energy and allows to obtain a regularization of
+the original data (noise reduction) which does not aﬀect crucial regions containing jumps and creases. Speciﬁcally,
+we focus on the detection of these features by means of two auxiliary functions that are computable by solving
+speciﬁc diﬀerential equations. Results obtained on LiDAR data by solving the equations via Finite Element
+Method are presented.
+Keywords: Point clouds, edge detection, crease detection, variational methods, Blake-Zisserman functional,
+remote sensing
+1. INTRODUCTION
+Nowadays, the increasing availability of remote sensing active systems (e.g. LiDAR and SAR with Tomography
+capability) makes it possible to produce detailed representations of objects on the ground in the form of dense 3D
+point clouds. For example, airborne LiDAR data acquisitions are now available with point densities ranging from
+1 to 50 pts/m2. On the other hand, according to the recent developments on multi-pass InSAR techniques such
+as Tomographic SAR Inversion (TomoSAR), densities comparable to LiDAR can be achieved by using multiple
+very high resolution (VHR) SAR images acquired at diﬀerent viewing angles.1,2 In terms of data availability
+this is of great relevance, in particular thanks to the large amount of images provided by new spaceborne
+VHR SAR sensors like those mounted on Cosmo-SkyMed and TerraSAR-X satellites. This scenario oﬀers the
+possibility to achieve signiﬁcant improvements in all those human activities where information extracted from
+the real 3D geometry of objects is of major importance, e.g. urban monitoring, identiﬁcation of man-made
+structures, building reconstruction. In order to concretize this potential, the increasing level of detail available
+in the produced data must be rigorously followed by an increasing accuracy, eﬀectiveness and automation, of
+the methods of analysis. Moreover, working directly on the original point cloud is a non-trivial task. Most of
+the techniques available in the literature cope with the problem of segmenting the scene and recognizing objects
+by means of model-based or context-driven approaches.3,4 These methods are shown to be eﬀective mostly on
+speciﬁc contexts, and basically they rely on prior knowledge. Other techniques (most of them coming from
+the literature of image processing) are based on segmentation steps where more general geometric features are
+detected (e.g. boundaries, edges, creases, slopes) without assuming any predeﬁned model.5–7 A limitation of
+these methods is that most of them require the unstructured point cloud to be rasterized or interpolated into
+a regular grid. When the density of the point cloud is low this may result in a potential loss of detail. On the
+other hand, the generalization of these methods to unstructured grid of points is not straightforward.
+In this paper we address the problem of edge-crease detection and surface reconstruction from point clouds.
+This work is intended to be a ﬁrst step for the generalization of a recently proposed variational model of second
+Address all correspondence to: massimo.zanetti@unitn.it
+
+
+--- Page 3 ---
+
+order based on the Blake-Zisserman functional, which has been successfully applied to the automatic segmentation
+of digital surface models (DSMs).8 The Blake-Zisserman model represents a generalization of the well-known
+Mumford-Shah, and provides a general framework for both data segmentation and surface reconstruction. The
+model is based on a cost-functional made up of several terms which interaction allows to obtain a smooth
+approximation of the data (more precisely a piecewise linear approximation) that preserves the morphology of
+constant gradient areas. These reconstructed regions are explicitly detected by partitioning the data using the
+graph of two auxiliary functions: the edge-detector function (which detects discontinuities of the data) and
+the edge/crease-detector function (which also detects discontinuities of the gradient). This model overcomes
+several drawbacks of the widely used ﬁrst order model, such as, over-segmentation of steep gradients, lack of
+second order information, degraded resolution on multiple junctions of boundaries. We aim at extending this
+approach to the case of unstructured clouds of points by ﬁnding proper ways for generalizing it by taking
+advantage from the intrinsic non-homogeneous characteristics of the data. To address this challenging problem,
+in this paper we investigate the deﬁnition of a general algorithm based on Finite Element Methods (FEM).
+After some manipulation of the original fomulation by Blake-Zisserman aimed at producing a new model for
+which a numerical solution can be computed, we come up to a model that depends on weakly diﬀerentiable
+Sobolev functions. Therefore, the original datum (the points to be segmented) and the unknowns of the problem
+(the smoothed datum and the auxiliary functions) must be represented as surfaces. Firstly, the 3D points are
+projected onto a plane and the original datum is represented as a surface deﬁned on such a plane. The projected
+planar points are considerd as the new unstructured domain on which the problem is deﬁned. Secondly, from the
+given optimization problem we derive diﬀerential equations whose solutions represent the discretization of the
+two auxiliary functions that detect edges and creases. The solution of the diﬀerential equations is numerically
+approximated by triangulating the unstructured planar domain and by splitting the variational weak formulation
+of the equations over the triangles. The paper presents the analytical details of this methodology and preliminary
+results obtained on LiDAR data.
+2. THEORETICAL MODEL
+The Blake-Zisserman variational model for image segmentation is a second order model introduced to overcome
+the drawbacks of the well-known Mumford-Shah (MS), which is a ﬁrst order model.9
+Because of intrinsic
+properties of the functional, by minimizing the integral sum with the gradient component the approximation of
+the original datum results in a piecewise constant function which is discontinuous on C1 arcs which represent the
+boundary of the object in the scene (e.g., building facets). Unfortunately, in the regions where the gradient is
+too steep, the solution of the minimization is often a step function that represents a degraded over-segmentation
+of the original datum.10
+In the Blake-Zisserman formulation,11 the gradient component is replaced with the squared norm of the
+Hessian matrix. The minimization of this second order information allows the solution to have variations of
+ﬁrst order, leading to a piecewise linear approximation of the original datum. In this way the problem of the
+over-segmentation is solved. Moreover, in the context of surface reconstruction the linear components of the
+solution are the recovered surfaces components of the building (facades, roof pitches, etc.). Another property of
+this model, which is of great importance for the segmentation of DSMs8 or point clouds in general (rather than
+images12), is that also second order geometric features such as creases between roof pitches are detectable.
+In the sequel we will present the variational approach to segmentation in the Blake-Zisserman sense and
+a numerical strategy for the solution of the related minimization problem. From the theory it turns out that
+the original formulation by Blake-Zisserman is too strong to prove the existence of minima. Thus, the problem
+is moved into a weaker space of functions that makes it possible to ﬁnd only solutions that make sense for
+visual/surface reconstruction purposes.13 Since a direct minimization of the weak functional is not possible, a
+relaxation of the problem by means of Γ-convergence is given.13 Moreover, the Γ-convergence approximation
+gives rise to two auxiliary functions that explicitly detect features of ﬁrst and second order of the data (data
+discontinuity and gradient discontinuity).
+2.1 A second order variational model for segmentation
+The variational formulation of the segmentation is given for open domains. The discretization step takes place
+after the formulation of the problem. Let us consider the datum to be segmented as a function g : Ω→[0, M],
+
+
+--- Page 4 ---
+
+where Ω⊂R2 is an open bounded domain and M any positive constant. The idea is to ﬁnd u, a regularized
+version of g, by minimizing the functional
+BZ(u, K0, K1) := µ
+Z
+Ω
+|u −g|2 dx +
+Z
+Ω\(K0∪K1)
+|∇2u|2 dx
++ αH1(K0 ∩Ω) + βH1((K1 \ K0) ∩Ω)
+(1)
+among all u ∈C2(Ω\ (K0 ∪K1)) ∩C1(Ω\ K0) and compact sets K0, K1 such that K0 ∪K1 is a closed subset
+of Ω. H1 is the one-dimensionall Hausdorﬀmeasure and µ, α, β are positive parameters. The solution u (if
+it exists) is twice diﬀerentiable outside K0 ∪K1 and has to be at least diﬀerentiable outside K0. Therefore
+discontinuities of u are allowed both on K0 and K1, whereas discontinuities of the gradient are allowed only on
+K1. Let us heuristically analyze the properties of a minimizing triplet (u, K0, K1) for the functional (1). The
+minimization of the term
+R
+Ω|u −g|2 forces u to be close to g, whereas by minimizing the term containing |∇2u|2
+the solution tends to be smooth (a linear behaviour is expected) outside K0 ∪K1. The terms αH1(K0 ∩Ω)
+and βH1((K1 \ K0) ∩Ω) are introduced to control the size of the sets K0, K1. In optimization problems of this
+kind both bulk (here 2-dimensonal) and surface (here 1-dimensional) energies are minimized simultaneously on
+unknown supports, henceforth the minimization is carried on both in a function domain (unknown u) and a
+set domain (compact sets K0, K1). Such problems are well-known as free discontinuity problems14 because the
+discontinuity sets K0, K1 are not known a priori.
+Since the original formulation by Blake-Zisserman is too strong to prove the existence of minima (i.e., for
+justifying the validity of the heuristical approach given above), the problem is moved into a weaker space
+of functions where the classical results of Calculus of Variations (the branch of Mathematics that deals with
+minimization of integral functionals) can be used for proving the existence of minima that are also suﬃciently
+regular for applying in real problems. The weak formulation of the Blake-Zisserman functional is given in the
+space of the generalized special functions of bounded variation, GSBV (Ω),15 as:
+F(u) =
+Z
+Ω
+µ|u −g|2 + |∇2u|2 dx + αH1(Su) + βH1(S∇u \ Su),
+(2)
+where Su, S∇u denote the discontinuity set for u and for the gradient of u, respectively. The existence of minima
+for this functional can be stated, moreover, after a suitable identiﬁcation a correspondence with a minimum
+for the strong formulation is possible.16 Because of the one-dimensional measure terms deﬁned on unknown
+supports, the functional F(u) is not diﬀerentiable. Thus the classical methods based on gradient descent cannot
+be directly applied for computing a minimizer. In order to overcome this problem a Γ-convergence approximation
+of F(u) by the family of elliptical functionals Fϵ, deﬁned on proper Sobolev spaces, is given13
+Fϵ(u, s, z) := δ
+Z
+Ω
+z2|∇2u|2 dx + ξϵ
+Z
+Ω
+(s2 + oϵ)|∇u|2 dx
++ (α −β)
+Z
+Ω
+ϵ|∇s|2 + 1
+4ϵ(s −1)2 dx
++ β
+Z
+Ω
+ϵ|∇z|2 + 1
+4ϵ(z −1)2 dx
++ µ
+Z
+Ω
+|u −g|2 dx
+(3)
+for ϵ →0 (ϵ is called the Γ-convergence parameter). The size of the discontinuity sets Su, S∇u is approximated
+by means of two auxiliary functions s, z : Ω→[0, 1], respectively. Here, δ, α, β, µ are positive parameters, ξϵ, oϵ
+are inﬁnitesimals faster than ϵ. For each ϵ > 0, the functional Fϵ admits a minimizer (uϵ, sϵ, zϵ). By sending
+ϵ →0, thanks to the properties of the Γ-convergence, the sequence {(uϵ, sϵ, zϵ)}ϵ converges to a triplet (u, s, z)
+where u is a minimizer of the limit functional F. In order to understand what the functions s and z represent,
+let us see more in detail the properties of a minimizer (uϵ, sϵ, zϵ) of (3). Because of the minimization, in order
+to keep the term 1/4ϵ(sϵ −1)2 bounded, sϵ is forced to be 1 almost everywhere over Ω, except where big values
+of |∇uϵ|2 are achieved (i.e., in presence of a discontinuity), where s2
+ϵ (hence sϵ) is forced to take the value 0.
+
+
+--- Page 5 ---
+
+Moreover, the minimization of the term ϵ|∇sϵ| avoids big oscillations of the function sϵ, hence the transition of
+sϵ between 0 and 1 turns out to be smooth. Similar arguments stand for zϵ, which goes to 0 in correspondence
+of big values of |∇2uϵ|2 (i.e., in presence of a discontinuity of the gradient), and for |∇zϵ|, which causes smooth
+variations of zϵ between 0 and 1. From the discussion above it follows that for small values of ϵ, a minimizer uϵ
+is an approximation (in the Γ-convergence sense) of a real minimizer u, whereas sϵ, zϵ are approximations of the
+indicator functions of the discontinuity sets Su, S∇u.
+2.2 Minimization and discretization approaches
+By following the framework given above, because of the Γ-approximation given by the family of functionals Fϵ,
+an approximation of a minimizer of the funcitonal (2) can be found by minimizing (3), where ϵ is ﬁxed. The
+cross terms z2|∇2u|2 and (s2 + oϵ)|∇u|2 do not allow a direct minimization with respect to the global variable
+(u, s, z). Since the functional Fϵ is strictly convex in the directions (·, s, z), (u, ·, z) and (u, s, ·), a general block
+iterative scheme can be used8
+
+
+
+s1 = arg mins Fϵ(u0, s, z0)
+z1 = arg minz Fϵ(u0, s1, z)
+u1 = arg mins Fϵ(u, s1, z1)
+(4)
+where the iterations are repeated subsequently, until small variations of the functional according to a given
+threshold, are achieved. For each partial minimization problem in (4) only one of the three components u, s, z is
+considered as a variable, and the remaining two are considered as constants. Thus, this formulation is equivalent
+to
+
+
+
+s1 = arg mins F 1
+ϵ (s, u0)
+z1 = arg minz F 2
+ϵ (z, u0)
+u1 = arg mins F 3
+ϵ (u, s1, z1)
+(5)
+where
+F 1
+ϵ (s, u) := ξϵ
+Z
+Ω
+(s2 + oϵ)|∇u|2 dx + (α −β)
+Z
+Ω
+ϵ|∇s|2 + 1
+4ϵ(s −1)2 dx + k1,
+(6)
+F 2
+ϵ (z, u) := δ
+Z
+Ω
+z2|∇2u|2 dx + β
+Z
+Ω
+ϵ|∇z|2 + 1
+4ϵ(z −1)2 dx + k2,
+(7)
+F 3
+ϵ (u, s, z) := δ
+Z
+Ω
+z2|∇2u|2 dx + ξϵ
+Z
+Ω
+(s2 + oϵ)|∇u|2 dx + µ
+Z
+Ω
+|u −g|2 dx + k3,
+(8)
+and k1, k2, k3 are constants that are irrelevant for ﬁnding the arguments of the minima. This general approach
+allows to exploit the convexity of the functional in its three components u, s, z in such a way that, after a
+proper discretization of the domain, the computation of each partial minimizer becomes an optimization problem
+characterized by a sparse positive deﬁnite matrix.
+In the case of structured domains (e.g., DSMs, images) the open set Ω⊂R2 is a rectangle and it is approx-
+imated by a lattice of coordinates, whereas the diﬀerential operators of the ﬁrst and second order appearing
+in the functional are approximated by using classical diﬀerence-schemes.8 The advantage of this approach is
+that each functional F i
+ϵ, i = 1, 2, 3, can be ﬁrstly discretized and then derived in its discrete form, leading to a
+straightforward and compact implementation.
+When the domain is an unstructured grid of points diﬀerence-schemes cannot be used, hence diﬀerent discretiza-
+tion strategies of the optimization problem must be used. The minimization of the functionals F i
+ϵ, i = 1, 2
+(i.e., the ones related to the detection of edges and creases) is in both cases a problem described by an elliptic
+Partial Diﬀerential Equation (PDE) which is a modiﬁcation of the well-known Poisson’s equation (in literature
+is sometimes referred to as scalar elliptic problem). Since one of the most eﬀective approaches to solve such kind
+of elliptical problems on unstructured domains is the Finite Element Method (FEM),17 we will give in the sequel
+some preliminay results on edge-crease detection (with consequent detection of planar surfaces) on synthetic and
+LiDAR data by using the FEM method.
+
+
+--- Page 6 ---
+
+3. NUMERICAL SOLUTION TO THE THEORETICAL MODEL
+Since in the proposed modelization the variables are weakly diﬀerentiable Sobolev functions deﬁned on a two-
+dimensional domain Ω⊂R2, the data g, u, s, z must be considered as two-dimensional surfaces in a three-
+dimensional space.
+It follows that the discretized representations of the data are uniquely determined by a
+(possibly) unstructured two-dimensional grid of points {(xi, yi)}i, which represents the discretization of Ω, and
+four families of real non-negative values {gi}i, {ui}i, {si}i, {zi}i, which arethe values of the surfaces on the grid
+points. It is worth noting that, since LiDAR points are more generally clouds of 3D points, the assumption
+of being surfaces is not always satisﬁed.
+Accordingly, one of the pre-processing steps needed to apply our
+model to the problem of edge-crease detection on LiDAR points consists in representing the original datum
+as a surface. Once the discrete domain is deﬁned, the solutions of the optimization problems (6) and (7) are
+numerically computed by solving the associated Euler Lagrange equations via the FEM. To this aim the domain
+Ωis subdivided into triangles whose vertices are triplets of points extracted from {(xi, yi)}i and the equation
+is splitted over each triangular component. The ﬂexibility of the triangulation approach can be exploited also
+for further reﬁnement of the unstructured grid by adding points only in certain areas where higher resolution is
+needed, such as in proximity of edges and creases.
+3.1 Domain and surface representation
+Let us consider a set of n points {Pi}i=1,...,n where each point is characterized by its east, north and height
+coordinate Pi = (Ei, Ni, Hi). The ﬁrst step of the processing consists in representing the area of interest as a
+surface. Here we propose a strategy for point selection and coordinate change that returns a subset of points
+{pik}k ⊂{Pi}i in local coordinates pik = (xik, yik, gik) in such a way that the surface to be segmented, g, is
+described by the values {gik}k on the 2-dimensional points {(xik, yik)}k. This technique is based on the projection
+of the points {Pi}i onto an aﬃne plane Π. We caractherize this plane by its normal versor v ∈R3, |v| = 1, and
+its displacement d with respect to the origin (0, 0, 0), thus Π = Πv
+d is given by
+Πv
+d := {p ∈R3 | p · v = d},
+where · denotes the standard Euclidean scalar product. Let M : R3 →R3 be a linear function (that we have
+ﬁxed) which isometrically maps Πv
+d into Πe
+0, where e = (0, 0, 1). For each point Pi let di be its displacement with
+respect to the plane Πv
+d, i.e, di = Pi · v −d. If di is non-negative we consider its orthogonal projecton Qi ∈Πv
+d,
+otherwise the point is discarted. By deﬁnition the third coordinate of the point M(Qi) is 0, we deﬁne xi and
+yi as the ﬁrst and the second coordinate of M(Qi), respectively. The third coordinate of the projected point is
+deﬁned as gi := di. It is worth noting that, if v = (0, 0, 1) and M is the identity map then the points pi are just
+the points Pi for which the height Hi is greater (or lower, according to the sign of d) than d. For the sake of
+simplicity and without loss of generality we can rename the family of points {pik}k as {pi}i.
+The last step to represent the data g as a surface consists in running a simple thinning algorithm, which
+removes the points that underlie the surface layer. The algorithm places a uniform grid over the points {(xi, yi)}i
+and within each grid cell keeps only the point with the highest g coordinate. In order to mantain the same density
+of the original data the grid width should be chosen accordingly. For example for a density of 25 pts/m2 a suitable
+grid width is 0.2 m.
+3.2 Numerical minimization
+We give here a brief explanation on how the numerical minimization of the functionals (6),(7), is addressed.
+According to the theory of Euler Lagrange Equations, similarly to what happens by minimizing functions, it is
+expected that in proximity of a minimizer the variations of a functional will approach zero. In general, the Euler
+Lagrange equation of a functional is derived in such a way that its solution (a Sobolev function in this case)
+corresponds to a point where the variations of the objective functional are null, hence a potential minimizer.
+In general, being a solution of the Euler Lagrange equation is just a necessary condition for being a minimizer;
+however, since in our case the objective functional is convex, it is also suﬃcient. After some computations we
+
+
+--- Page 7 ---
+
+get the following diﬀerential equations
+ξϵ|∇u|2s + α −β
+4ϵ
+(s −1) −ϵ(α −β)∆s = 0,
+(9)
+δ|∇2u|2z + β
+4ϵ(z −1) −ϵβ∆z = 0,
+(10)
+where ∆denotes the Laplacian operator, over the open domain Ω. Since these equations do not have trivial
+solutions we do not consider boundary conditions here. It is important to point out here that, since in this paper
+we do not perform the minimization of the functional (8), the values of the function u are not known. Anyway, u
+is the smooth approximation of the original datum g; therefore, in order to give a preliminary qualitative analysis
+of the proposed method, we will just replace u by g in equations (9) and (10). Of course, results will be aﬀected
+by the noise.
+The numerical solution of the equations is computed by means of Finite Element Method based on Riesz-
+Galerkin approximation.17
+The Sobolev spaces in which the problem is deﬁned are approximated by ﬁnite
+dimensional subspaces that are generated by a family of elementary basis functions (usually called shape func-
+tions) whose support is the union of few simple planar elements. The only information we have about the domain
+Ωis in its discrete representation given by the family of points {(xi, yi)}i; thus, let us consider a (Delaunay)
+triangulation Ωh = ∪kτk where each triangle τk has its vertices in {(xi, yi)}i. Here h is a discretization param-
+eter and it equals the largest edge length among all the triangles. The triangles in Ωh are the planar elements
+in which the domain is splitted. By considering the variational formulation of equations (9) and (10) on the
+above-mentioned ﬁnite dimensional subspaces we get two symmetric positve deﬁnite sparse linear systems whose
+solutions are {si}i and {zi}i.
+4. EXPERIMENTAL RESULTS
+In this section we show the results of edge and crease detection on a 3D point cloud. The study area is a portion
+of a large dataset acquired over Pellizzano, Trento (Italy), in September 2012, by the airborne Riegl LMS-Q680i
+LiDAR sensor. Points have a density greater than 25 pts/m2. The main object represented in the considered
+scene is a building with diﬀerent roof pitches (see in Figure 1a a plot of the original point cloud).
+Being the building in a ﬂat area we choose as a projecting plane Πv
+d, where v = (0, 0, 1) and d equals the
+lowest height among all the points in the study area. After the projection step the point cloud is represented as
+(a)
+(b)
+996 m
+980 m
+Figure 1. Dataset preparation. (a) Plot of the original LiDAR data representing a complex building. (b) Same dataset
+represented as a surface, i.e., the g function. Notice that points belonging to balconies and walls have been signiﬁcantly
+removed. We can see noticeable jumps due to chimneys and garrets. Creases are mainly due to the connection between
+roof pitches.
+
+
+--- Page 8 ---
+
+(a)
+(b)
+983 m
+980 m
+Figure 2. Example of domain representation. The plots are related to a small portion of the dataset. (a) Vertical look
+of the triangulation; each point (xi, yi) is colored according to the gi value. (b) 3D perspective of the same particular
+represented in (a).
+a surface by running a standard thinning algorithm. We can see in Figure 1b that many of the points belonging
+to the balconies and walls are removed by the algorithm, but still a few of them remain. The discretized surface
+domain {(xi, yi)}i is then triangulated according to a Delaunay criterion, i.e., each triangle has the property
+that its circumcircle does not contain any other point of the unstructured grid.
+A Delaunay triangulation
+is a preferable choice for representing the domain of diﬀerential problems because of its very nice properties
+such as: (1) each vertex of a Delaunay triangulation has on average six surrounding triangles (a topological
+regularity property); (2) a Delaunay triangulation maximizes the minimum interior angle when compared to
+other triangulation methods (a geometrical regularity property). Figure 2 shows a particular of the triangulation
+and related surface representation on the considered dataset.
+4.1 Edge detection
+Let us present the results of edge-detection obtained by approximating the solution of equation (9), where u is
+replaced by g. We mention here that the squared norm of the gradient |∇g|2 is computed by assuming that g
+(a)
+(b)
+Figure 3. Edge detection. Purple points are the detected edges, i.e., the points (pi, gi) such that si = 0. Yellow points are
+the ones where si = 1. (a) Look of the whole dataset from above. (b) Diﬀerent perspective of the edge detection on the
+whole dataset.
+
+
+--- Page 9 ---
+
+(a)
+(b)
+Figure 4. Particular of edge/crease detection related to the same points represented in Figure 2. (a) Look from above.
+(b) Diﬀerent perspective of the edge/crease detection.
+is a surface made up of triangular facets denoted by τ g
+k . For each triangle τk let us denote its vertices (in local
+enumeration) as pa, pb, pc. We consider the trianular facet τ g
+k as the planar triangle (in a 3D space) with vertices
+(pa, ga), (pb, gb), (pc, gc). The gradient of each τ g
+k is a constant vector, over the whole τk, pointing towards the
+direction of maximum slope and it is computed by elementary operations involving pj, gj, j = a, b, c.
+The numerical solution of equation (9) is computed by means of the Riesz-Galerkin approximation. The varia-
+tional equation of (9) is considered in a ﬁnite dimensional space of piecewise linear functions and the problem
+is reduced to a linear system of equations which solution is the vector {si}i. It is possible to prove that the
+associated matrix (the so-called stiﬀness matrix) is sparse, symmetric and positive deﬁnite. Thus, the solution
+exists, is unique and computationally convenient. In Figure 3 we can see the plots of the solution: the color
+information is related to si, whereas the spatial information is related to (pi, gi). The points colored purple are
+the detected edges, namely, the points (pi, gi) such that si = 0. The yellow points are the homogeneous regions,
+i.e., the points such that si = 1. From the particular in Figure 4 we can see that the edges are detected with a
+precision of one point for each side of the jump. This mainly happens because the portion of space occupied by
+a jump is fully described by its triangular facet, which has a high gradient information. Notice that the purple
+points are all vertices of common triangles.
+4.2 Edge and crease detection
+The joint edge and crease detection is performed by approximating the solution of equation (10), where u is
+replaced by g. Again, a numerical method based on Riesz-Galerkin approximation is used. We recall that also
+(a)
+(b)
+Figure 5. Approximation of |∇2g| over a triangle by superposition of a regular grid. (a) Vertical look of the piecewise linear
+approximation. (b) 3D perspective of the same particular, the second-order information is catched by the interpolated
+points.
+
+
+--- Page 10 ---
+
+(a)
+(b)
+Figure 6. Edge/crease detection. Red points are the detected edge/creases, i.e., the points (pi, gi) such that zi = 0. Yellow
+points represent homogeneous areas, i.e., the points where zi = 1. (a) Look of the whole dataset from above. (b) Diﬀerent
+perspective of the edge/crease detection on the whole dataset.
+in this case the associated matrix is sparse, symmetric and positive deﬁnite. An important remark regarding the
+approximation of the second-order operator must be done. Since in the proposed modelization the function g
+is a piecewise linear function, the second-order information given by |∇2g| over a triangle must be recovered by
+using neighboring points (with respect to the triangle). To this aim we used a strategy based on superposition
+of a regular grid around each triangle τk. Once the grid is deﬁned, the corresponding values of g are interpolated
+and their values are used to compute an approximation of |∇2g| over the triangle. An example of regular grid
+superposition is represented in Figure 5.
+Results on edge/crease detection attained by solving the equation are illustrated in Figure 3, where the red and
+yellow points represent the detected edges/creases and the homogeneous areas, respectively. As we can see, some
+irragularities on the roof pitches, especially due to noise, are wrongly detected by the algorithm. Indeed this
+behaviour was expected because, as we have already remarked, no smoothing of the data is done. We recall
+here that these preliminary tests are concerned with the problem of solving the partial optimization problems
+(6) and (7), which are related to edge and crease detection. The minimization of (8), the smoothing funtional, is
+not considered here. Lastly, we want to point out that the approximation of the second-order operator |∇2g| by
+means of regular grid superposition is purely an empirical technique, aimed at exploiting only the piecewise linear
+approximation of g, without making use of polynomial approximations. Anyway, in order to give a qualitative
+look on the general behaviour of the proposed method, our choise has shown to be eﬀective.
+Regarding the order of complexity of the computations we reacall that the method is based on the solution
+of two sparse, symmetric, and positive deﬁnite linear systems. The size of each matrix side equals the number
+of points of the cloud, which is 16840 in the considered case. For each row of the matrix there are on average
+7 non-zero elements. The main tasks of the algorithm are two: (1) the population of the matrix (hard work),
+and (2) the solution of the system (light work). The time required for populating the matrices strictly depends
+on how well-optimized is the approximation of the operators |∇g|2 and |∇2g|2 over the triangles. In the ﬁrst
+case the time was approximately 6 seconds, while in the second case it was 30 seconds. The signiﬁcant increase
+in time of the second case is mainly due to the approximation of the second-order operator by the empirical
+technique described before. Once the system is deﬁned, the solution can be computed by using standard libraries
+for sparse systems. The time of computation in the considered case is in the order of 10−1 seconds for both
+systems.
+Computations are performed in MATLAB R
+⃝, hardware is Intel(R) Core(TM) i5-4570 CPU @ 3.20 GHz, 8.00
+GB Ram.
+
+
+--- Page 11 ---
+
+5. CONCLUSIONS
+In this paper we addressed the problem of edge and crease detection and surface reconstruction from 3D point
+clouds. Recently, a second-order variational model based on the Blake-Zisserman functional has been succesfully
+applied to the segmentation of DSMs. This work is intended to be a ﬁrst step for the generalization of this model
+from regular to unstructured grid of points. The model is of interest since it allows to: (1) detect geometrical
+features such as steps and creases in order to discriminate objects in the scene; (2) smooth the original data (noise
+reduction) by preserving ﬁrst and second order features; (3) control the level of detection (length of countours).
+In the paper we presented a numerical approach to the solution of the related optimization problem based
+on Euler-Lagrange equations via the Finite Element Method. We give two (of the overall three) diﬀerential
+equations whose solutions determine the map of edges and edges/creases of the objects in the scene represented
+by the cloud of points. In the experimental part we presented the results of edge and crease detection on LiDAR
+data. The results have shown promise and gave us the conﬁdence that a complete formal generalization of the
+method can be reached by adding the smoothing component to the algorithm.
+In a future perspective we aim at: (1) completing the proposed method by adding the numerical implemen-
+tation of the smoothing component; (2) exploiting the ﬂexibility of the proposed approach for further reﬁnement
+of the unstructured grid by adding points only in certain areas where higher resolution is needed (for instance
+in proximity of edges and creases); (3) performing a full quantitative assessment of the proposed method by
+comparing it with others thechniques presented in the literature.
+REFERENCES
+[1] X. Zhu and R. Bamler, “Very high resolution spaceborne SAR tomography in urban environment,” IEEE
+Transactions on Geoscience and Remote Sensing 48(12), 4296–4308 (2010).
+[2] M. Shahzad and X. X. Zhu and R. Bamler, “Facade structure reconstruction using spaceborne TomoSAR
+point clouds,” in [IEEE Geoscience and Remote Sensing Symposium (IGARSS)’12], 467–470 (July 2012).
+[3] G. Forlani and C. Nardinocchi and M. Scaioni and P. Zingaretti, “Complete classiﬁcation of raw LiDAR data
+and 3D reconstruction of buildings,” Pattern Analysis and Applications 8(4), 357–374 (2006).
+[4] A. Sampath and J. Shan, “Segmentation and reconstruction of polyhedral building roofs from aerial lidar
+point clouds,” IEEE Transactions on Geoscience and Remote Sensing 48(3), 1554–1567 (2010).
+[5] P. Perona and J. Malik, “Scale-space and edge detection using anisotropic diﬀusion,” IEEE Trans. Pat. Anal.
+Machine Intel. (12)7, 629–639 (1990).
+[6] L. A. Vese and T. F. Chan, “A multiphase level set framework for image segmentation using the Mumford
+and Shah model,” International journal of computer vision 50(3), 271–293 (2002).
+[7] G. Dogan and P. Morin and R. H. Nochetto and M. Verani, “Discrete gradient ﬂows for shape optimization
+and applications,” Computer methods in applied mechanics and engineering 196(37), 3898–3914 (2007).
+[8] M. Zanetti and A. Vitti, “The Blake-Zisserman model for digital surface models segmentation,” ISPRS
+Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences II-5-W2, 355–360 (2013).
+[9] D. Mumford and J. Shah, “Optimal approximations by piecewise smooth functions and associated variational
+problems,” Comm. Pure Appl. Math. 42, 577–685 (1989).
+[10] A. Vitti, “The Mumford-Shah variational model for image segmentation: an overview of the theory, imple-
+mentation and use,” ISPRS Journal of Photogrammetry and Remote Sensing 69, 50–64 (2012).
+[11] A. Blake and A. Zisserman, [Visual Reconstruction], MIT Press (1987).
+[12] M. Carriero and A. Farina and I. Sgura, “Blake & Zisserman variational model for image segmentation and
+discrete approximation,” Dept. of Mathematics “Ennio De Giorgi” Lecce - Italy Preprint (11), . (2002).
+[13] L. Ambrosio and L. Faina and R. March, “Variational approximation of a second order free discontinuity
+problem in computer vision,” Siam J. Math. Anal. 32, 1171–1197 (2001).
+[14] E. De Giorgi, [Frontiers in Pure and Applied Mathemathics, a collection of papers dedicated to J.L. Lions
+on the occasion of his 60th birthday], ch. Free discontinuity problems in calculus of variations, 55–62, North-
+Holland P.C. (1991).
+[15] L. Ambrosio and N. Fusco and D. Pallara, [Functions of bounded variation and free discontinuity problems],
+Oxford University Press (2000).
+
+
+--- Page 12 ---
+
+[16] M. Carriero and A. Leaci and V.M. Tomarelli, “Strong minimizers of Blake & Zisserman functional,” Ann.
+Scuola Norm. Sup. Pisa Cl. Sci. 25, 257–285 (1997).
+[17] B. Szabo and I. Babuska, [Introduction to ﬁnite element analysis: formulation, veriﬁcation, and validation],
+John Wiley & Sons, Ltd (2011).
+View publication stats

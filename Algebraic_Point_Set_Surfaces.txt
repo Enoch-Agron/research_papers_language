@@ -1,0 +1,1236 @@
+# Algebraic_Point_Set_Surfaces.pdf
+# Converted: 2025-07-19 12:45:30
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Algebraic_Point_Set_Surfaces.pdf
+# Output: ../layer2_completion/txt/Algebraic_Point_Set_Surfaces.txt
+
+
+--- Page 1 ---
+
+Algebraic Point Set Surfaces
+Ga¨el Guennebaud
+Markus Gross
+ETH Zurich
+Figure 1: Illustration of the central features of our algebraic MLS framework. From left to right: efﬁcient handling of very complex point
+sets, fast mean curvature evaluation and shading, signiﬁcantly increased stability in regions of high curvature, sharp features with controlled
+sharpness. Sample positions are partly highlighted.
+Abstract
+In this paper we present a new Point Set Surface (PSS) deﬁnition
+based on moving least squares (MLS) ﬁtting of algebraic spheres.
+Our surface representation can be expressed by either a projection
+procedure or in implicit form. The central advantages of our ap-
+proach compared to existing planar MLS include signiﬁcantly im-
+proved stability of the projection under low sampling rates and in
+the presence of high curvature. The method can approximate or
+interpolate the input point set and naturally handles planar point
+clouds. In addition, our approach provides a reliable estimate of the
+mean curvature of the surface at no additional cost and allows for
+the robust handling of sharp features and boundaries. It processes
+a simple point set as input, but can also take signiﬁcant advantage
+of surface normals to improve robustness, quality and performance.
+We also present an novel normal estimation procedure which ex-
+ploits the properties of the spherical ﬁt for both direction estima-
+tion and orientation propagation. Very efﬁcient computational pro-
+cedures enable us to compute the algebraic sphere ﬁtting with up to
+40 million points per second on latest generation GPUs.
+CR Categories:
+I.3.5 [Computer Graphics]: Computational Ge-
+ometry and Object Modeling—Curve and surface representations
+Keywords:
+point based graphics, surface representation, moving
+least square surfaces, sharp features.
+1
+Introduction
+A key ingredient of most methods in point based graphics is the un-
+derlying meshless surface representation which computes a contin-
+uous approximation or interpolation of the input point set. The by
+far most important and successful class of such meshless represen-
+tations are point set surfaces (PSS) [Alexa et al. 2003] combining
+high ﬂexibility with ease of implementation. PSS generally deﬁne
+a smooth surface using local moving least-squares (MLS) approxi-
+mations of the data [Levin 2003]. The degree of the approximation
+can easily be controlled, making the approach naturally well suited
+to ﬁlter noisy input data. In addition, the semi-implicit nature of
+the representation makes PSS an excellent compromise combining
+advantages both of explicit representations, such as parametric sur-
+faces, and of implicit surfaces [Ohtake et al. 2003].
+Since its inception, signiﬁcant progress has been made to better
+understand the properties and limitations of MLS [Amenta and
+Kil 2004a,2004b] and to develop efﬁcient computational schemes
+[Adamson and Alexa 2004]. A central limitation of the robustness
+of PSS, however, comes from the plane ﬁt operation that is highly
+unstable in regions of high curvature if the sampling rate drops be-
+low a threshold. Such instabilities include erroneous ﬁts or the lim-
+ited ability to perform tight approximations of the data. This be-
+havior sets tight limits to the minimum admissible sampling rates
+for PSS [Amenta and Kil 2004b; Dey et al. 2005].
+In this paper we present a novel deﬁnition of moving least squares
+surfaces called algebraic point set surfaces (APSS). The key idea
+is to directly ﬁt a higher order algebraic surface [Pratt 1987] rather
+than a plane. For computational efﬁciency all methods in this paper
+focus on algebraic sphere ﬁtting, but the general concept could be
+applied to higher order surfaces as well. The main advantage of
+the sphere ﬁtting is its signiﬁcantly improved stability in situations
+where planar MLS fails. For instance, tight data approximation is
+accomplished, spheres perform much better in the correct handling
+of sheet separation (ﬁgure 3) and exhibit a high degree of stability
+both in cases of undersampling (ﬁgure 2) and for very large weight
+functions. The speciﬁc properties of algebraic spheres make APSS
+superior to simple geometric sphere ﬁtting. It allows us to elegantly
+handle planar areas or regions around inﬂection points as limits in
+which the algebraic sphere naturally degenerates to a plane.
+Furthermore, the spherical ﬁtting enables us to design interpolatory
+weighting schemes by using weight functions with singularities at
+zero while overcoming the fairness issue of previous MLS surfaces.
+The sphere radius naturally serves as a for-free and reliable esti-
+mate of the mean curvature of the surface. This enables us, for
+instance, to compute realtime accessibility shading on large input
+objects (ﬁgure 1).
+Central to our framework are the numerical procedures to efﬁciently
+perform the sphere ﬁt. For point sets with normals we designed
+
+
+--- Page 2 ---
+
+(a)
+(b)
+(c)
+Figure 2: The undersampled ear of the Stanford bunny (a) using
+normal averaging plane ﬁt (SPSS) with h = 1.8 (b) and our new
+APSS with h = 1.7 (c).
+a greatly simpliﬁed and accelerated algorithm whose core part re-
+duces to linear least squares. For point sets without normals, we
+employ a slightly more expensive ﬁtting scheme to estimate the
+surface normals of the input data. In particular, this method al-
+lows us to improve the normal estimation by [Hoppe et al. 1992].
+The tighter ﬁt of the sphere requires on average less projection it-
+erations to achieve the same precision making the approach even
+faster than the most simple plane ﬁt MLS. Our implementation on
+the latest generation GPUs features a performance up to 45 millions
+of points per second, sufﬁcient to compute a variety of operations
+on large point sets in realtime.
+Finally, we developed a simple and powerful extension of [Fleish-
+man et al. 2005] to robustly handle sharp features, such as bound-
+aries and creases, with a built-in sharpness control (ﬁgure 1).
+2
+Related Work
+Point set surfaces were introduced to computer graphics by [Alexa
+et al. 2003]. The initial deﬁnition is based on the stationary set
+of Levin’s moving least squares (MLS) projection operator [Levin
+2003]. The iterative projection involves a non-linear optimization
+to ﬁnd the local reference plane, a bivariate polynomial ﬁt and it-
+eration. By omitting the polynomial ﬁtting step, Amenta and Kil
+[2004a] showed that the same surface can be deﬁned and computed
+by weighted centroids and a smooth gradient ﬁeld. This leads to
+a signiﬁcantly simpliﬁed implicit surface deﬁnition [Adamson and
+Alexa 2004] and faster algorithms, especially in the presence of
+normals [Alexa and Adamson 2004]. In particular, the projection
+can be accomplished on a plane passing through the weighted av-
+erage of the neighboring samples with a normal computed from the
+weighted average of the adjacent normals. In the following we will
+refer to this efﬁcient variant as SPSS for Simple PSS.
+Boissonnat and Cazals [2000] and more speciﬁcally Shen et al.
+[2004] proposed a similar, purely implicit MLS (IMLS) surface
+(a)
+(b)
+(c)
+Figure 3: Sheet separation with conventional PSS compared to our
+new spherical ﬁt: (a) Standard PSS with covariance analysis (or-
+ange) and normal averaging (green). (b) Our APSS without (or-
+ange) and with (green) normal constraints. The best plane and best
+algebraic sphere ﬁts for the blue point in the middle are drawn in
+blue. For this example the normals were computed using our tech-
+nique from section 5 which can safely propagate the orientation
+between the two sheets (c).
+Figure 4: A 2D oriented point set is approximated (left) and in-
+terpolated (right) using various PSS variants: SPSS (blue), IMLS
+(red), HPSS (magenta) and our APSS (green).
+representation deﬁned by a local weighted average of tangential im-
+plicit planes attached to each input sample. This implicit surface
+deﬁnition was initially designed to reconstruct polygon soups, but
+the point cloud case was recently analyzed by Kolluri [2005] and
+made adaptive to the local feature size by Dey et al. [2005]. Note
+that in this paper IMLS refers to the simple deﬁnition given in [Kol-
+luri 2005]. If applied without polygon constraints and in the case
+of sparse sampling, we found that the surface can grow or shrink
+signiﬁcantly as a function of the convexity or concavity of the point
+cloud. To alleviate this problem, Alexa and Adamson [2006] en-
+forced convex interpolation of an oriented point set using singular
+weight functions and Hermite centroid evaluations (HPSS).
+Likewise relevant to our research is prior art on normal estimation.
+Many point based algorithms, including some of the aforedescribed
+PSS variants, require surface normals. A standard procedure pro-
+posed by [Hoppe et al. 1992] is to estimate their directions using
+a local plane ﬁt followed by a propagation of the orientations us-
+ing a minimum spanning tree (MST) strategy and a transfer heuris-
+tic based on normal angles. Extending this technique, Mitra and
+Nguyen [2003] take into account the local curvature and the amount
+of noise in order to estimate the optimal size of the neighborhood
+for the plane ﬁt step. However, the inherent limitations of the plane
+ﬁt step and the propagation heuristic require a very dense sampling
+rate in regions of high curvature.
+Intrinsically, a PSS can only deﬁne a smooth closed manifold sur-
+face. Even though boundaries could be handled by thresholding an
+off-center distance [Adamson and Alexa 2004], obtaining satisfac-
+tory boundary curves with such an approach is usually difﬁcult or
+even impossible. In order to detect and reconstruct sharp creases
+and corners in a possibly noisy point cloud, Fleishman et al. [2005]
+proposed a reﬁtting algorithm that locally classiﬁes the samples
+into multiple pieces of surfaces according to discontinuities of the
+derivative of the surface. While constituting an important progress,
+the method requires very dense point clouds, it is rather expensive,
+and it offers only limited ﬂexibility to the user. Also, potential insta-
+bilities in the classiﬁcation can create discontinuous surface parts.
+A second important approach is the Point-Sampled Cell Complexes
+[Adamson and Alexa 2006b] which allows to explicitly represent
+sharp features by decomposing the object into cells of different di-
+mensions. While this approach allows to handle a wide variety of
+cases (e.g., non-manifoldness), the decomposition and the balanc-
+ing of the cells’ inﬂuence on the shape of the surface demands effort
+by the user, making the method unsuitable for some applications.
+As we will elaborate in the following sections, the algebraic sphere
+ﬁtting overcomes many of the aforedescribed limitations by the sig-
+niﬁcantly increased robustness of the ﬁt in the presence of low sam-
+pling rates and high curvature.
+3
+Overview of the APSS framework
+Given a set of points P = {pi ∈Rd}, we deﬁne a smooth surface
+SP approximating P using a moving least squares spherical ﬁt to
+the data. Our approach handles both simple point clouds and point
+
+
+--- Page 3 ---
+
+c
+pi
+p
+i
+pj
+c
+c
+u(p )
+i
+u(x)
+u(m)
+m
+x=q0
+q1
+(a)
+(b)
+(c)
+(d)
+Normal direction 
+estimation (5.1)
+using a sphere fitting 
+without normal (4.2)
+Normal orientation 
+propagation (5.2)
+using a sphere fitting 
+without normal (4.2)
+Projection operator (4.4) 
+using normal constraint 
+sphere fitting (4.3)
+Implicit definition (4.4)
+Figure 5: Overview of our APSS framework. (a) Evaluation of the normal direction at point pi. (b) Propagation of a consistent normal
+orientation from pi to pj. (c) First iteration of the projection of the point x onto the APSS. (d) Illustration of the scalar ﬁeld deﬁned by APSS.
+clouds with normals. The presence of surface normals leads to sim-
+pliﬁed, more efﬁcient, and more robust ﬁtting algorithms (see sec-
+tion 4.3). We recommend to estimate them from the input point set
+using the procedures of section 5 and section 4.2 as a preprocessing
+step.
+Figure 5 presents the procedural ﬂow using a 2D example. Starting
+from a simple point cloud, we ﬁrst evaluate the normal directions
+by locally ﬁtting an algebraic sphere u at each point pi (ﬁgure 5a).
+Next, a consistent normal orientation is robustly propagated from
+the point pi to its neighbor pj by approximating the surface in-
+between using an approximating sphere (ﬁgure 5b). Given the es-
+timated normals, a simpliﬁed spherical ﬁtting technique can be ap-
+plied to compute our ﬁnal APSS SP which can be deﬁned as the
+set of stationary points of a projection operator projecting a point
+onto a locally ﬁtted sphere (ﬁgure 5c). As an alternative our surface
+SP can also be deﬁned as the zero set of a scalar ﬁeld representing
+the distance between the evaluation point and a locally ﬁtted sphere
+(ﬁgure 5d). The former deﬁnition is well suited for resampling,
+while the latter one is convenient to raytrace the surface [Adam-
+son and Alexa 2003; Wald and Seidel 2005] or to perform Boolean
+operations [Pauly et al. 2003].
+The key ingredients of our framework are the computational algo-
+rithms to robustly and efﬁciently ﬁt a sphere to a set of points in a
+moving least squares fashion. These methods will be presented for
+the cases of a simple point cloud as well as for a point cloud with
+normals in sections 4.2 and 4.3. Based on the procedures for alge-
+braic sphere ﬁts, we will deﬁne and discuss our APSS deﬁnition in
+section 4.4. Two signiﬁcant extensions include normal estimation
+in section 5 and the handling of sharp features in section 6.
+4
+Sphere Fitting and APSS
+In this section we will discuss the core mathematical deﬁnitions and
+computational procedures of our APSS framework. We will elabo-
+rate on the sphere ﬁtting problem and show how previous methods
+can be adapted to deﬁne a MLS surface based on sphere ﬁts. As a
+central computational algorithm, we will present a novel and very
+efﬁcient sphere ﬁtting method taking into account surface normals.
+4.1
+General Issues
+Weighting scheme. Throughout the paper we will utilize the fol-
+lowing generic weight function
+wi(x) = φ
+∥pi −x∥
+hi(x)
+
+(1)
+describing the weight of the point pi for the local evaluation po-
+sition x. φ is a smooth, decreasing weight function and hi(x) de-
+scribes the local feature size. hi(x) can be constant, depend on x as
+in [Pauly et al. 2003], or only on pi, i.e., hi(x) = hi as in [Adamson
+and Alexa 2006a]. As a proper choice of φ we suggest the follow-
+ing compactly supported polynomial
+φ(x) =
+
+(1−x2)4
+if x < 1
+0
+otherwise.
+(2)
+This function performs a smooth data approximation and avoids
+square root evaluations for the distance computation. Interpolation
+can be achieved using functions with a singularity at zero, see [Shen
+et al. 2004; Adamson and Alexa 2006b].
+Spherical ﬁtting. The problem of ﬁtting a sphere to a set of points
+is not new and several methods have been proposed in the past.
+It is important to distinguish geometric approaches from algebraic
+ones. Geometric ﬁtting denotes algorithms minimizing the sum of
+the squared Euclidean distances to the given points (e.g., see [Gan-
+der et al. 1994]). Geometric sphere ﬁts have several drawbacks.
+First, because of the non-linear nature of the problem, the solution
+can only be found using an iterative, expensive approach. More im-
+portantly, since these algorithms are either based on a center-radius
+or parametric representation of the sphere, they become unstable
+when the best ﬁt tends to a plane. This limits the practical utility of
+such methods for our purposes.
+An elegant alternative is to substitute the geometric distance by an
+algebraic distance as in [Pratt 1987]. An algebraic sphere is thus
+deﬁned as the 0-isosurface of the scalar ﬁeld su(x) = [1, xT , xT x]u,
+where u = [u0, ..., ud+1]T ∈Rd+2 is the vector of scalar coefﬁcients
+describing the sphere. For ud+1 ̸= 0 the corresponding center c and
+radius r are easily computed as:
+c = −
+1
+2ud+1
+[u1, ..., ud]T , r =
+q
+cT c−u0/ud+1
+(3)
+with d being the dimension. In degenerate cases, u corresponds to
+the coefﬁcients of a plane equation with u0 representing the plane’s
+distance from the origin and [u1,..,ud]T being its normal.
+4.2
+Fitting Algebraic Spheres Without Normals
+Let n be the number of points and let W(x) and D respectively be
+the n×n diagonal weight matrix and the n×(d +2) design matrix
+deﬁned as:
+W(x) =
+
+
+w0(x)
+...
+wn−1(x)
+
+, D =
+
+
+1
+pT
+0
+pT
+0 p0
+...
+...
+...
+1
+pT
+n−1
+pT
+n−1pn−1
+
+.
+(4)
+Then the solution u(x) of our algebraic sphere ﬁt at a given point
+x ∈Rd can be expressed as:
+u(x) = argmin
+u, u̸=0
+W
+1
+2 (x)Du
+
+2
+.
+(5)
+In order to avoid the trivial solution u(x) = 0, u has to be con-
+strained by a metric. The choice of this constraint signiﬁcantly in-
+ﬂuences the solution of the above minimization problem. Ideally
+we want the algebraic ﬁt to behave as closely as possible to a ge-
+ometric ﬁt, but at the same time to reliably handle the planar case.
+Among all constrained methods that have been proposed, we found
+Pratt’s constraint [Pratt 1987] the most suitable for our purposes.
+Pratt’s constraint ﬁxes the norm of the gradient at the surface of the
+sphere to unit length 1. This is accomplished by ∥(u1, ..., ud)∥2 −
+4u0ud+1 = 1 and ensures that the algebraically ﬁtted sphere is close
+
+
+--- Page 4 ---
+
+to the least squares Euclidean best ﬁt, i.e., the geometric ﬁt (see
+also ﬁgure 6). By rewriting the above constraint in matrix form
+uT Cu = 1, the solution u(x) of our minimization problem yields as
+the eigenvector of the smallest positive eigenvalue of the following
+generalized eigenproblem:
+DT W(x)Du(x) = λCu(x), with C =
+
+
+0
+0
+···
+0
+−2
+0
+1
+0
+.
+.
+.
+...
+..
+.
+0
+1
+0
+−2
+0
+···
+0
+0
+
+.
+(6)
+Note that this method is only used to estimate the missing normals
+of input point sets. An efﬁcient algorithm for running the APSS in
+the presence of normals will be derived in the following section.
+4.3
+Fitting Spheres to Points with Normals
+While the problem of ﬁtting a sphere to points has been investigated
+extensively, there exists to our knowledge no method to take spe-
+ciﬁc advantage of normal constraints at the sample positions. We
+derive a very efﬁcient algorithm by adding the following derivative
+constraints ∇su(pi) = ni to our minimization problem (5). Note
+that, by deﬁnition, it holds that ∥ni∥= 1, which constrains both di-
+rection and magnitude of the normal vector. This is especially im-
+portant to force the algebraic distance to be close to the Euclidean
+distance for points close to the surface of the sphere. Furthermore,
+the normal constraints lead to the following standard linear system
+of equations that can be solved very efﬁciently:
+W
+1
+2 (x)Du
+=
+W
+1
+2 (x)b
+(7)
+where
+W(x) =
+
+
+. . .
+wi(x)
+βwi(x)
+. . .
+βwi(x)
+. . .
+
+
+, D =
+
+
+.
+..
+.
+..
+.
+..
+1
+pT
+i
+pT
+i pi
+0
+eT
+0
+2eT
+0 pi
+.
+..
+.
+..
+.
+..
+0
+eT
+d−1
+2eT
+d−1pi
+.
+..
+.
+..
+.
+..
+
+
+, b =
+
+
+.
+.
+.
+0
+eT
+0 ni
+.
+..
+eT
+d−1ni
+.
+..
+
+
+. (8)
+Here, {ek} denote the unit basis vectors of our coordinate system.
+The scalar β allows us to weight the normal constraints. We will
+discuss the proper choice of this parameter subsequently. We solve
+this equation using the pseudo-inverse method, i.e.:
+u(x) = A−1(x)ˆb(x)
+(9)
+where both the (d+2)×(d+2) weighted covariance matrix A(x) =
+DT W(x)D and the vector ˆb(x) = DT W(x)b can be computed di-
+rectly and efﬁciently by weighted sums of the point coefﬁcients.
+The issue of afﬁne invariance of this method deserves some further
+discussion. While the method’s invariance under translations and
+rotations is trivial, the mix of constraints representing algebraic dis-
+tances and distances between unit vectors makes it slightly sensitive
+to scale. A simple and practical solution is to choose a large value
+for β, e.g. β = 106h(x)2 where h(x) = ∑i wi(x)hi(x)
+∑i wi(x)
+is a smooth func-
+tion describing the local neighborhood size (1). This effectively
+assigns very high importance to the derivative constraints, which,
+prescribed at given positions and with a ﬁxed norm, are sufﬁcient
+to ﬁt a spherical isosurface to the data. The positional constraints
+still specify the actual isovalue. Not only does this choice leave the
+ﬁtting invariant under scale, but it also makes it more stable, much
+less prone to oscillations (ﬁgure 3b) and less sensitive to outliers.
+This choice does not unbalance the relative importance of the posi-
+tions and normals of the samples because the derivative constraints
+depend on both the sample positions and normals.
+Figure 6: The Euclidean distance (green cone) versus an algebraic
+distance (orange paraboloid) to the 2D yellow circle. Pratt’s nor-
+malization makes these two surfaces tangent to each other at the
+given circle.
+4.4
+Algebraic Point Set Surfaces
+Implicit surface deﬁnition. The previous sections provide all in-
+gredients to deﬁne an MLS surface based on sphere ﬁts. Our APSS
+SP, approximating or interpolating the point set P = {pi ∈Rd},
+yields as the zero set of the implicit scalar ﬁeld f(x) representing
+the algebraic distance between the evaluation point x and the ﬁtted
+sphere u(x). This ﬁeld is illustrated in ﬁgure 5d:
+f(x) = su(x)(x) =
+h
+1, xT , xT x
+i
+u(x) = 0 .
+(10)
+If needed the actual Euclidean distance to the ﬁtted algebraic sur-
+face can be computed easily by its conversion to an explicit form.
+Gradient. This implicit deﬁnition allows us to conveniently com-
+pute the gradient of the scalar ﬁeld which is needed to obtain the
+surface normal or to perform an orthogonal projection. We com-
+pute the gradient ∇f(x) as follows:
+∇f(x) = [1, xT , xT x]∇u(x) +
+
+
+0
+eT
+0
+2eT
+0 x
+...
+...
+...
+0
+eT
+d−1
+2eT
+d−1x
+
+u(x).
+(11)
+The value of the gradient ∇u(x) =
+
+du(x)
+dx0 , du(x)
+dx1 , ...
+
+depends on the ﬁt-
+ting method. With the Pratt’s constraint, the derivatives can be com-
+puted as the plane ﬁt with covariance analysis case (see [Alexa and
+Adamson 2004]). With our normal constraint, the derivatives can
+be directly computed from equation (9):
+du(x)
+dxk
+=
+A−1(x)
+
+−dA(x)
+dxk
+u(x)+ d ˆb(x)
+dxk
+
+.
+(12)
+Curvature. The implicit deﬁnition can be used to compute higher
+order differential surface operators, such as curvature.
+In prac-
+tice, however, the evaluation of the shape matrix involves expensive
+computations. Our sphere ﬁt provides an elegant estimate of the
+mean curvature readily available by the radius of the ﬁtted sphere
+(3). This estimate of the mean curvature is in general very accurate,
+except when two pieces of a surface are too close to each other.
+In this case the samples of the second surface can lead to an over-
+estimation of the curvature. Note that in such cases our normal
+constraint ﬁtting method still reconstructs a correct surface without
+oscillations (ﬁgure 3b). The sign of this inexpensive mean curva-
+ture estimate is determined by the sign of un+1 and can be utilized
+for a variety of operations, such as accessibility shading shown in
+ﬁgure 1.
+Projection procedure.
+Since the presented APSS surface deﬁni-
+tion is based on a standard MLS, all the projection operators for the
+plane case can easily be adapted to our setting by simply replac-
+ing the planar projection by a spherical projection. Following the
+concept of almost orthogonal projections in [Alexa and Adamson
+2004] we recommend the following procedure as a practical recipe
+to implement APSS: Given a current point x, we iteratively deﬁne
+a series of points qi, such that qi+1 is the orthogonal projection of
+x onto the algebraic sphere deﬁned by u(qi). Starting with q0 = x,
+
+
+--- Page 5 ---
+
+the projection of x onto the surface is asymptotically q∞. The re-
+cursion stops when the displacement is lower than a given precision
+threshold. This procedure is depicted in ﬁgure 5c.
+Including surface normals into the deﬁnition comes with additional
+signiﬁcant advantages. First, it makes the scalar ﬁeld f(x) to be
+consistently signed according to the inside/outside relative position
+of x. Such consistent orientation is fundamental to perform boolean
+operations or collision detections for instance. Furthermore, point-
+normals provide a ﬁrst order approximation of the underlying sur-
+face and thus allow for smaller neighborhoods at the same accuracy.
+Tighter neighborhoods do not only increase stability, but also accel-
+erate the processing. To this end, we recommend the normal esti-
+mation procedure described in the following section to preprocess
+a raw input point cloud.
+5
+Estimation of Surface Normals
+Our method for normal estimation draws upon the same principle as
+the one proposed by Hoppe et al. [1992]. The novelties include the
+normal direction estimation and new heuristics for the propagation
+of the normal orientation. We will focus on these two issues.
+5.1
+Normal Direction
+To estimate the normal direction ni of a point pi of our input point
+set, we essentially take the gradient direction at pi of our MLS sur-
+face deﬁnition described in the previous section, i.e., ni = ∇f(pi).
+Here, the computation of the algebraic sphere is based on the eigen-
+vector method described in section 4.2. In practice, we can approx-
+imate the accurate gradient direction of the scalar ﬁeld f (appendix)
+with the gradient of the ﬁtted algebraic sphere u(pi), i.e.:
+ni ≈∇su(pi)(pi) =
+
+
+0
+eT
+0
+2eT
+0 pi
+...
+...
+...
+0
+eT
+d−1
+2eT
+d−1pi
+
+u(pi).
+(13)
+This step is illustrated in ﬁgure 5a. Although the sphere normal
+can differ from the actual surface normal, the above simpliﬁcation
+is reasonable, because the approximation is usually very close to
+the accurate surface normal for points evaluated close to an input
+sample. In practice, we never experienced any problems with it.
+During this step we also store for each point a conﬁdence value
+µi that depends on the sanity of the neighborhood used to estimate
+the normal direction. We take the normalized residual value, i.e.,
+µi = ¯λ/∑d+1
+k=0 |λk| where λk are the d + 2 eigenvalues and ¯λ is the
+smallest positive one. Similar conﬁdence estimates were used be-
+fore by several authors (e.g. [Pauly et al. 2004]) in combination
+p
+ph
+i
+pj
+m
+c
+pi
+pj
+(a)
+(b)
+Figure 7: (a) Illustration of the BSP neighborhood of a point pi:
+each neighbor deﬁnes a halfspace limiting the neighborhood. The
+blue points correspond to a naive kNN with k = 6. (b) Illustration
+of Ψi j. The angle between the gradient of the ﬁtted sphere (green
+arrows) and the normal direction (shown in red here) serves as a
+measure for the reliability of the normal propagation.
+(a)
+(b)
+(c)
+(f)
+(d)
+(e)
+Figure 8: (a) Closeup view of the tip of the ear of ﬁgure 2 after
+recomputing the normals using our method. A few normals are
+incorrectly oriented and eventually break the APSS reconstruction
+(b) when using a weight radius of h = 2. A smoothed manifold
+reconstruction (c) can still be obtained when increasing the weight
+radius signiﬁcantly (h = 3.5). Figures (d) and (e) show the normals
+after 15 and 30 iterations of our normal optimization procedure
+respectively. (f) APSS reconstruction of (e) with h = 2.
+with covariance analysis to perform adaptive resampling. We will
+use this conﬁdence value in the next section for our propagation
+algorithm.
+5.2
+Propagation of Orientation
+Our second contribution concerns the propagation of normal orien-
+tation. Following [Hoppe et al. 1992], we use a minimum spanning
+tree (MST) strategy which is initialized by setting the normal ori-
+entation of a single point in contact with the point set’s bounding
+box to point outside.
+The major difference of our approach lies in the propagation
+method and the weight function for the MST. To propagate the
+orientation from a point pi of normal ni to a point pj of normal
+nj we locally ﬁt an algebraic sphere at m = pi+pj
+2
+halfway be-
+tween the two points.
+Figures 3c and 5b serve for illustration.
+The sphere gives us a reliable approximation of the surface con-
+necting the two points. It hence allows us to reliably transfer a
+given normal orientation even across sharp features or along two
+close surface sheets. The normal nj of the point pj is ﬂipped if
+∇su(m)(pi)T ni ·∇su(m)(pj)T nj < 0.
+The purpose of the weight function of the MST is to favor edges
+along which it is safe to transfer the normal orientation using the
+previous procedure. The MST assigns an edge i-j if and only if
+the two involved samples pi and pj are neighbors. Unlike Hoppe’s
+k-nearest neighborhood deﬁnition (kNN), we utilize a somewhat
+more elaborate BSP neighborhood deﬁnition. This deﬁnition re-
+moves from a large kNN of the point pi every point that is behind
+another neighbor, i.e., every point pj such that there exist a third
+point ph satisfying (pi −ph)T (pj −ph) < 0. Figure 7a depicts an
+example. This neighborhood deﬁnition allows us to select reliably
+the closest neighbors in each direction, even in cases of strongly
+non-uniform sampling. In addition it avoids that the propagation
+procedure jumps over relevant samples.
+To compute the weight of an edge i-j we consider the following
+two terms: The ﬁrst one takes the sum of the conﬁdence values of
+its adjacent vertices: µi j = µi +µj. The rationale of this heuristic is
+
+
+--- Page 6 ---
+
+to push the samples with the lowest conﬁdence values to the bottom
+(i.e. the leaves) of the tree. The second term Ψij is computed by
+ﬁrst ﬁtting a sphere at the center m of the edge and by quantifying
+the difference between the gradient of the sphere and the estimated
+normal direction. Ψi j is deﬁned as the dot product between the two
+vectors, i.e., Ψij = 1−(|∇su(m)(pi)T ni|+|∇su(m)(pj)T nj|)/2. As
+illustrated in ﬁgure 7b, this conﬁrms our intuition that the propa-
+gation of normal directions is less obvious when the two vectors
+deviate strongly. We ﬁnally weight each edge i-j by a weighted
+sum of µi j and Ψij, an empirical choice being 8µij +Ψi j.
+For some rare difﬁcult cases, we propose to use the actual normals
+to further optimize the normals with low conﬁdence. This is ac-
+complished by using our stable spherical ﬁtting method from sec-
+tion 4.3. For the ﬁt, we weight each normal constraint according to
+its respective conﬁdence value. This ensures that samples of higher
+conﬁdence have increased importance for the ﬁt. To further opti-
+mize accuracy, we process the samples starting with the ones having
+the highest average conﬁdence of their neighborhood. Our normal
+estimation procedure is depicted ﬁgure 8.
+6
+Sharp Features
+In this section we present a new approach to handle sharp features
+such as creases, corners, borders or peaks. We will explain it in the
+context of APSS, but the discussed techniques can easily be used
+with any PSS deﬁnition. Our approach combines the local CSG
+rules proposed in [Fleishman et al. 2005] with a precomputed par-
+tial classiﬁcation, and we present extensions for the robust handling
+of borders and peaks. During the actual projection of a point x onto
+the surface, we ﬁrst group the selected neighbors by tag values.
+Samples without tags are assigned to all groups. Then, the APSS is
+executed for each group and the actual point is projected onto each
+algebraic sphere. Next, we detect for each pair of groups whether
+the sharp crease they form originates from a boolean intersection or
+from a union and apply the corresponding CSG rule. We refer to
+[Fleishman et al. 2005] for the details of this last step, and focus on
+the novel aspects of our approach.
+6.1
+Tagging a Point Cloud
+In a ﬁrst preprocessing step or at run time, we compute a partial
+classiﬁcation of the samples by assigning a tag value to each sample
+in the adjacency of a sharp feature. Two adjacent samples must
+have the same tag if they are on the same side of the discontinuity
+and a different tag otherwise. This classiﬁcation can be achieved
+in several ways from fully automatic to entirely manual processing.
+Tags can easily be set automatically during a CSG operation [Pauly
+et al. 2003; Adams and Dutr´e 2003]. Tags can also be conveniently
+painted by using a brush tool. Figure 9 displays a simple tag stroke.
+Such interactive painting provides full user control over the position
+of sharp features and it can be applied very efﬁciently.
+Figure 9: A sharp crease is obtained by painting two strokes on an
+initially smooth point cloud.
+a
+pi
+b i
+x
+i
+n (x)
+i
+same tag
+same tag
+n j,0
+n j,1
+n i,0
+n i,1
+Figure 10: Left: A cubic B´ezier curve connects two samples to
+propagate the tagging and to correctly align the respective normals.
+Right: Deﬁnition of a peak sample pi of axis ai and angle bi. Its
+normal ni(x) depends on the actual evaluation point x.
+Automatic Tagging by Local Classiﬁcation
+Another way to automatically tag the point cloud would be to use
+the local classiﬁcation scheme of Fleishman et al. [2005]. While
+being very efﬁcient, this method, however, cannot guarantee a con-
+sistent global classiﬁcation. Therefore, we developed the follow-
+ing grouping method that guarantees global consistency. The local
+classiﬁcation is applied to each sample in a breadth ﬁrst order of
+the Euclidean minimum spanning tree, each sample counting the
+number of times it is assigned a given tag value. If only one group
+is found (smooth part) then the algorithm continues with the next
+sample. Otherwise, the tag value of each group is determined from
+the tag value with the maximum count of all samples. In addition,
+each local group must have different tag values. If required, new
+tags are created. Next, the group tags are propagated to their sam-
+ples. The ﬁnal tag value of a sample is the one of maximum count.
+Tagging from “Sharp” Points
+A common way to represent sharp features in point sampled ge-
+ometry is to use “sharp” points, i.e., points with multiple normals
+[Pauly et al. 2003; Wicke et al. 2004; Guennebaud et al. 2005].
+Usually, two normals are assigned to a point on a crease and three
+normals to a corner point. We handle such explicit representations
+within our framework by the following two step tagging procedure:
+The ﬁrst step focuses on tagging the normals of the sharp samples
+only. For simplicity, we will ﬁrst only consider the case of edge
+points, i.e., points having two normals. We start with any sharp
+sample, assign a different tag value to each of its normals, and prop-
+agate the tag values along the crease lines into each direction. Our
+propagation method is mainly based on the construction of an inter-
+polating cubic B´ezier curve between sharp samples. This enables
+us to safely and naturally handle high curvature of the crease lines.
+Such a curve can be constructed easily by taking the cross prod-
+uct of the two normals of the samples as the curve’s end tangent
+vectors. Figure 10 shows the idea.
+We scale the tangent vectors such that their length is equal to the
+third of the Euclidean distance between the two samples and orient
+them such that the length of the resulting curve is minimal. The best
+possible successor of a sharp point pi along a crease line is thus the
+sharp point p j that leads to the shortest curve connecting it to pi.
+In practice, we approximate the length of the B´ezier curve by taking
+the length of its control polygon. We also propagate the tags of
+the point’s normals through tangent orientation. If the normals of
+the successor are already tagged, the propagation for this branch
+stops, and the corresponding tag values are marked. Otherwise,
+the procedure continues by searching the best successor of pj in
+the outgoing direction until all sharp samples are tagged. Handling
+corner points is accomplished considering them as three distinct
+edge samples, and when a corner is reached, a new tag value is
+assigned to the third normal.
+
+
+--- Page 7 ---
+
+(b)
+(a)
+Figure 11: (a) Illustration of boundaries handled using “clipping
+samples” and an interpolatory weight function. (b) Illustration of
+peaks handled without any treatment (left part) and with our special
+“peak” samples (right part).
+The second step involves a propagation of the tag values to the sam-
+ples close to a sharp edge, i.e., where distance is deﬁned by the ac-
+tual weighting scheme. Tagging only the samples close to a sharp
+crease speciﬁcally enables us to deal with non-closed creases as in
+ﬁgure 9. If pi is a smooth point and pj its closest sharp point having
+a non-zero intersection of inﬂuence radii, the tag value of pi yields
+as the tag value of the normal of pj deﬁning the plane closest to pi.
+A result of this procedure is depicted in ﬁgure 1-right.
+6.2
+Extensions
+Object boundaries can be treated using “clipping samples”. A set
+of clipping points deﬁnes a surface that is only used to clip another
+surface. In order to simplify both the representation and the user
+control, we place such clipping samples at the positions of bound-
+ary samples. Similar to the above notion of sharp points it is sufﬁ-
+cient to add a clipping normal to each sample at the desired bound-
+ary. A clipping normal is set orthogonal to the desired boundary
+curve and should be tangent to the surface. Figure 11a illustrates
+the concept. Obviously, clipping samples may also be tagged to
+deﬁne boundary curves with discontinuities. Finally, the evaluation
+of the surface or the projection onto the surface only requires a mi-
+nor additional modiﬁcation. Clipping samples are always treated in
+separate groups and the reconstructed clipping surface is only used
+to clip the actual surface by a local intersection operation. Auto-
+matic detection of boundaries in a point cloud can easily be done
+by analyzing the neighborhood of each sample, such as in [Guen-
+nebaud et al. 2005].
+Handling “peak” discontinuities also deserves some special at-
+tention. We propose to explicitly represent a peak by a point pi
+equipped with an axis ai and an angle bi, i.e., by a cone, as illus-
+trated in ﬁgure 10. During the local ﬁtting step, we take as the
+normal ni(x) of such a peak sample the normal of the cone in the
+direction of the evaluation point x. ni(x) thus yields as the unit
+vector ai rotated by angle π
+2 −bi and axis ai × (x −pi). We also
+guarantee that the surface will be C0 at the peak by attaching an
+interpolating weight function to peak samples. The results in ﬁgure
+11b demonstrate that our method produces high quality peaks.
+Figure 12: Illustration of the sharpness control, from left to right:
+α = 0, α = 0.15, α = 0.5, α = 1.
+The sharpness control of a crease feature by a user parameter can
+easily be added to our concept. To this end we insert all samples
+into all groups but assign a lower weight to a sample when inserted
+into a group with a tag different from its own one. We deﬁne a
+global or local parameter α ∈[0,1] which modulates the weight of
+these samples. For α = 0 we obtain a fully sharp feature, for α = 1
+the feature is completely smoothed since all groups are weighted
+identically. Values in-between permit a continuous transition from
+smooth to sharp (ﬁgure 12).
+7
+Results
+7.1
+Implementation and Performance
+In addition to a software implementation, we accelerated the pro-
+jection operator described in section 4.4 on a GPU. Our implemen-
+tation relies on standard GPGPU techniques and computes all the
+steps of the projection, including neighbor queries, the ﬁtting step
+and the orthogonal projection, in a single shader. We use grids
+of linked lists as spatial acceleration structures. Our implementa-
+tion performs about 45 million projection iterations per second on
+a NVidia GeForce 8800-GTS for APSS, compared to 60 million
+for SPSS. As detailed in table 1, our APSS projection operator con-
+verges about two times faster than SPSS making APSS overall about
+1.5 times faster for the same precision. As we can see, a single it-
+eration is usually sufﬁcient to obtain a reasonable precision, while
+SPSS achieves a similar accuracy only after 2 to 3 iterations.
+# iter.
+1
+2
+3
+4
+5
+6
+APSS
+2.01e-4
+3.72e-5
+1.9e-5
+1.53e-5
+1.38e-5
+1.28e-5
+SPSS
+1.94e-3
+4.62e-4
+1.67e-4
+7.53e-5
+3.95e-5
+2.32e-5
+Table 1: Comparison of the convergence of APSS and SPSS. The
+values indicate the relative average precision obtained after the
+given number of iterations for a typical set of models.
+The results of MLS surfaces depend signiﬁcantly on the weight
+functions. Although we tried to ﬁnd best settings for each method,
+other weight functions could lead to other, potentially better results.
+In particular, we performed all our comparisons on uniform point
+clouds using the weight function described in section 4.1 with a
+constant weight radius hi(x) = h·r where h is an intuitive scale fac-
+tor and r is the average point spacing.Moreover, our IMLS imple-
+mentation corresponds to the “simple” deﬁnition given in [Kolluri
+2005]:
+f(x) = ∑wi(x)(x−pi)T ni
+∑wi(x)
+= 0.
+(14)
+In order to conveniently handle arbitrary point clouds we suggest to
+use hi(x) = h·ri where ri is the local point spacing that is computed
+as the distance to the farthest neighbor of the point pi using our
+BSP neighborhood deﬁnition. An open source library of our APSS
+framework is available at: http://graphics.ethz.ch/apss.
+7.2
+Analysis of Quality and Stability
+Approximation and interpolation quality
+Figure 4 compares the ability of our spherical MLS to perform tight
+approximation and convex interpolation. For interpolation we used
+φ(x) = log(x)4 for both APSS and IMLS and φ(x) = 1/x2 for the
+two others. The values of h used for this ﬁgure are summarized in
+the following table (interpol./approx.):
+SPSS
+HPSS
+IMLS
+APSS
+3.35 / na
+na / na
+1.95 / 1.95
+1.95 / 3.25
+
+
+--- Page 8 ---
+
+(a)
+(b)
+(d)
+(c)
+Figure 13: (a) Initial dense chameleon model from which 4k samples have been uniformly picked (depicted with red dots). This low sampled
+model is reconstructed using APSS (h = 1.9) (b), SPSS (h = 1.8) (c) and IMLS (h = 2.6) (d).
+Stability for Low Sampling Rates
+One of the central advantages of our spherical MLS is its ability
+to robustly handle very low sampling densities as illustrated in ﬁg-
+ure 13. The ﬁgure compares the approximation quality of a uni-
+formly sampled 4K chameleon model for APSS, SPSS and IMLS.
+We can clearly see the superior quality of APSS. We computed the
+texture colors from the original dense model. In order to quantita-
+tively evaluate the robustness under low sampling and the approx-
+imation quality, we iteratively created a sequence of subsampled
+point sets P0,P1,... by ﬁrst decomposing the current point set Pi
+into disjunctive point pairs using a minimum weight perfect match-
+ing (see [Waschb¨usch et al. 2004] for a similar scheme). A subse-
+quent projection of the pair centers onto the actual PSS Si yields a
+reduced point set Pi+1. The graph in ﬁgure 14 shows the relative
+average distance of the initial point set P0 onto various PSS Si as
+a function of the number of samples. Note that the graph is given
+on a logarithmic scale. The results demonstrate that the APSS is
+about three times more precise than the planar MLS variants. Fur-
+thermore, the planar versions break already at much higher sam-
+pling rates (crosses in the diagram), while APSS allows for stable
+ﬁt at very low sampling rate. The instability of Levin’s operator is
+mainly due to the polynomial projection which requires a relatively
+large and consistent neighborhood. The distribution of the error is
+shown for an example in ﬁgure 15.
+Stability for Changes of Weights
+Figure 16 compares the stability of APSS versus SPSS as a function
+of the size of the weight radii. We utilized a higher order genus
+model with very ﬁne structures and a low sampling density. As can
+be seen SPSS exhibits undesired smoothing already at small radii
+and breaks quickly at larger sizes. In this example, APSS always
+delivers the expected result, and the surface stays reasonably close
+to original data even for large radii.
+7.3
+Unwanted Extra Zeros
+Our spherical ﬁtting algorithm can exhibit an increased sensitivity
+with respect to unwanted stationary points away from the surface.
+We refer to [Adamson and Alexa 2006a] for a discussion of the pla-
+nar ﬁt. With spheres, such extra zeros can specially occur close to
+153k 76k
+38k
+19k
+9.5k 4.7k
+1.4k 1.2k
+597
+299
+150
+75
+38
+19
+1E-6
+1E-5
+1E-4
+1E-3
+1E-2
+1E-1
+APSS
+SPSS
+IMLS
+Levin's
+     # pts
+Average displacement
+Figure 14: Logarithmically scaled graph of the average projection
+error for the Chinese Dragon model.
+the boundary of the surface deﬁnition domain D when for instance
+a small set of points yields a small and stable sphere that lies en-
+tirely inside D. D is the union of the balls centered at the sample
+positions pi and having the radius of the weight function (h·ri). We
+handle such spurious extra zeros by limiting the extent of D, i.e. by
+both reducing the ball radii and removing regions in which fewer
+than a given number (e.g., 4) of samples have non-zero weights.
+We found that this solution is working well in practice, but admit
+that in-depth theoretical analysis is needed as part of future work.
+8
+Conclusion and Future Work
+We have demonstrated that the planar ﬁt utilized in conventional
+PSS implementations can successfully be replaced by spherical ﬁts.
+Our sphere ﬁt MLS has numerous signiﬁcant advantages and over-
+comes some of the intrinsic limitations of planar MLS. In particular,
+we obtain an increased stability for low sampling rates, a tighter ﬁt,
+a better approximation quality, robustness, and for-free mean cur-
+vature estimation. Fast numerical procedures and efﬁcient imple-
+mentations allow for the processing of very complex, high-quality
+models and make APSS as fast as simple MLS. Extensions of the
+method handle discontinuities of various kinds. An apparent nat-
+ural extension of the method would be to employ ellipsoids, espe-
+cially for highly anisotropic objects, such as cylinders. Algebraic
+ellipsoidal ﬁts, however, do not naturally degenerate to planes. In
+contrast, our method handles such objects correctly, as can be seen
+on the saddle conﬁguration of ﬁgure 1-right.
+Future work comprises applications of the representation in inter-
+active modeling. We believe that the method is well-suited for de-
+formations of point sampled geometry where the surface normals
+could be estimated directly from the gradient operator. Another im-
+portant issue is the theoretical analysis of both unwanted extra zeros
+and the sampling requirements for our setting. Finally, we want to
+explore its extension to non-manifold geometry as well as realtime
+ray-tracing of dynamic APSS.
+(a)
+(b)
+(c)
+0%
+0.6%
+Figure 15: Chinese Dragon model (150 K) approximated with
+APSS (a) and color-coded magnitude of the displacement between
+the input samples and a low resolution model (19 K) using APSS
+(b) and SPSS (c).
+
+
+--- Page 9 ---
+
+Figure 16: A sparsely sampled point model (19 K) handled with
+APSS (top row) and with SPSS (botton row) using different sizes of
+the weight radii: 1.6, 4, 8.
+Acknowledgments
+This work was supported in part by the ERCIM “Alain Bensoussan”
+Fellowship Programme. We would like to thank all reviewers for
+their insightful comments and discussions of the method, as well
+as Mario Botsch and Ronny Peikert for proof reading the paper.
+The models of ﬁgures 15 and 16 are provided courtesy of INRIA
+and SensAble by the AIM@SHAPE Shape Repository. The tree of
+ﬁgure 1 is provided courtesy of Vincent Forest.
+References
+ADAMS, B., AND DUTR´E, P. 2003. Interactive boolean opera-
+tions on surfel-bounded solids. ACM Transactions on Graphics
+(SIGGRAPH 2003 Proceedings) 22, 3, 651–656.
+ADAMSON, A., AND ALEXA, M. 2003. Approximating and inter-
+secting surfaces from points. In Proceedings of the Eurographics
+Symposium on Geometry Processing 2003, 230–239.
+ADAMSON, A., AND ALEXA, M. 2004. Approximating bounded,
+non-orientable surfaces from points. In Proceedings of Shape
+Modeling International 2004, IEEE Computer Society.
+ADAMSON, A., AND ALEXA, M.
+2006. Anisotropic point set
+surfaces. In Afrigraph ’06: Proceedings of the 4th international
+conference on Computer graphics, virtual reality, visualisation
+and interaction in Africa, ACM Press, 7–13.
+ADAMSON, A., AND ALEXA, M. 2006. Point-sampled cell com-
+plexes. ACM Transactions on Graphics (SIGGRAPH 2003 Pro-
+ceedings) 25, 3, 671–680.
+ALEXA, M., AND ADAMSON, A. 2004. On normals and projection
+operators for surfaces deﬁned by point sets. In Proceedings of the
+Eurographics Symposium on Point-Based Graphics, 149–156.
+ALEXA, M., AND ADAMSON, A. 2006. Interpolatory point set
+surfaces - convexity and hermite data. Submitted paper.
+ALEXA, M., BEHR, J., COHEN-OR, D., FLEISHMAN, S., LEVIN,
+D., AND SILVA, C. T. 2003. Computing and rendering point set
+surfaces. IEEE Transactions on Computer Graphics and Visual-
+ization 9, 1, 3–15.
+AMENTA, N., AND KIL, Y. 2004. Deﬁning point-set surfaces.
+ACM Transactions on Graphics (SIGGRAPH 2004 Proceedings)
+23, 3, 264–270.
+AMENTA, N., AND KIL, Y. 2004. The domain of a point set sur-
+face. In Proceedings of the Eurographics Symposium on Point-
+Based Graphics 2004, 139–147.
+BOISSONNAT, J.-D., AND CAZALS, F. 2000. Smooth shape recon-
+struction via natural neighbor interpolation of distance functions.
+In Proceedings of the 16th Annual Symposium on Computational
+Geometry, ACM Press, 223–232.
+DEY, T. K., AND SUN, J. 2005. An adaptive MLS surface for re-
+construction with guarantees. In Proceedings of the Eurograph-
+ics Symposium on Geometry Processing 2005, 43–52.
+DEY, T. K., GOSWAMI, S., AND SUN, J. 2005. Extremal sur-
+face based projections converge and reconstruct with isotopy.
+manuscript.
+FLEISHMAN, S., COHEN-OR, D., AND SILVA, C. T. 2005. Robust
+moving least-squares ﬁtting with sharp features. ACM Transac-
+tions on Graphics (SIGGRAPH 2005 Proceedings) 24, 3, 544–
+552.
+GANDER, W., GOLUB, G. H., AND STREBEL, R. 1994. Least-
+squares ﬁtting of circles and ellipses. BIT Numerical Mathemat-
+ics 34, 4, 558–578.
+GUENNEBAUD, G., BARTHE, L., AND PAULIN, M. 2005. Interpo-
+latory reﬁnement for real-time processing of point-based geom-
+etry. Computer Graphics Forum (Proceedings of Eurographics
+2005) 24, 3, 657–666.
+HOPPE, H., DEROSE, T., DUCHAMP, T., MCDONALD, J., AND
+STUETZLE, W. 1992. Surface reconstruction from unorganized
+points. In Proc. of ACM SIGGRAPH ’92, ACM Press, 71–78.
+KAZHDAN, M., BOLITHO, M., AND HOPPE, H. 2006. Poisson
+surface reconstruction. In Proceedings of the Eurographics Sym-
+posium on Geometry Processing 2006, 43–52.
+KOLLURI, R. 2005. Provably good moving least squares. In ACM-
+SIAM Symposium on Discrete Algorithms, 1008–1018.
+LEVIN, D. 2003. Mesh-independent surface interpolation. Geo-
+metric Modeling for Scientiﬁc Visualization, 181–187.
+MITRA, N. J., NGUYEN, A., AND GUIBAS, L. 2004. Estimating
+surface normals in noisy point cloud data. International Journal
+of Computational Geometry and Applications 14, 4–5, 261–276.
+OHTAKE, Y., BELYAEV, A., ALEXA, M., TURK, G., AND SEI-
+DEL, H.-P. 2003. Multi-level partition of unity implicits. ACM
+Transactions on Graphics (SIGGRAPH 2003 Proceedings) 22,
+3, 463–470.
+PAULY, M., KEISER, R., KOBBELT, L. P., AND GROSS, M. 2003.
+Shape modeling with point-sampled geometry. ACM Transac-
+tions on Graphics (SIGGRAPH 2003 Proceedings) 22, 3.
+PAULY, M., MITRA, N. J., AND GUIBAS, L. 2004. Uncertainty
+and variability in point cloud surface data. In Proceedings of the
+Eurographics Symposium on Point-Based Graphics, 77–84.
+PRATT, V. 1987. Direct least-squares ﬁtting of algebraic surfaces.
+In Proc. of ACM SIGGRAPH ’87, ACM Press, 145–152.
+SHEN, C., O’BRIEN, J. F., AND SHEWCHUK, J. R. 2004. Inter-
+polating and approximating implicit surfaces from polygon soup.
+ACM Transactions on Graphics (SIGGRAPH 2004), 896–904.
+WALD, I., AND SEIDEL, H.-P. 2005. Interactive ray tracing of
+point based models. In Proceedings of the Eurographics Sympo-
+sium on Point Based Graphics 2005.
+WASCHB ¨USCH, M., GROSS, M., EBERHARD, F., LAMBORAY,
+E., AND W ¨URMLIN, S. 2004. Progressive compression of point-
+sampled models. In Proceedings of the Eurographics Symposium
+on Point-Based Graphics 2004, 95–102.
+WICKE, M., TESCHNER, M., AND GROSS, M. 2004. CSG tree
+rendering of point-sampled objects. In Proceedings of Paciﬁc
+Graphics 2004, 160–168.

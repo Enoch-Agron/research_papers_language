@@ -1,0 +1,1570 @@
+# Graph based over-segmentation methods for 3d point clouds.pdf
+# Converted: 2025-07-19 12:45:30
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Graph based over-segmentation methods for 3d point clouds.pdf
+# Output: ../layer2_completion/txt/Graph based over-segmentation methods for 3d point clouds.txt
+
+
+--- Page 1 ---
+
+Graph Based Over-Segmentation Methods for 3D Point
+Clouds
+Yizhak Ben-Shabat · Tamar Avraham · Michael Lindenbaum ·
+Anath Fischer
+Received: date / Accepted: date
+Abstract Over-segmentation, or super-pixel generation,
+is a common preliminary stage for many computer vi-
+sion applications. New acquisition technologies enable
+the capturing of 3D point clouds that contain color
+and geometrical information. This 3D information in-
+troduces a new conceptual change that can be utilized
+to improve the results of over-segmentation, which uses
+mainly color information, and to generate clusters of
+points we call super-points. We consider a variety of
+possible 3D extensions of the Local Variation (LV) graph
+based over-segmentation algorithms, and compare them
+thoroughly. We consider diﬀerent alternatives for con-
+structing the connectivity graph, for assigning the edge
+weights, and for deﬁning the merge criterion, which
+must now account for the geometric information and
+not only color. Following this evaluation, we derive a
+Y. Ben-Shabat
+Mechanical Engineering Department, Technion - Israel Insti-
+tute of Technology, Haifa 32000, Israel.
+Tel.: +972-4-829-2334
+E-mail: sitzikbs@campus.technion.ac.il
+T. Avraham
+Computer Science Department, Technion - Israel Institute of
+Technology, Haifa 32000, Israel.
+Tel.: +972-4-829-4877
+E-mail: tammya@cs.technion.ac.il
+M. Lindenbaum
+Computer Science Department, Technion - Israel Institute of
+Technology, Haifa 32000, Israel.
+Tel.: +972-4-829-4331
+Fax.: +972-4-829-3900
+E-mail: mic@cs.technion.ac.il
+A. Fischer
+Mechanical Engineering Department, Technion - Israel Insti-
+tute of Technology, Haifa 32000, Israel.
+Tel.: +972-4-829-3260
+Fax.: +972-4-829-5711
+E-mail: meranath@technion.ac.il
+new generic algorithm for over-segmentation of 3D point
+clouds. We call this new algorithm Point Cloud Local
+Variation (PCLV). The advantages of the new over-
+segmentation algorithm are demonstrated on both out-
+door and cluttered indoor scenes. Performance analysis
+of the proposed approach compared to state-of-the-art
+2D and 3D over-segmentation algorithms shows signif-
+icant improvement according to the common perfor-
+mance measures.
+Keywords 3D Point Cloud Over-segmentation · 3D
+Point Cloud segmentation · Super-points · Grouping
+1 Introduction
+1.1 Overview
+Image segmentation methods aim to divide the input
+data according to object association. This inverse prob-
+lem is often ill-posed. It is therefore common to relax
+the requirement, and aim for an over-segmentation in
+which the number of segments can be greater than the
+number of objects in the scene. The goal is then to
+get a rather small set of segments that do not cross ob-
+ject boundaries; an over-segmentation algorithm is con-
+sidered to perform well when the segment boundaries
+overlap with the ground truth object boundaries while
+also partially covering only a single object’s area. Over-
+segmentation can be considered as a compact and in-
+formative description of the scene, using a substantially
+lower number of elements than the initial pixel repre-
+sentation. It signiﬁcantly reduces the amount of data
+that must be dealt with for the following image analy-
+sis stages, without loss of information. The output ele-
+ments of the over-segmentation process are commonly
+called super-pixels. Super-pixels were shown to be very
+arXiv:1702.04114v1  [cs.CV]  14 Feb 2017
+
+
+--- Page 2 ---
+
+2
+Yizhak Ben-Shabat et al.
+useful as inputs for higher-level vision tasks such as se-
+mantic segmentation (Gould et al, 2008; Farabet et al,
+2013), scene classiﬁcation (Juneja et al, 2013), 3D ge-
+ometry inference (Hoiem, 2007), and tracking (Oron
+et al, 2014; Wang et al, 2011).
+In recent years, 3D point cloud representation of
+geometric real-world data has gained popularity in the
+ﬁelds of robotics, computer vision, and computer aided
+design. This is mainly due to the emergence of low cost
+3D sensing devices such as the Microsoft Kinect for in-
+door scenes and the more expensive LiDAR for outdoor
+scenes. Many point cloud based algorithms are being
+developed for applications such as navigation, object
+recognition, pose estimation, registration, and surface
+reconstruction. One of the main challenges when work-
+ing with 3D point clouds is the large number of points.
+This challenge becomes even greater for real-time ap-
+plications. One way to deal with the large amount of
+data is to divide it into subsets and process them sepa-
+rately. The data can be subdivided by a 3D regular grid,
+but data-driven subdivision that relies on 3D properties
+might be much more eﬀective.
+Many over-segmentation methods have been pro-
+posed for 2D images, while very limited research has
+been done on adapting the over-segmentation approach
+for 3D point clouds. We focus here on extensions of one
+of the leading 2D over-segmentation algorithms, Lo-
+cal Variation (LV) by Felzenszwalb and Huttenlocher
+(1998, 2004). A few works incorporated 3D extensions
+for it in diﬀerent applications. However, none of these
+works compared the proposed extension to possible al-
+ternatives. Here we propose, for each step of the original
+algorithm, options for extending it to 3D point clouds,
+and discuss the pros and cons of each. We thoroughly
+test and compare each option and select the best com-
+bination. We call this new algorithm Point Cloud Local
+Variation (PCLV). Like the original algorithm, PCLV is
+simple and fast yet powerful. The algorithm is generic
+and can be applied on any data represented by a 3D
+point cloud, regardless of its geometrical complexity or
+the sensor used for its acquisition. We show that PCLV
+performs better than state-of-the-art 2D methods and
+better than all previously suggested 3D methods on an
+extensive benchmark of indoor Kinect data. Addition-
+ally, we demonstrate its performance on urban scenes
+captured by an interferometry sensor. Our main contri-
+butions are:
+• A class of 3D over-segmentation algorithms, ob-
+tained by applying the LV principles with diﬀerent
+choices.
+• The PCLV algorithm, obtained by optimizing over
+all choices, which outperforms state-of-the-art 2D
+and 3D methods.
+• A thorough performance analysis of 3D point cloud
+extensions of the LV algorithm.
+• A performance analysis of existing 2D and 3D over-
+segmentation algorithms on a large indoor dataset.
+• Qualitative and promising results for new outdoor
+scenes.
+The paper is structured as follows. The rest of
+this section overviews existing 2D and 3D over-
+segmentation algorithms. Section 2 presents the 3D
+point cloud over-segmentation algorithm analysis, and
+its results are summarized in Section 3. The PCLV al-
+gorithm is presented in Section 4. Experimental results
+and comparison to state-of-the art algorithms are pre-
+sented in Section 5 along with some implementation
+details. Finally, Section 6 discusses the results and con-
+cludes.
+1.2 Related Work
+In this section, we brieﬂy overview existing over-
+segmentation methods for 2D images and 3D point
+clouds.
+1.2.1 2D Over-Segmentation Methods (Super-Pixel
+Generation)
+A short survey and comparison of existing 2D over-
+segmentation methods can be found in Achanta et al
+(2012). Classic algorithms include Graph-cut (Malik,
+2000), Meanshift (Comaniciu and Meer, 2002), and Wa-
+tershed (Meyer, 1994). Current state-of-the-art over-
+segmentation methods include the Turbopixels algo-
+rithm (TP) (Levinshtein et al, 2009), which evolves a
+set of curves that converge to the segment borders us-
+ing a level set approach, and the Simple Linear Iterative
+Clustering (SLIC) algorithm (Radhakrishna et al, 2010;
+Achanta et al, 2012), which is based on the k-means
+clustering algorithm. One of the best performing yet
+eﬃcient over-segmentation methods is the graph based
+Local Variation (LV) algorithm (Felzenszwalb and Hut-
+tenlocher, 1998, 2004). A connectivity graph is con-
+structed by connecting each pixel to its 4 or 8 clos-
+est neighbors. The square root of the squared sum of
+diﬀerences in color space between connected pixels is
+assigned as the weight on the graph edges. Then the al-
+gorithm iteratively merges pixel regions by comparing
+the dissimilarity between regions to the internal dissim-
+ilarity of pixels within the region. The decision rule used
+in the LV algorithm was recently explained, in a prob-
+abilistic setting, as hypothesis testing from which the
+Probabilistic Local Variation (pLV) algorithm (Baltaxe
+et al, 2015) was derived. Other 2D variations of LV have
+
+
+--- Page 3 ---
+
+Graph Based Over-Segmentation Methods for 3D Point Clouds
+3
+been suggested (Fahad and Morris, 2006; Zhang and Al-
+hajj, 2006), as well as video-based extensions (Grund-
+mann et al, 2010). In this work we thoroughly analyze
+the 3D extension of each LV algorithm stage and pro-
+pose a new over-segmentation algorithm for 3D point
+clouds.
+1.2.2 3D Over-Segmentation Methods (Super-Point
+Generation)
+Similarly to 2D over-segmentation algorithms,which di-
+vide an image into segments, 3D over-segmentation
+methods divide a 3D point cloud into clusters, which we
+call super-points. The desired properties of the super-
+points are the same as for super-pixels: a super-point’s
+boundaries should include the object boundaries and
+overlap with only one object, while the total number
+of super-points should be small. In contrast to over-
+segmentation of 2D images, little work has been done
+on over-segmentation of 3D point clouds.
+The
+Voxel
+Cloud
+Connectivity
+Segmentation
+(VCCS) algorithm (Papon et al, 2013) followed the 2D
+SLIC (Achanta et al, 2012) algorithm and uses a vari-
+ant of k-means clustering for the labeling of points.
+First, the cluster seeding is done by partitioning the
+3D space into a regular grid of voxels. Second, strict
+spatial connectivity is enforced by the iterative cluster-
+ing algorithm. The similarity between candidate points
+is deﬁned by a distance function that takes into ac-
+count the spatial distance, color and FPFH descriptors
+(Rusu et al, 2009) between two points. This algorithm
+has the advantage of producing regular and uniform
+sized segments. However, it has ﬁve adjustable parame-
+ters: the initial voxel grid resolution, the seed voxel grid
+resolution, and three importance factors, one for each
+of the color, distance, and geometrical components. A
+main disadvantage of this algorithm is its dependence
+on these parameters, which create a tradeoﬀbetween
+accuracy and the running time of the algorithm.
+The Boundary-enhanced Supervoxel Segmentation
+(BESS) algorithm (Song et al, 2014) starts with a pre-
+processing boundary detection stage and applies a clus-
+tering process on a connectivity graph that excludes
+these boundary points. The geometric features used in
+the clustering step are the spatial coordinates concate-
+nated with the angles, and angle distribution between
+horizontal and vertical neighboring points. The main
+drawback of this algorithm is its reliance on the point
+order. It assumes that the input is point data from Li-
+DAR with horizontal and vertical consecutive points.
+This constraint is used both in the adjacency graph
+construction and in the boundary detection stage, mak-
+ing this algorithm inapplicable to general, unorganized
+point clouds.
+3D LV extensions were proposed in three papers.
+Each extension used a diﬀerent graph construction
+method, diﬀerent modalities to quantify the dissimilar-
+ity between neighboring points, and a diﬀerent merge
+criterion for the clustering of sub-graphs. It remains un-
+clear how each of these diﬀerences aﬀected overall algo-
+rithm performance. Strom et al (2010) used a sensor de-
+pendent mesh for the connectivity graph, and weighted
+the edges by both color dissimilarity and normal direc-
+tion diﬀerences. Their merge criterion considered the
+two dissimilarities separately. Schoenberg et al (2010)
+combined these dissimilarities along with the Euclidean
+distance into a single weight. Karpathy et al (2013)
+omitted the color information and used an assumption
+that concave regions are related to boundaries; their
+weight included a penalty for the dissimilarity of angle
+between normal vectors in these regions. These three
+papers focus largely on the sensor and system setup.
+In two of them, over-segmentation is not an end in it-
+self but a tool for achieving other goals. The evaluation
+process was either qualitative or in terms of the end
+goal. Our focus here is on over-segmentation as an end
+in itself. We present several 3D variations to this algo-
+rithm and evaluate the performance of these variants
+quantitatively and qualitatively.
+2 Local Variation (LV) 3D Extensions
+In this work we address the problem of achieving an ac-
+curate over-segmentation result in 3D point clouds us-
+ing a graph based approach. The input of the method
+is a 3D point cloud representation of the boundary sur-
+face of any general object or scene. The output is a di-
+vision of the data into small segments. These segments
+are essentially clusters of proximate points sharing ge-
+ometric properties and appearance, which are diﬀerent
+from points in surrounding clusters. The original LV
+algorithm and all the 3D extensions discussed here are
+constructed of the following steps:
+1. Graph construction
+2. Descriptor computation
+3. Edge weight assignment
+4. Sequential subgraph criteria based merging
+In the ﬁrst step a graph is constructed from the in-
+put 3D point cloud data. In the second step, for each
+3D point, a descriptor is estimated. The descriptor is
+a quantity, usually a vector of several elements, which
+characterize the point and its local environment. Some
+elements may be appearance related e.g. color, inten-
+sity, or local texture, and some may relate to local ge-
+
+
+--- Page 4 ---
+
+4
+Yizhak Ben-Shabat et al.
+Fig. 1: Block diagram of LV variants for 3D over-
+segmentation
+ometrical properties of the point with respect to its
+neighbors. The third step assigns one weight or more to
+each graph edge. The weight is a dissimilarity measure
+between two connected points. While the dissimilari-
+ties arising from diﬀerent properties are often combined
+into one scalar weight, using an “adding apples to or-
+anges” approach, we use a diﬀerent approach to tackle
+the challenge of combining these properties, which we
+will refer to henceforth as modalities. The core of the
+over-segmentation method is the ﬁnal merge stage. All
+input points are initially super-points, which are itera-
+tively merged to form larger super-points: the algorithm
+sorts the graph edges in ascending order and then tra-
+verses over the edges and applies a decision criterion to
+determine whether the super-points connected by the
+edge should be merged. Figure 1 summarizes the main
+stages of the approach. Next, we detail the factors that
+must taken into account when choosing how to extend
+each of the stages for 3D point clouds.
+2.1 Graph Construction
+The construction of the connectivity graph G = (V, E)
+is a crucial stage in the algorithm. It essentially deﬁnes
+the space of possible clusters. If there is no path be-
+tween two points in the connectivity graph, they will
+never be in the same ﬁnal cluster. However, too many
+graph edges decrease the algorithm’s eﬃciency. We con-
+sider four alternative methods for constructing the con-
+nectivity graph for a 3D point cloud:
+1. Connecting every two points whose distance from
+each other is less than a threshold R.
+2. Connecting each point to its K-nearest neighbors.
+3. Constructing a Delaunay triangulation and using it
+as the connectivity graph.
+4. Using a 2D image grid to construct a 4-connected or
+8-connected graph, when such a projection is avail-
+able (as originally constructed by the LV algorithm).
+There are advantages and drawbacks to these diﬀerent
+options.
+Constructing a graph using neighbors within a given
+radius R limits the length of graph edges, ﬁltering
+out irrelevant connections. However, it also creates dis-
+connected components for isolated points or points in
+sparse regions, actually performing a segmentation de-
+cision that was originally assigned to later stages in the
+algorithm. In addition, the number of points encapsu-
+lated in each sphere may vary drastically between dif-
+ferent sections of the point cloud, creating unbalanced
+graphs and a bias toward dense regions. Most impor-
+tantly, a majority of real-world point clouds have inter-
+nally varying point densities, which makes it hard to
+adjust the R parameter.
+The K-nearest neighbor graph overcomes some of
+these drawbacks: it is less sensitive to varying point
+cloud densities. In addition, the number of neighbors
+for each point is predetermined, eliminating the bias
+and creating a balanced graph. However, the K pa-
+rameter still requires adjustment. This parameter has
+a signiﬁcant impact on speed due to the required
+K-nearest neighbor search. Furthermore, distant non-
+related points may be connected in this graph.
+The Delaunay mesh approach requires a triangula-
+tion stage that is sensitive to noise as outlier points
+may result in mesh structure that does not represent
+the underlying geometry. Furthermore, similarly to the
+K-nearest neighbor approach, triangulation may create
+synthetic connections between distant points.
+Using a 2D grid based graph requires a mapping
+between the point cloud and an image. This mapping
+is easily obtained when working with low cost sen-
+sors such as the Microsoft Kinect, but is not always
+available for other sensors. Once the image is given,
+the connectivity graph is given as well, making the
+graph construction stage highly eﬃcient in comparison
+to the other graph construction methods. Furthermore,
+although this method does not directly facilitate the ge-
+ometry of all three dimensions, it still exploits a planar
+geometric relationship between the sampled points in a
+projection plane.
+All the above options excluding the last may lead
+to undesirable over-segmentation results, including dis-
+persed segments that appear as small islands. These
+are clusters that are disconnected in the 3D space. Fig-
+ure 2 illustrates the cause for this problem. The blue
+
+
+--- Page 5 ---
+
+Graph Based Over-Segmentation Methods for 3D Point Clouds
+5
+Fig. 2: Dispersed segments. Blue and yellow nodes:
+points in two diﬀerent super-points; black lines: graph
+edges of an 8-connected image-based graph; red lines:
+additional edges used by other graph construction
+methods.
+Fig. 3: Example of dispersed segments. (a) 3D point
+cloud with RGB color overlay, (b) 3D point cloud with
+resulting super-points colored in diﬀerent colors, and
+(c) enlargement of a region with dispersed segments.
+and yellow nodes represent points in two diﬀerent re-
+sulting super-points. The black lines illustrate graph
+edges of an 8-connected image-based graph, and the
+red lines represent additional edges used by other graph
+construction methods. The illustrated segmentation is
+clearly impossible when using an 8-connected graph,
+while it is possible for the other graph types. Indeed,
+we observed such problematic results during our evalua-
+tion (detailed in Section 3). See Figure 3 for an example
+result using a “Radius R” based graph. Similar phe-
+nomena were encountered for K-NN based graphs and
+Delaunay based graphs. This issue can be addressed by
+integrating a connected component analysis stage into
+the algorithm. However, this limits the control over the
+number of segments and requires a corresponding im-
+age. This problem can be reduced by choosing lower
+values of K and R.
+The advantages and drawbacks
+of each of the graph construction methods presented
+above are summarized in Table 1.
+Given the advantages and disadvantages above, it
+remains diﬃcult to conclude which graph construction
+method is preferable. Therefore, a quantitative com-
+parison is necessary. This comparison is presented in
+Section 3.2.1.
+2.2 Descriptor Estimation
+The LV algorithm, having been designed for 2D images,
+uses only RGB color to characterize each pixel. When
+the input is a 3D point cloud, we would like to exploit
+the additional available dimension and to describe also
+the local geometry of each point. However, it is not
+easy to characterize the local geometry of a point in a
+cloud and most studies that attempted to do so yielded
+ambiguous results. Many of these studies were subse-
+quently surveyed and evaluated in Guo et al (2015),
+who concluded that some descriptors were better than
+others for certain tasks while the FPFH (Rusu et al,
+2009) descriptor performed well for all of the evaluated
+tasks. We test here the eﬀectiveness of the FPFH de-
+scriptor for the task of over-segmentation and compare
+it to using the estimated normal at each point. We also
+test the eﬀectiveness of using the absolute location of
+each point. Along with color, that gives us 4 diﬀerent
+point descriptors, and diﬀerent combinations thereof.
+Each graph vertex (3D point) vi ∈V is therefore de-
+scribed by one or more of the following properties:
+1. RGB color (Ri, Gi, Bi)
+2. Location (Xi, Yi, Zi)
+3. FPFH descriptor vector (FPFHi, 1...33)
+4. Estimated normal vector ((Nx)i, (Ny)i, (Nz)i)
+Note that most 3D geometrical descriptors are esti-
+mated using their local neighbors (even the “simple”
+normal vector). As such, some“impurity” is introduced
+into the algorithm: the similarity now relies on all of
+the neighboring points rather than only on one.
+Next we describe how the graph edge weights are de-
+rived from these properties. A quantitative comparison
+between properties and weight alternatives is presented
+in Section 3.2.2.
+2.3 Edge Weight Assignment
+As discussed in Section 2.2, four diﬀerent “modalities”
+were considered for describing each point. Respectively,
+we deﬁne the dissimilarity between every two points
+connected by an edge eij in the connectivity graph G
+by:
+1. The diﬀerence in color as the Euclidean distance in
+the RGB space,
+wc(eij) =
+q
+(Ri −Rj)2 + (Gi −Gj)2 + (Bi −Bj)2
+√
+3
+.
+2. The normalized Euclidian distance in the 3D space,
+
+
+--- Page 6 ---
+
+6
+Yizhak Ben-Shabat et al.
+Graph Construction
+Method
+Advantages
+Drawbacks
+Radius R
+• Integrated edge length limitation
+• R parameter adjustment
+• Sensitive to non-uniform point density
+• Dispersed segments
+K nearest neighbors
+• Balanced graph (non-biased to num-
+ber of neighboring points).
+• Insensitive to non-uniform point den-
+sity
+• K parameter adjustment
+• Distant point connections
+• Dispersed segments
+Delaunay
+• Insensitive to isolated points
+• Parameter independent
+• Sensitive to noise
+• Distant point connections
+• Dispersed segments
+2D Image grid based
+• Fast
+• Requires a mapping from a point
+cloud to a 2D grid.
+• Does not directly incorporate 3D in-
+formation.
+Table 1: Pros and cons of the graph construction methods
+wd(eij) =
+q
+(Xi −Xj)2 + (Yi −Yj)2 + (Zi −Zj)2 −dmin
+dmax −dmin
+where dmin, dmax are the minimum and maximum
+distances within the given graph.
+3. A measure of planarity using the angle between the
+estimated normal vectors,
+wn(eij) = 1 −ˆNi · ˆNj.
+4. The histogram intersection (Barla et al, 2003) of the
+FPFH descriptors (Rusu et al, 2009),
+wF P F H(eij) = 1 −
+33
+X
+l=1
+min(FPFHi,l, FPFHj,l).
+As we explain in the next section, the aforemen-
+tioned dissimilarity measure can be combined into one
+scalar, by for example, linear combination, and used as
+the weight on the graph’s edge. Then, one criterion can
+be used to decide whether to merge two super-points.
+Another option is to assign a vector of weights to each
+edge, associated with all, or some, of the dissimilarity
+measures. In this case, the merge decision will use sev-
+eral criteria.
+The decision as to whether the weights should be
+combined or used separately is left for the next stage.
+Therefore, the output of the current algorithm stage is
+a vector of weights ¯wij. As explained in Section 3.2, we
+tested the contribution of each modality by combing
+the weights in diﬀerent ways, as follows:
+1. Color diﬀerences only, as in the original LV, ¯wij =
+wc(eij)
+2. Color diﬀerences and Euclidian distance,
+¯wij
+=
+(wc(eij), wd(eij))
+3. Color diﬀrences and normal diﬀerences,
+¯wij
+=
+(wc(eij), wn(eij))
+4. Euclidean distance and normal diﬀerences, ¯wij =
+(wd(eij), wn(eij))
+5. Color diﬀerences and FPFH descriptor diﬀerences,
+¯wij = (wc(eij), wF P F H(eij))
+6. Color diﬀerences, Euclidean distance and normal
+diﬀerences, ¯wij = (wc(eij), wd(eij), wn(eij))
+The following section addresses the question of how
+to use these weight vectors when sequentially deciding
+whether two super-points should be merged.
+2.4 Merge Criterion
+In the original LV algorithm (Felzenszwalb and Hutten-
+locher, 2004, 1998), subgraph merging begins by sorting
+the connectivity graph edges by the weight deﬁned only
+by the color diﬀerences. Then, the connectivity graph
+edges are traversed in ascending order and a merge
+decision is made. Let eij be the graph edge that con-
+nects the two sub-graphs Ci and Cj. Let w(e) be the
+(scalar) weight on edge e, and let MST(Cx) be the min-
+imum spanning tree of Cx. The merge criterion checks
+whether
+
+
+--- Page 7 ---
+
+Graph Based Over-Segmentation Methods for 3D Point Clouds
+7
+w(eij) ≤
+min
+x ∈{i,j}
+
+max
+e ∈MST (Cx) w(e) +
+δ
+|Cx|
+
+.
+Note that
+δ
+|Cx| is a segment-dependent adaptive
+threshold function in which δ is a user controlled pa-
+rameter that is related to the desired number of output
+segments.
+In our work, a few diﬀerent weights associated with
+the diﬀerent modalities are considered for the merge
+criterion. The merge criterion is the decision whether
+or not to merge two sub-graphs based on a comparison
+between the weight on the connecting graph edge and
+an adaptive threshold value. Integrating the weights is a
+non-trivial task, commonly described as the problem of
+“adding apples to oranges”. Combining them into one
+scalar requires each of the weights to be normalized
+and factorized using parameters that require adjust-
+ment. Furthermore, some information may be lost in
+this process. For example, two distant points on diﬀer-
+ent objects may have similar color and collinear normal
+vectors; when combining these weights the Euclidean
+distance’s inﬂuence is averaged with the other weights’
+inﬂuence and the eﬀective weight may falsely imply that
+both points belong to the same segment. On the other
+hand, performing separate comparisons for each modal-
+ity violates some of the algorithm’s original assump-
+tions and guarantees. Normalization is also required in
+this case in order to reduce the number of adjustable
+parameters.
+In this work we compare the following options for
+using the weight information:
+1. Linearly combining all modalities to a scalar weight
+and using a single merge criterion,
+w(eij) = kcwc(eij) + kdwd(eij) + knwn(eij),
+w(eij) ≤
+min
+x ∈{i,j}
+
+max
+e ∈MST (Cx) w(e) +
+δ
+|Cx|
+
+.
+2. Checking separate criteria for each modality and
+merging only if all criteria are met. If, for instance,
+we test the use of the weights associated with color,
+normal, and Euclidean distance, then the criteria
+that will be checked are:
+wc(eij) ≤
+min
+x ∈{i,j}
+
+max
+e ∈MST (Cx) wc(e) +
+δ
+|Cx|
+
+and
+wd(eij) ≤
+min
+x ∈{i,j}
+
+max
+e ∈MST (Cx) wd(e) +
+δ
+|Cx|
+
+and
+wn(eij) ≤
+min
+x ∈{i,j}
+
+max
+e ∈MST (Cx) wn(e) +
+δ
+|Cx|
+
+.
+As mentioned above, the number of segments is con-
+trolled indirectly by adjusting the parameter that in-
+tuitively reﬂects the initial tolerance of point dissimi-
+larity within a segment. It is possible to use a diﬀerent
+parameter for each of the modalities; we decided not
+to do so in order not to introduce another parameter
+adjustment and tuning challenge that would make it
+much more diﬃcult to control the number of output
+segments.
+2.5 Over-segmentation Post-processing
+In LV, as well as in all the algorithms tested here,
+a post-processing stage merges all the small segments
+with the segment closest to them in the graph. Small
+segments are deﬁned as segments with less than 10%
+of the number of points there would have been if the
+3D point cloud had been subdivided uniformly (num-
+ber of points divided by the desired number of seg-
+ments). Note that for some applications the current
+post-processing stage can be replaced by omitting small
+segments.
+3 Evaluation of LV 3D Variants
+This section details the experimental results of the fam-
+ily of point cloud over-segmentation algorithms that ex-
+tended the 2D LV algorithm to 3D. We ﬁrst provide a
+summary of the common evaluation metrics for over-
+segmentation. Then, each algorithm stage is thoroughly
+analyzed, using the original LV as the baseline. We then
+select the best choice for each stage. Afterwards, we use
+this analysis to derive the PCLV algorithm. We com-
+pare its performance to that of other state-of-the-art
+2D and 3D over-segmentation algorithms in Section 5.
+The performance analysis was performed on the
+NYU Depth V2 (Silberman et al, 2012) dataset, which
+contains 1449 images of indoor scenes acquired by Mi-
+crosoft Kinect. It includes RGB images aligned with
+depth intensity images, human labeled ground truth
+segmentation, camera parameters for 3D point cloud
+reconstruction, and additional data. For this dataset
+the normal vectors provided by Ladick´y et al (2014)
+were used.
+3.1 Evaluation Metrics
+The dominant metrics used to test and compare
+the performance of over-segmentation algorithms are
+boundary recall and under-segmentation error (Neu-
+bert and Protzel, 2012). We use the boundary recall
+
+
+--- Page 8 ---
+
+8
+Yizhak Ben-Shabat et al.
+deﬁnition from Martin et al (2001) and the under-
+segmentation error deﬁnition from Silberman et al
+(2012). Boundary recall quantiﬁes the fraction of the
+ground truth boundaries that intersect with the algo-
+rithm’s output boundaries. The under-segmentation er-
+ror measures the area of incorrect segment overlaps.
+In 2D over-segmentation studies these metrics were de-
+ﬁned and used mainly for evaluating and comparing
+algorithms using the Berkeley Segmentation Dataset
+and Benchmark (Martin et al, 2001). Generally, such an
+evaluation is only possible when an annotation of the
+borders between objects is available. Border annotation
+directly on a 3D point cloud is a diﬃcult task. For the
+KITTI point-clouds dataset (Geiger et al, 2013), an-
+notations are available for some of the objects (people
+and vehicles), but full segmentation of scenes is not yet
+provided. We follow Papon et al (2013) and project the
+3D points to a 2D domain; we then compare the algo-
+rithm’s results to the manually annotated segmentation
+provided by the NYU dataset for that projection.
+The evaluation metrics mentioned above will al-
+ways prefer many small segments, and will provide the
+best scores for the trivial over-segmentation, where each
+point is considered as a separate segment. This is obvi-
+ously an undesirable result. The objective is, of course,
+to get the highest boundary recall and the lowest over-
+segmentation error with a minimal number of segments.
+Most over-segmentation algorithms allow some control
+over the number of output segments. Therefore, each
+metric is evaluated for each algorithm as a function of
+the number of output segments. The formulation of the
+measures is detailed below.
+3.1.1 Boundary Recall
+This metric evaluates the number of boundary pixels
+correctly labeled by the algorithm versus the total num-
+ber of boundary pixels. It is deﬁned to be the fraction
+of ground truth (GT) edges that fall within a certain
+distance d of at least one super-pixel boundary. Given
+a ground truth boundary image T and the algorithm
+output boundary image B, the number of true positive
+(TP) pixels is computed by summing all boundary pix-
+els in T for which exists a boundary pixel in B within
+a range d. The number of false negative (FN) pixels
+is computed by summing the boundary pixels in T for
+which does not exist a boundary pixel in B within a
+range d. We used d = 2. Finally, the boundary recall
+(BR) is computed:
+BR =
+TP
+TP + FN .
+3.1.2 Under-segmentation Error
+The under-segmentation error (UE) evaluation metric
+penalizes the algorithm on segments that cross ground-
+truth borders, by considering the “trespassed” areas as
+errors. Let S be a ground-truth segment, let P be an
+intersecting output segment, let Pin denote the inter-
+section P ∩S, and let Pout denote P ∩¯S (the points
+in P that do not intersect with S). Either Pin or Pout
+has the smallest number of points, and, for each S and
+P, the metric will integrate that number into the total
+error.
+UE = 1
+N
+
+X
+S∈GT
+
+
+X
+P :P ∩S̸=∅
+min (|Pin |, |Pout|)
+
+
+
+
+where N is the number of segments in the GT image.
+Note that this formulation distinguishes between inter-
+nal and external clusters. An internal cluster is a cluster
+with a majority of points within S. This formulation
+prevents over-penalizing small “bleeding” overlaps.
+3.2 Experimental Evaluation
+In this section the diﬀerent extensions are analyzed with
+respects to the evaluation metrics.
+3.2.1 Graph Construction Analysis
+The graph construction method may vary by applica-
+tion. Here we compared the results obtained using the
+four graph construction methods presented in Section
+2.1 while maintaining all of the original LV stages. This
+was done in order to isolate the eﬀect of the graph con-
+struction choice. The results can be seen in Figure 4.
+Surprisingly, integrating the third-dimension infor-
+mation into the graph construction stage does not al-
+ways improve the algorithm’s performance, as can be
+seen in the results for the KNN graph and the ra-
+dius based graph. Furthermore, for the Delaunay graph,
+while the recall has improved, this improvement comes
+with a signiﬁcant increase in the under-segmentation
+error. Taking into account these results and the advan-
+tages and disadvantages of each method, as summarized
+in Table 1, we conclude that the best choice for this
+stage would be to use the 8-connected graph construc-
+tion method when a corresponding image is available
+and to use a KNN graph when it is not.
+
+
+--- Page 9 ---
+
+Graph Based Over-Segmentation Methods for 3D Point Clouds
+9
+500
+1000
+1500
+2000
+Number of Segments
+0.7
+0.75
+0.8
+0.85
+0.9
+0.95
+1
+Recall
+Boundary Recall
+LV 8-connected Graph
+LV 8KNN Graph
+LV Delaunay Graph
+LV R Graph
+(a)
+0
+500
+1000
+1500
+2000
+2500
+Number of Segments
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0.4
+Under-segmentation Error
+Under-Segmentation Error
+LV
+LV 8KNN Graph
+LV Delaunay Graph
+LV R Graph
+(b)
+Fig. 4: Graph construction comparison. (a) Boundary
+recall; (b) Under-segmentation error.
+3.2.2 Descriptors and Edge Weight Assignment
+The modalities available for 3D point clouds may vary
+according to the application. Here we compared the re-
+sults of algorithms using each of the four modalities
+deﬁned in Section 2.3. We isolated the eﬀect of descrip-
+tor and weight choice by setting the graph construction
+to be the same as in the LV algorithm (8-connected)
+and applying the merge criterion separately on each
+modality using a single adjustable parameter for the
+adaptive threshold. Figure 5 depicts the boundary re-
+call and under-segmentation error. It can be seen that
+the recall is substantially lower and the error substan-
+tially higher for the variant that does not use the color
+information. Therefore, contrary to the conclusion of
+Karpathy et al (2013), color clearly plays an impor-
+tant role and each modality further contributes to per-
+formance. Surprisingly, FPFH contributed less to per-
+formance than did the angle between normal vectors.
+This is because the FPFH estimation relies heavily on
+the surrounding points; therefore, adjacent points will
+500
+1000
+1500
+2000
+Number of Segments
+0.65
+0.7
+0.75
+0.8
+0.85
+0.9
+0.95
+1
+Recall
+Boundary Recall
+LV (wc)
+(wc, wd)
+(wc, wFPFH)
+(wc, wn)
+(wd, wn)
+(wc, wd, wn)
+(a)
+0
+500
+1000
+1500
+2000
+2500
+Number of Segments
+0.1
+0.15
+0.2
+0.25
+0.3
+Under-segmentation Error
+Under-Segmentation Error
+LV (wc)
+(wc, wd)
+(wc, wFPFH)
+(wc, wn)
+(wd, wn)
+(wc, wd, wn)
+(b)
+Fig. 5: Boundary recall (a) and under-segmentation er-
+ror (b) for the 4 modalities: color (wc), distance (wd),
+normal vectors (wn), FPFH feature (wF P F H), and their
+combinations.
+have similar FPFH values. Furthermore, it can be seen
+that combining the color, normal, and Euclidian dis-
+tance yielded the best over-segmentation performance.
+An additional qualitative comparison between the
+over-segmentation results is presented in Figure 6
+(where the number of output segments is 500). At the
+top right corner of the image, a shaded intersection be-
+tween the wall and the ceiling can be seen; a zoomed-in
+view of the over-segmentation results on this region is
+also shown. The shading makes it impossible to ﬁnd
+the location of this intersection using color information
+alone because the color is approximately uniform. This
+is evident in the results of the LV algorithm, where the
+border follows the shade line rather than the under-
+lying intersecting corner, while for the extension that
+uses 3D information the corner boundary was correctly
+located. This example emphasizes the contribution of
+the normal vector to the over-segmentation process.
+
+
+--- Page 10 ---
+
+10
+Yizhak Ben-Shabat et al.
+LV (wc)
+(wc, wd, wn)
+Fig. 6: The advantage of using normal vectors. Top:
+over-segmentation results; bottom: enlarged region of
+interest; left: using color (wc); right: using a combina-
+tion of color, distance, and normal vectors (wc, wd, wn).
+3.2.3 Merge Criteria Selection and Further
+Comparison to Previously Suggested LV Extensions
+As discussed in Section 2.4, it is possible to linearly
+combine the modality-based weights into one weight
+and then use one merge criterion, or use multiple crite-
+ria, one for each modality, all of which must be met if a
+merge decision is to be made. We compared these two
+options. Following the results reported in Section 3.2.2,
+we used the modalities of color, normal and Euclidean
+distance for both options. The results are reported in
+Figure 7. The dark purple lines depict the performance
+of the linear combination option, while the black lines
+present the results of the multiple criteria option. The
+latter option is more successful, while the linear com-
+bination option performs slightly worse than the origi-
+nal LV algorithm. This ﬁnding concurs with our notion
+that combining the weights will average signiﬁcant dif-
+ferences in color space. As discussed in Section 1.2.2,
+point-cloud extensions for LV were suggested in Strom
+et al (2010); Karpathy et al (2013), and (Schoenberg
+et al, 2010). We also compared our approach to the
+approaches suggested in these works. The approach of
+Schoenberg et al (2010) is similar to the linear combi-
+nation option discussed above.The method of Karpathy
+et al (2013), which does not exploit the color informa-
+tion, has lower recall and higher under-segmentation er-
+ror than our results. Finally, the method of Strom et al
+(2010), which yields a single data point on the evalu-
+0
+500
+1000
+1500
+2000
+Number of Segments
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+1
+Recall
+Boundary Recall
+Karpathy
+LV
+Schoenberg (Linear)
+Strom
+PCLV
+(a)
+0
+500
+1000
+1500
+2000
+2500
+Number of Segments
+0.1
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+Under-segmentation Error
+Under-Segmentation Error
+Karpathy
+LV
+ Schoenberg (Linear)
+Strom
+PCLV
+(b)
+Fig. 7: Single vs. multiple merge criteria comparison,
+and comparison to previously suggested LV extensions.
+(a) Boundary recall and (b) under-segmentation error.
+ation graphs, has signiﬁcantly lower recall and higher
+under-segmentation error than those of the other ap-
+proaches. This may be attributed to the use of two
+predeﬁned parameters for the color and normal vector
+modalities, which may require optimization and adjust-
+ment for every data type.
+4 The Proposed Point Cloud Local Variation
+Algorithm (PCLV)
+Based on the analysis in the previous section, it is ev-
+ident that the choices of an 8-connected graph, a de-
+scriptor based on color, normal vectors, and Euclidean
+distance, and multiple merge criteria yield better per-
+formance than all the surveyed extensions. We denote
+the algorithm that makes those choices PCLV (Point-
+Cloud Local Variation). The PCLV algorithm is for-
+mally summarized in Algorithm 1.
+
+
+--- Page 11 ---
+
+Graph Based Over-Segmentation Methods for 3D Point Clouds
+11
+Algorithm 1 Point Cloud Local Variation Algorithm
+Input: 3D Point Cloud.
+Output: Set of components C1, ..., Cn deﬁning the super-
+points
+1: Construct connectivity graph G = (V, E)
+1. If an image mapping is available construct an 8-
+connected graph.
+2. Otherwise construct a K nearest neighbor graph.
+2: Compute
+descriptors
+for
+each
+point
+(X, Y, Z, R, G, B, Nx, Ny, Nz)
+3: Compute and assign multi-value graph weights for each
+edge (wc, wd, wn), e ∈E
+4: Sort E by non-decreasing edge color weight (e1, e2, ..., em)
+5: Initialize segmentation S0 with each vertex being a com-
+ponent
+6: for all q = 1, ..., m do
+7:
+eq = (vi, vj) ←edge with the qth smallest weight
+8:
+Cq−1
+i
+←component of Sq−1 containing vi
+9:
+Cq−1
+j
+←component of Sq−1 containing vj
+10:
+if
+
+
+
+
+
+
+
+
+
+
+
+
+Cq−1
+i
+̸= Cq−1
+j
+
+and
+
+wc(eq) ≤
+min
+x ∈{i,j}
+
+max
+e ∈MST (Cx) wc(e) +
+δ
+|Cx|
+
+and
+
+wd(eq) ≤
+min
+x ∈{i,j}
+
+max
+e ∈MST (Cx) wd(e) +
+δ
+|Cx|
+
+and
+
+wn(eq) ≤
+min
+x ∈{i,j}
+
+max
+e ∈MST (Cx) wn(e) +
+δ
+|Cx|
+
+
+
+
+
+
+
+
+
+
+
+
+then
+11:
+Sq = Sq−1 ∪
+n
+Cq−1
+i
+∪Cq−1
+j
+o
+\
+n
+Cq−1
+i
+, Cq−1
+j
+o
+12:
+else
+13:
+Sq = Sq−1
+14:
+end if
+15: end for
+16: Postprocessing: Merge all small segments to closest
+neighbor.
+5 PCLV Performance Analysis
+We compared PCLV’s performance to that of 2D and
+3D state-of-the-art over-segmentation algorithms (that
+are not LV-based) using the NYU Depth V2 cluttered
+indoor scenes dataset (Silberman et al, 2012). In addi-
+tion, we demonstrate PCLV’s performance on outdoor
+scenes.
+5.1 Indoor Scene Over-Segmentation Performance
+Evaluation
+Figure 8 depicts the boundary recall and under-
+segmentation error results for the following algorithms:
+LV (Felzenszwalb and Huttenlocher, 1998, 2004), SLIC
+(Achanta et al, 2012), pLV (Baltaxe et al, 2015), TP
+(Levinshtein et al, 2009), VCCS (Papon et al, 2013) and
+the proposed PCLV. It can be seen that PCLV, marked
+in black, outperforms all the other algorithms in both
+evaluation metrics. The result on the 2D algorithms
+SLIC, LV, pLV and TP are consistent with previously
+published results on the Berkeley dataset (Baltaxe et al,
+2015). The publicly available implementation of the
+VCCS algorithm in the Point Cloud Library (PCL)
+(Rusu and Cousins, 2011) yields diﬀerent results than
+the ones reported in the original paper (Papon et al,
+2013). This diﬀerence can be attributed to discrepan-
+cies between the paper and the publicly available imple-
+mentation, such as the discrepancy in the geometrical
+component: the implementation uses the angle between
+normal vectors while in the paper the FPFH intersec-
+tion kernel is used. In addition, the pixels with missing
+depth information are not segmented in the PCL im-
+plementation while in the paper a post-processing step
+is used to integrate SLIC over-segmentation into these
+regions. Furthermore, we applied the PCL implementa-
+tion with the default values for several adjustable pa-
+rameters. Therefore, for fairness, we present both the
+PCL implementation results (in green) and the approx-
+imated data points for the VCCS algorithm retrieved
+from the original paper (Papon et al, 2013) (dashed or-
+ange line). Note that this comparison may still be some-
+what inaccurate with regard to the under-segmentation
+error since in Papon et al (2013) a slightly diﬀerent def-
+inition for it was used.
+Figure 9 depicts some examples of the over-
+segmentation results for the diﬀerent algorithms when
+outputting 200 and 1200 segments. The LV, pLV and
+PCLV algorithms segment the sink as a single unit (top
+row, (c), (d), and (f)), while the while the VCCS and
+SLIC algorithms subdivide it (top row, (b) and (e)). In
+general, SLIC and VCCS produce regular and uniform
+segments while LV, pLV and PCLV better follow the
+GT boundaries. This introduces a compromise between
+regularity and accuracy (Machairas et al, 2015; Veksler
+et al, 2010). Note that Figure 9 (b) depicts the results
+for the VCCS algorithm as presented in the original
+paper.
+5.2 Outdoor Scene Over-Segmentation Performance
+Evaluation
+We also experimented with diﬀerent outdoor 3D point
+clouds provided by diﬀerent industrial companies. We
+demonstrate here PCLV’s performance on a large point
+cloud acquired by a data capturing vehicle mounted
+with an interferometry sensor by Geosim, a 3D city
+modeling technology company (Geosim, 2016). The
+scanner is very accurate but the raw point clouds are
+rather noisy and require some pre-processing. The pre-
+processing stage included a basic color threshold ﬁlter
+
+
+--- Page 12 ---
+
+12
+Yizhak Ben-Shabat et al.
+500
+1000
+1500
+2000
+Number of Segments
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+1
+Recall
+Boundary Recall
+LV
+pLV
+SLIC
+TurboPixels
+VCCS
+Approximate_VCCS
+PCLV
+(a)
+0
+500
+1000
+1500
+2000
+2500
+Number of Segments
+0.1
+0.2
+0.3
+0.4
+0.5
+Under-segmentation Error
+Under-Segmentation Error
+LV
+pLV
+SLIC
+TurboPixels
+VCCS
+Approximate_VCCS
+PCLV
+(b)
+Fig. 8: Performance analysis of PCLV compared to 2D
+and 3D state-of the-art over-segmentation algorithms.
+(a) Boundary recall and (b) under-segmentation error
+as a function of the number of segments.
+to remove sensor-generated false points and denoising
+(Rusu et al, 2008) to remove isolated noisy points. Note
+that for this data the color information for each point is
+an intensity value and not RGB. The ﬁnal input point
+cloud included approximately 5.75M points. The PCLV
+algorithm was applied using a K = 8 nearest neighbor
+connectivity graph. Normal vectors were estimated us-
+ing Hoppe et al (1992).
+The input 3D point cloud after ﬁltering and denois-
+ing is depicted in Figure 10 (a), and the PCLV algo-
+rithm over-segmentation results are depicted in Fig-
+ure 10, (b) which shows each segment in a distinct
+color. Enlarged regions of the over-segmented 3D point
+cloud are shown in Figure 10 (c),(d), and (e), where
+points located on the same object are clustered together
+as desired. An additional point of view of this over-
+segmented cloud is depicted in Figure 11 (b), where
+nicely segmented cars can be seen in the enlarged re-
+gion.
+6 Discussion and Conclusion
+Super-pixels have become a common preliminary stage
+in many high level vision related tasks which use 2D
+images. We introduce a similar notion of super-points.
+In 3D point clouds, the amount of data is usually much
+larger than in 2D images, We considered a variety of ex-
+tensions of the LV algorithm, which is known to be fast
+and accurate on 2D images. We showed that the exten-
+sion of LV into the 3D domain is not straightforward for
+several reasons: (a) Unlike 2D images, 3D point clouds
+are not structured on a grid, giving rise to the question
+of how the connectivity graph should be deﬁned; (b)
+3D point clouds contain not only color information but
+also geometric information, giving rise to the question
+of how to best exploit this additional information; and
+(c), adapting the LV merge criterion is not trivial when
+multiple modalities must be taken into account.
+After a thorough analysis of these questions, we in-
+troduced a new graph-based over-segmentation algo-
+rithm for 3D point clouds. Our new Point Cloud Local
+Variation (PCLV) algorithm is generic in the sense that
+it is sensor independent and may be applied to any 3D
+point cloud data.
+An extensive empirical comparison of the PCLV al-
+gorithm on cluttered indoor scenes from a large Kinect
+dataset was conducted, along with a qualitative evalua-
+tion of the algorithm on outdoor scenes. It was demon-
+strated that PCLV is highly accurate and outperforms
+all of the compared 2D and 3D over-segmentation meth-
+ods. In future work the evaluation may be extended for
+outdoor data. However, as far as we know, there is cur-
+rently no benchmark with annotated segmentations for
+point clouds of outdoor scenes. Therefore future work
+may also focus on creating such a dataset or extend-
+ing the annotations for an existing one, such as KITTI
+(Geiger et al, 2013; Niemeyer et al, 2014).
+The comparison between over-segmentation meth-
+ods demonstrated a tradeoﬀbetween segment regular-
+ity and accuracy. This has been previously addressed
+in the literature (Veksler et al, 2010; Machairas et al,
+2015). Regularity has some advantages, such as an ap-
+proximately equal sized segments, sometimes desirable
+for a speciﬁc application. Its main drawback, however,
+is the lower correlation with the true segments’ bound-
+aries. Furthermore, for the non-regular case, very small
+segments may be attributed to noise and therefore omit-
+ted. This further reduces the size of the output for any
+following application. Future work may focus on im-
+proving the regularity of the PCLV segments.
+One of our interesting ﬁndings was that more com-
+plicated 3D descriptors, such as FPFH, produced less
+accurate results than those obtained using the simple
+
+
+--- Page 13 ---
+
+Graph Based Over-Segmentation Methods for 3D Point Clouds
+13
+Fig. 9: Results of diﬀerent over-segmentation algorithms. (a) human labeled ground truth, (b) VCCS, (c) LV, (d)
+pLV, (e) SLIC, (f) PCLV.
+Fig. 10: Outdoor 3D point cloud and PCLV over-
+segmentation results. (a) The input point cloud after
+ﬁltering and denoising, (b) PCLV over-segmentation
+results for 3500 segments, (c)-(e) enlarged regions of
+the over-segmented 3D point cloud, where the correctly
+clustered points are shown for pedestrians (c), stop light
+poles and sewer covers (d), and building facades and
+signs (e).
+normal vectors. We believe this is due not to the design
+of these descriptors but to their being estimated from
+the data; the more complicated they are, the more bias
+is introduced into the estimation. Further investigation
+of this issue will include attempts to integrate diﬀer-
+Fig. 11: PCLV over-segmentation results. (a) The full
+point cloud from a certain viewpoint, (b) the result-
+ing segments for an enlarged region, showing correctly
+segmented cars.
+ent local geometric descriptors in the over-segmentation
+process, with a focus on the way they are estimated.
+Acknowledgements This work was supported by Magnet
+Omek Consortium, Ministry of Industry and Trade, Israel.
+References
+Achanta R, Shaji A, Smith K, Lucchi A, Fua P,
+S¨usstrunk S (2012) SLIC superpixels compared to
+state-of-the-art superpixel methods. IEEE Transac-
+
+
+--- Page 14 ---
+
+14
+Yizhak Ben-Shabat et al.
+tions on Pattern Analysis and Machine Intelligence
+34(11):2274–82
+Baltaxe M, Meer P, Lindenbaum M (2015) Local Vari-
+ation as a Statistical Hypothesis Test. International
+Journal of Computer Vision 117(2):131–141, 1504.
+06507
+Barla A, Odone F, Verri A (2003) Histogram inter-
+section kernel for image classiﬁcation. Proceedings
+of the International Conference on Image Processing
+2(1):513–516
+Comaniciu D, Meer P (2002) Mean shift: a robust ap-
+proach toward feature space analysis. IEEE Transac-
+tions on Pattern Analysis and Machine Intelligence
+24(5):603–619
+Fahad A, Morris T (2006) A Faster Graph-Based Seg-
+mentation Algorithm with Statistical Region Merge.
+In: International Symposium on Visual Computing,
+Springer Berlin Heidelberg, pp 286–293
+Farabet C, Couprie C, Najman L, LeCun Y (2013)
+Learning Hierarchical Features for Scene Labeling.
+IEEE Transactions on Pattern Analysis and Machine
+Intelligence 35(8):1915–1929
+Felzenszwalb P, Huttenlocher D (1998) Image segmen-
+tation using local variation. Proceedings of the 1998
+IEEE Computer Society Conference on Computer Vi-
+sion and Pattern Recognition pp 98–104
+Felzenszwalb PF, Huttenlocher DP (2004) Eﬃcient
+Graph-Based
+Image
+Segmentation.
+International
+Journal of Computer Vision 59(2):167–181
+Geiger A, Lenz P, Stiller C, Urtasun R (2013) Vi-
+sion meets robotics: The KITTI dataset. The Inter-
+national Journal of Robotics Research 32(11):1231–
+1237
+Geosim (2016) http://www.geosimcities.com
+Gould S, Rodgers J, Cohen D, Elidan G, Koller D
+(2008) Multi-class segmentation with relative loca-
+tion prior. International Journal of Computer Vision
+80(3):300–316
+Grundmann M, Kwatra V, Han M, Essa I (2010) Ef-
+ﬁcient hierarchical graph-based video segmentation.
+In: Proceedings of the IEEE Computer Society Con-
+ference on Computer Vision and Pattern Recogni-
+tion, pp 2141–2148
+Guo Y, Bennamoun M, Sohel F, Lu M, Wan J, Kwok
+NM (2015) A comprehensive performance evaluation
+of 3D local feature descriptors. International Journal
+of Computer Vision 116(1):66–89
+Hoiem D (2007) Recovering surface layout from an im-
+age. International Journal of Computer Vision 75(1)
+Hoppe H, DeRose T, Duchamp T, McDonald J, Stuet-
+zle W (1992) Surface reconstruction from unorga-
+nized points. ACM SIGGRAPH Computer Graphics
+26(2):71–78
+Juneja M, Vedaldi A, Jawahar CV, Zisserman A (2013)
+Blocks that shout: Distinctive parts for scene classi-
+ﬁcation. In: Proceedings of the IEEE Computer So-
+ciety Conference on Computer Vision and Pattern
+Recognition, pp 923–930
+Karpathy A, Miller S, Fei-Fei L (2013) Object discov-
+ery in 3D scenes via shape analysis. In: 2013 IEEE
+International Conference on Robotics and Automa-
+tion, pp 2088–2095
+Ladick´y L, Zeisl B, Pollefeys M (2014) Discriminatively
+trained dense surface normal estimation. In: Euro-
+pean Conference on Computer Vision, Springer In-
+ternational Publishing, Part 5, pp 468–484
+Levinshtein A, Stere A, Kutulakos KN, Fleet DJ,
+Dickinson SJ, Siddiqi K (2009) TurboPixels: fast
+superpixels using geometric ﬂows. IEEE Transac-
+tions on Pattern Analysis and Machine Intelligence
+31(12):2290–2297
+Machairas V, Faessel M, C´ardenas-Pe˜na D, Chabardes
+T, Walter T, Decenci`ere E (2015) Waterpixels. IEEE
+Transactions on Image Processing 24(11):3707–3716
+Malik J (2000) Normalized cuts and image segmen-
+tation. IEEE Transactions on Pattern Analysis and
+Machine Intelligence 22(8):888–905
+Martin D, Fowlkes C, Tal D, Malik J (2001) A database
+of human segmented natural images and its applica-
+tion to evaluating segmentation algorithms and mea-
+suring ecological statistics. In: Proceedings of the
+Eighth IEEE International Conference on Computer
+Vision., IEEE Comput. Soc, pp 416–423
+Meyer F (1994) Topographic distance and watershed
+lines. Signal Processing 38(1):113–125
+Neubert P, Protzel P (2012) Superpixel benchmark and
+comparison. In: Proc. Forum Bildverarbeitung
+Niemeyer J, Rottensteiner F, Soergel U (2014) Con-
+textual classiﬁcation of lidar data and building ob-
+ject detection in urban areas. ISPRS Journal of Pho-
+togrammetry and Remote Sensing 87:152–165
+Oron S, Bar-Hillel A, Levi D, Avidan S (2014) Locally
+orderless tracking. International Journal of Com-
+puter Vision 111(2):213–228
+Papon J, Abramov A, Schoeler M, Worgotter F (2013)
+Voxel cloud connectivity segmentation-supervoxels
+for point clouds. In: Proceedings of the IEEE Confer-
+ence on Computer Vision and Pattern Recognition,
+pp 2027–2034
+Radhakrishna A, Shaji A, Smith K, Lucchi A, Fua
+P, Susstrunk S (2010) Slic superpixels. EPFL, Lau-
+sanne, Switzerland, TechRep 149300
+Rusu RB, Cousins S (2011) 3D is here: Point Cloud
+Library (PCL). In: 2011 IEEE International Confer-
+ence on Robotics and Automation, IEEE, pp 1–4
+
+
+--- Page 15 ---
+
+Graph Based Over-Segmentation Methods for 3D Point Clouds
+15
+Rusu RB, Marton ZC, Blodow N, Dolha M, Beetz M
+(2008) Towards 3D Point cloud based object maps for
+household environments. Robotics and Autonomous
+Systems 56(11):927–941
+Rusu RB, Blodow N, Beetz M (2009) Fast Point Fea-
+ture Histograms (FPFH) for 3D registration. In: 2009
+IEEE International Conference on Robotics and Au-
+tomation, IEEE, pp 3212–3217
+Schoenberg JR, Nathan A, Campbell M (2010) Segmen-
+tation of dense range information in complex urban
+scenes. In: 2010 IEEE/RSJ International Conference
+on Intelligent Robots and Systems, IEEE, pp 2033–
+2038
+Silberman N, Hoiem D, Kohli P, Fergus R, Nathan Sil-
+berman, Derek Hoiem PK, Rob Fergus (2012) Indoor
+segmentation and support inference from RGBD im-
+ages. In: European Conference on Computer Vi-
+sion), Springer Berlin Heidelberg, Part 5, pp 746–760,
+arXiv:1301.3572v2
+Song S, Lee H, Jo S (2014) Boundary-enhanced super-
+voxel segmentation for sparse outdoor LiDAR data.
+Electronics Letters 50(25):1917–1919
+Strom J, Richardson A, Olson E (2010) Graph-based
+segmentation for colored 3D laser point clouds. In:
+2010 IEEE/RSJ International Conference on Intelli-
+gent Robots and Systems, IEEE, pp 2131–2136
+Veksler O, Boykov Y, Mehrani P (2010) Superpixels
+and supervoxels in an energy optimization frame-
+work. In: European Conference on Computer Vision,
+Springer Berlin Heidelberg, Part 5, pp 211–224
+Wang S, Lu H, Yang F, Yang MH (2011) Superpixel
+tracking. International Conference on Computer Vi-
+sion 2(3):1323–1330
+Zhang M, Alhajj R (2006) Improving the graph-based
+image segmentation method. In: Proceedings of the
+International Conference on Tools with Artiﬁcial In-
+telligence, IEEE, pp 617–624

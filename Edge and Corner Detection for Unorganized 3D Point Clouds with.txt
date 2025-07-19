@@ -1,0 +1,676 @@
+# Edge and Corner Detection for Unorganized 3D Point Clouds with.pdf
+# Converted: 2025-07-19 12:45:29
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Edge and Corner Detection for Unorganized 3D Point Clouds with.pdf
+# Output: ../layer2_completion/txt/Edge and Corner Detection for Unorganized 3D Point Clouds with.txt
+
+
+--- Page 1 ---
+
+ 
+ 
+Abstract—In this paper, we propose novel edge and corner 
+detection algorithms for unorganized point clouds. Our edge 
+detection method evaluates symmetry in a local neighborhood 
+and uses an adaptive density based threshold to differentiate 3D 
+edge points. We extend this algorithm to propose a novel corner 
+detector that clusters curvature vectors and uses their 
+geometrical statistics to classify a point as corner. We perform 
+rigorous evaluation of the algorithms on RGB-D semantic 
+segmentation and 3D washer models from the ShapeNet dataset 
+and report higher precision and recall scores. Finally, we also 
+demonstrate how our edge and corner detectors can be used as 
+a novel approach towards automatic weld seam detection for 
+robotic welding. We propose to generate weld seams directly 
+from a point cloud as opposed to using 3D models for offline 
+planning of welding paths. For this application, we show a 
+comparison between Harris 3D and our proposed approach on 
+a panel workpiece.  
+I. INTRODUCTION 
+Visual features like edge, corner and texture are widely 
+used in computer vision and robotic perception. They can be 
+detected through low-level cues and then subsequently used 
+for higher level perception tasks. A rapidly growing 
+application is robotic welding which depends on extraction of 
+corners and edges to generate welding paths for the robot. An 
+example of a welding workpiece, known as panel workpiece, 
+is shown in Fig. 1. Existing approaches for such welding tasks 
+are based on offline simulation and planning using 3D CAD 
+models. With the growing demand for automation, alternative 
+solutions are required that are more open to adaptation to 
+previously unseen and complicated welding tasks.   
+Though a 3D point cloud is more informative as compared 
+to a 2D image, extracting edge and corner features in 3D is 
+much more challenging. In case of edge detection for 
+unorganized 3D point clouds, conventional methods perform 
+surface reconstruction to form a mesh [1, 8, 16, 17] or build a 
+graph [3] to analyze the neighborhood of each point through 
+principal 
+component 
+analysis 
+(PCA). 
+However, 
+reconstruction tends to wash out sharp edges and intricate 
+features while graph based methods are computationally 
+expensive [7]. The most recent approach, applicable to 
+unorganized point clouds, is based on discriminative learning 
+[2]. The authors train a random forest based binary classifier 
+on a set of features that learn to classify points into edge 
+versus non-edge points. One drawback of their method is poor 
+performance on unseen data.  
+Real-time state-of-the-art methods for 3D edge detection 
+are much more efficient for organized point clouds [5, 6]. This 
+is due to the fast nearest neighbor search that can be 
+performed in an organized structure and makes them suitable 
+ 
+Syeda Mariam Ahmed1 and Chee Meng Chew1 are with the Department of 
+Mechanical Engineering, National University of Singapore (email: 
+mpesyed@nus.edu.sg ). Yan Zhi Tan2 and Abdullah Al Mamun2 are with the 
+ 
+Fig. 1. Demonstration of our edge and corner detectors on 3D pointcloud of 
+panel workpiece.  
+for real-time applications. However, their fast speed is a result 
+of the nearest neighbor search in a regular 3D grid and thus 
+their performance is restricted to organized point clouds.    
+ Similarly corner detection methods in 3D are often an 
+extension of 2D techniques [9] and require an organized 
+structure or a depth image for detection [12]. Additionally, 
+various keypoint detection algorithms exist in 3D, 
+however,they aim to find stable and repeatable points that are 
+not directly on the edge [10, 11]. Thus it is not possible to use 
+such methods for accurate corner detection.  
+This paper has two main contributions: the first is a new 
+edge detection algorithm; second is a novel corner detector. 
+The edge detection method evaluates the level of symmetry 
+in a local region of a 3D point. A main advantage of this 
+approach is that it is independent of surface normals due to 
+which the detected edges show a higher accuracy. We extend 
+the edge detection algorithm to differentiate between line-
+type or sharp features and propose a novel corner detector. 
+Our approach is most similar to the Gauss map clustering 
+method, proposed by Weber [3]. They observe that sharp 
+features separate two or more surfaces and in presence of a 
+discontinuity, the points of a sphere will build more than one 
+distinct cluster. Using a similar intuition, our corner detection 
+approach is also based on clustering of curvature vectors. 
+However the key differences are: 1) we only evaluate edge 
+points in the point cloud, thus reducing the number of points 
+to search for corners. 2) We compare features extracted from 
+the size and average curvature vector associated with each 
+cluster to detect a corner, as opposed to evaluating the number 
+of clusters formed. As a result, our proposed method can 
+detect accurate corners.  
+II. 3D EDGE DETECTION  
+The proposed edge detection method is based on the mean 
+shift algorithm [18] which is a non-parametric iterative 
+Department of Electrical Engineering, National University of Singapore. 
+Fook Seng Wong3 is with Keppel Technology and Innovation, Singapore (e-
+mail: fookseng.wong@komtech.com.sg).  
+Edge and Corner Detection for Unorganized 3D Point Clouds with 
+Application to Robotic Welding  
+Syeda Mariam Ahmed1, Yan Zhi Tan2, Chee Meng Chew1, Abdullah Al Mamun2, Fook Seng Wong 3  
+Detected 
+Edges 
+Detected 
+Corners 
+
+
+--- Page 2 ---
+
+ 
+technique to locate the maximum density/modes of a function 
+in feature space. Our algorithm for edge detection in 3D point 
+cloud uses the same intuition, but instead of finding the local 
+maxima, we evaluate the degree of shift in centroid from its 
+initial position to classify points as edge or non-edge.  
+More formally, we define the approach as follows. Given a 
+query point 𝑝𝑖, we determine its k-nearest neighbors. For an 
+unorganized point cloud, this is achieved through a k-
+dimensional (K-d) tree [13]. For an organized point cloud, the 
+nearest neighbors are all points in a square of size 𝑠, while 𝑝𝑖 
+is the centroid. These neighboring points of 𝑝𝑖 are given as 
+Ѵ𝑖= {𝑛1, 𝑛2, … . 𝑛𝑘 }. Initially we assume that the centroid of 
+Ѵ𝑖 is the query point itself, while a new centroid 𝐶𝑖 is 
+computed by taking the mean of the neighboring points as 
+follows:  
+𝐶𝑖=
+1
+|Ѵ𝑖| ∑
+𝑛𝑗
+𝑘
+𝑗=1
+                                (1) 
+To cater variation in density, we compute the resolution 
+𝑍𝑖(Ѵ𝑖), as defined by (2), of the neighboring points. This is 
+achieved by determining the distance of the nearest neighbor 
+of  𝑝𝑖 among all the k neighbors.  
+𝑍𝑖(Ѵ𝑖) = min
+𝑛∈Ѵ𝑖
+‖𝑝𝑖−𝑛𝑖‖                            (2) 
+‖𝐶𝑖−𝑝𝑖‖ > 𝜆∙𝑍𝑖(Ѵ𝑖)                             (3) 
+Evaluation of 𝑍𝑖 ensures scale invariance as the local density 
+of points is considered for each point individually. Finally, 𝑍𝑖 
+is multiplied by a fixed parameter 𝜆 which serves as the 
+classification threshold. If the distance between the new 
+centroid 𝐶𝑖 and the query point 𝑝𝑖 is greater than this threshold 
+times 𝑍𝑖(Ѵ𝑖) as defined by (3), the point is classified as an 
+edge.  
+Fig. 2 illustrates the concept behind the proposed approach 
+on a partial view of the Stanford bunny model. It can be seen 
+that the neighboring points Ѵ𝑖 (shown in green) of the query 
+point 𝑝𝑖 (shown in red), do not have a symmetrical circular 
+shape, but rather ends abruptly at the edge. This results in a 
+larger shift in the position of the centroid 𝐶𝑖 (shown in blue). 
+As opposed to this, a point on a smoother surface will have a 
+shift in centroid position that is comparatively small. This 
+fundamental idea of symmetry among neighboring points can 
+enable quick classification of 3D data. 
+The only variable parameters in the algorithm are k and 𝜆, 
+that determine the number of nearest neighbors and the 
+classification threshold, both of which can be easily tuned for 
+any point cloud. For data with lower signal to noise ratio, a 
+higher value of k and 𝜆 will be required and vice versa.  
+III. CORNER DETECTION 
+Efficient corner detection algorithms are the basis for many 
+vision based applications. A 3D corner can be defined at the 
+intersection of two or more edges. Theoretically, there should 
+not be ambiguity in the location of the corner as it is spatially 
+constrained, however noisy point clouds can make it difficult 
+to accurately localize the corner point. To this end we propose 
+a novel corner detector for 3D point clouds.   
+The corner detection algorithm is mathematically 
+formulated as follows. Given a point cloud 𝒫, we detect edges  
+using the method described in Section II. As a result the data  
+Fig. 2. Demonstration of shift in centroid for edge and non-edge points for a 
+partial view of the Stanford bunny model. The query point 𝑝𝑖 is shown in red, 
+the neighboring points Ѵ𝑖 are shown in green and the new centroid 𝐶𝑖 is shown 
+in blue.  
+points are classified as edge 𝐸, and non edge points 𝒩 such 
+that 𝒫= (𝐸, 𝒩). For all points in 𝐸, we compute their 
+curvature defined by the Eigenvector 𝑒 of the smallest 
+Eigenvalue, 𝜆1, determined from the covariance tensor 𝛴𝐸 of 
+the neighboring points in 𝐸. The covariance tensor used is a 
+weighted linear combination of neighboring points proposed 
+by [19]. The covariance tensor is defined as follows:  
+𝛴𝐸=
+1
+∑(𝑅−𝑑𝑖) ∑
+(𝑅−𝑑𝑖)(𝑝𝑖−𝑝̅)(𝑝𝑖−𝑝̅)𝑇
+𝑛
+𝑖=1
+ ∀ 𝑝 ϵ 𝐸   (4) 
+where 𝑅 is a predefined radius, 𝑑𝑖= ‖𝑝𝑖−𝑝‖2 and 𝑝̅ is the 
+centroid of the neighboring points 𝑝 ϵ 𝐸. The advantage of 
+this tensor is that it assigns smaller weights to distant points 
+so as to increase repeatability in presence of clutter.  
+Next, for each point 𝑝𝑖 𝜖 𝐸, we find its k nearest neighbors 
+from 𝐸 defined as follows: 
+𝒦= {𝑢1, 𝑢2, … . 𝑢𝑘 }   𝑢 ϵ 𝐸, |𝒦| = 𝑘              (5) 
+Since corners in 3D may exist at the intersection of numerous 
+edges, we assume to be dealing only with objects where the 
+corners lie at intersection of either two or three edges. Thus it 
+is important to distinguish between the type of corner, so as to 
+define the required number of clusters. This check is 
+performed by evaluating the maximum variation in Euclidean 
+distance within each of the x, y and z directions as follows: .  
+𝑁(𝒦𝑖)
+{  
+  
+  
+ | max
+1<𝑖<𝑘𝑢𝑖(𝑥) −min
+1<𝑖<𝑘𝑢𝑖(𝑥)| > 𝜌
+  | max
+1<𝑖<𝑘𝑢𝑖(𝑦) −min
+1<𝑖<𝑘𝑢𝑖(𝑦)| > 𝜌
+  | max
+1<𝑖<𝑘𝑢𝑖(𝑧) −min
+1<𝑖<𝑘𝑢𝑖(𝑧)| > 𝜌
+            (6) 
+where 𝑁(𝒦𝑖) is the number of clusters for the group of points 
+that belong to 𝒦𝑖 while 𝑢𝑖(𝑥), 𝑢𝑖(𝑦) and 𝑢𝑖(𝑧) are the x, y 
+and z values of each point 𝑢𝑖. 𝜌 is a fixed parameter that 
+determines the minimum variance along each direction to 
+indicate the existence of a corner at that particular location. If 
+the variation in all three directions is above 𝜌, the corner is 
+predicted to be located at the intersection of three edges. 
+Similarly, if the variation is significant in two directions, the 
+given corner will most likely exist at the intersection of two 
+edges. Since our corner detector is based on a clustering 
+approach, this check determines the number of clusters 𝑁, for  
+splitting features. 
+
+
+--- Page 3 ---
+
+ 
+Our features associated with each cluster are 1) size of the 
+cluster and 2) mean curvature vector of the cluster. These are 
+shown in Fig. 3a) and 3b) where a corner of a washer (from 
+the ShapeNet dataset [14]) lies at the intersection of three 
+edges. In this case, since the corner belongs to a regular 
+shaped cuboid, the mean curvature vectors 𝜇𝑖 associated with 
+each cluster should be approximately orthogonal to each 
+other. Thus, an angular variation between curvature vectors of 
+the clusters in this range will indicate existence of such 
+corners.  
+Similarly, the size of clusters is an indication of how far the 
+query point is from the actual corner. Considering the cube in 
+Fig. 3a), a corner point will consist of k-nearest neighbors that 
+have an equally distributed number of points with curvature 
+vectors in three unique directions. The equal sized clusters are 
+shown in red, yellow and purple. When the size of the three 
+clusters is relatively equal, we consider the query point to be 
+close to the actual corner. However, as shown in Fig. 3b), as 
+the query point moves away from the real corner, its k-nearest 
+neighbors will have points that consist of a bias towards a 
+particular curvature direction. Thus, one of the clusters will 
+be comparatively larger than the other two. This indicates that 
+the query point is far away from the actual position of the 
+corner. Thus, these properties can be used to distinguish well 
+localized corners from edge points.        
+Mathematically, we formulate these concepts as follows. 
+Given the number of clusters from our initial condition, the 
+neighboring points 𝑢𝑖 𝜖 𝐸 are partitioned into 𝑁 sets 𝑆=
+{𝑆1, . 𝑆𝑛}, 𝑛= 2, 3 using k-means algorithm, based on the 
+associated curvature vectors 𝑒. K-means algorithm will 
+minimize the within-cluster variance among the curvature 
+vectors which is defined as:  
+min
+𝑠
+∑
+∑
+‖𝑒−𝜇𝑖‖2
+𝑒∈𝑆𝑖
+𝑘
+𝑖=1
+                       (7) 
+where 𝜇𝑖 is the mean of curvature vectors for its respective 
+cluster 𝑆𝑖. The geometrical properties associated with each 
+cluster are their mean curvature vectors 𝜇𝑖 and the size of each 
+cluster 𝑆𝑖. We use these properties to extract two prominent 
+features a) angular variation in 𝜇𝑖 defined as 𝜙𝑖𝑗 in (9) and b) 
+difference in size of the clusters denoted as |𝑆𝑖−𝑆𝑗|. We 
+evaluate the angular variation in curvature between two 
+clusters as follows: 
+𝜙𝑖𝑗= 𝑎𝑡𝑎𝑛2 (‖𝜇𝑖⃑⃑⃑ × 𝜇𝑗
+⃑⃑⃑ ‖, 𝜇𝑖⃑⃑⃑ ∙𝜇𝑗
+⃑⃑⃑ )  𝑖, 𝑗= {1,2,3}, 𝑖≠𝑗    (8) 
+where 𝜇𝑖⃑⃑⃑  and 𝜇𝑗
+⃑⃑⃑  are mean curvature vectors for 𝑆𝑖 and 𝑆𝑗 
+respectively. Thus the feature vector 𝜙𝑖𝑗 represents the 
+angular variation in curvature for all N clusters. The second 
+property is the difference in size of the sets given as |𝑆𝑖−𝑆𝑗| 
+where 𝑖, 𝑗= {1,2,3}, 𝑖≠𝑗. Using these features, we classify 
+the query point 𝑝𝑖 as a corner if it satisfies the following 
+conditions: 
+𝐶(𝑝𝑖) {1, { |𝑆𝑖−𝑆𝑗| < 𝜀,     𝑖, 𝑗= {1,2,3}, 𝑖≠𝑗 
+ 𝜃1 < 𝜙𝑖𝑗< 𝜃2,        𝜃1, 𝜃2 ∈[0, 𝜋]    
+0,         otherwise
+        (9) 
+where 𝐶(𝑝𝑖) = 1 indicates a corner, 𝜀 is a slack variable while 
+𝜃1, 𝜃2 define the allowable range of angular variation between 
+Fig. 3. Demonstration of a corner that lies at the intersection of three edges, 
+a) accurate localization of corner as the size of clusters 𝑺𝑖 is similar and b) 
+poor localization of corner as the yellow cluster is significantly larger. 
+the Eigenvectors. The introduction of the slack variable 𝜀 is 
+meant to add robustness in case of noisy point clouds and 
+allows the flexibility to classify a group of points as corners 
+and finally use their centroid as the true corner.     
+IV. EXPERIMENTAL RESULTS 
+In the first section of our results, we evaluate the proposed 
+algorithm for edge detection against state-of-the-art edge 
+detection algorithms for organized and unorganized point 
+clouds. We demonstrate our results on the RGB-D semantic 
+segmentation dataset [20] for comparison. In the next section 
+we evaluate the repeatability and accuracy of the corner 
+detector on 3D models of washers from the ShapeNet dataset 
+[14]. Finally, we show how the algorithms proposed above 
+can be used to automate welding of a panel workpiece. All 
+experiments described in the following sections are run on an 
+Intel i7-4600M CPU with 2.9 GHz and 8GB RAM. No multi-
+threading or any other parallelism such as OpenMP or GPU 
+was used in our implementation.  
+A. Evaluation of Edge Detection 
+The 3D edge detection algorithm was evaluated using the 
+RGB-D semantic segmentation dataset [20] that is acquired 
+using the Microsoft Kinect device. The dataset provides 3D 
+meshes and yaml files for 16 different scenes that includes 5 
+categories of common grocery products such as packets of 
+biscuits, juice bottles, coffee cans and boxes of salt. We use 
+the 3D meshes to generate ground truth using Meshlab [15] 
+that directly allows edge selection for the dataset. In addition, 
+we use the yaml files to extract organized point clouds for 
+comparative evaluation.   
+We use three edge detection algorithms for comparison [5- 
+7]. We will refer to the first two algorithms as D+HC and 
+D+SC, respectively, throughout the rest of the paper. Both of 
+these algorithms are available online as part of the PCL [4]. 
+Their limitation is that they can only be implemented on 
+organized point clouds. The third method is based on 
+evaluating Eigenvalues of the covariance matrix that is 
+defined by each point’s local neighborhood [7]. We will refer 
+to this algorithm as EV. Unlike the first two methods, this alg- 
+𝑺𝑖 
+𝝁𝒊 
+𝒑𝒊 
+a) 
+b) 
+
+
+--- Page 4 ---
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Fig. 5. Comparison of all four edge detection algorithms on a scene from the RGB-D semantic segmentation dataset where a) ground truth extracted from the 
+mesh of the scene, b) results of edge detection from the proposed approach, c) results of edge detection using EV [7], d) results of edge detection using D+HC 
+[6] and e) results of edge detection using D+SC [5]. 
+ 
+orithm can be implemented on both organized and 
+unorganized point clouds. Finally, we will refer to our 
+proposed edge detection algorithm as MS, Mean Shift based 
+edge detector. 
+Quantitave analysis of the results is performed using the 
+precision and recall estimates. We conduct experiments with 
+a nearest neighborhood of k = {10, 50, 100, and 150} (this 
+parameter is consistent for all algorithms). For the particular 
+dataset, it was observed that best results were obtained for k 
+= 100 for all algorithms. For D+HC and D+SC, the main 
+parameter is the depth discontinuity, d, which is evaluated 
+over the range of 0.0002 < d < 0.5 and 0.0001 < d < 1.5 for 
+each method respectively. In addition, D+SC also requires 
+parameter tuning for Gaussian filter, detectable edge angle 
+and line smoothing parameters. We experimented with 
+Gaussian kernel sizes of {3x3, 7x7, 10x10, 20x20 and 
+40x40}. Similarly we varied edge angle for a range of 
+𝜃 𝜖 {10°, 20°, 25°, 30°, and 40°} while after experimenting 
+with a few different values, the   minimum and maximum line 
+width was kept at 10 and 30 respectively.  
+From our experiments, we obtained the best results at d 
+= 0.0002 and 0.0001 for D+HC and D+SC respectively. 
+Additionally, a Gaussian kernel size of 40x40, 𝜃= 10°  and 
+maximum and minimum line width at 10 and 30 were 
+found to be optimal parameters for the given dataset. For 
+EV, the only variable parameter is the factor of surface 
+variation 𝜎𝑘(𝑝) that is used to distinguish between edge 
+versus non- edge points. This parameter was varied 
+between 0 < 𝜎𝑘(𝑝) < 27 and highest precision was achieved 
+at 𝜎𝑘(𝑝) = 27. Finally, our proposed algorithm MS was 
+evaluated for the threshold parameter varying between 
+0 < 𝜆< 8 and optimal precision was achieved at 𝜆= 8.      
+Precision and recall results for the parameters described 
+above, are shown in Fig. 4. The graph clearly shows that MS 
+has a consistently higher precision and recall as compared to 
+all other algorithms. D+HC shows high precision in a very 
+small range after which it quickly drops. Similarly EV and 
+D+SC demonstrate even lower precision values that indicate 
+a low level of TPs for generally majority of their parameter  
+ 
+ 
+Fig. 4. Precision recall curve for proposed method, EV, D+HC and D+SC, 
+with the fixed parameter of k = 100.  
+range. These results are validated by a visual analysis of 
+detected edges, shown in Fig. 5. It can be seen that EV and 
+D+HC tend to miss out boundary edges, which results in 
+lower precision. Additionally, D+SC generates noisier edges 
+that further reduces TP and increases FP. As opposed to all 
+three algorithms, results from the proposed algorithm are 
+more precise and most similar to the ground truth edges.  
+D+HC and D+SC still demonstrate faster computation 
+times of an average time of 217 ms and 700 ms for one point 
+cloud of size 640x480x3. After downsampling the cloud with 
+a voxel grid leaf size of 0.005x0.005x0.005 and employing 
+Kd tree search with k=100, for unorganized point clouds of 
+size 307,200 points, EV and MS took an average of 4303 ms 
+and 3515 ms respectively. We believe that the code can be 
+optimized to reach much faster computations in future.  
+B. Evaluation of Corner Detector 
+In this section we evaluate the accuracy of the corner 
+detector. For testing we use ten 3D models from the washer 
+category of the ShapeNet dataset [14]. The corners in these 
+3D models are manually labeled using Meshlab.  
+The first experiment analyzes the accuracy of corner 
+detection by varying 𝜀 for various 𝒦 nearest neighbors from 
+the edge cloud 𝐸. For this experiment, the fixed parameters   
+a) 
+b) 
+c) 
+d) 
+e) 
+Precision 
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+1
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+1
+ 
+ 
+D+HC
+D+SC
+MS
+EV
+Recall 
+
+
+--- Page 5 ---
+
+ 
+ 
+Fig. 6 a) Precision recall curve versus 𝜀 for different values of 𝒦 nearest 
+neighbours and b) precision recall curve for variable 𝜀= {1­6}, 30° < 𝜃1 <
+80° and 110° < 𝜃2 < 140°.     
+were 𝜌= 0.005, 𝜃1 = 60° and 𝜃2 = 130° while the variable 
+parameters were 1 < 𝜀< 6 and 𝒦= {15, 20, 30}. As seen 
+from the graph in Fig. 6a, since the washer models are noise 
+free, even a very small value of epsilon results in high 
+precision. This intuitively implies that the constraint of 
+clusters being relatively equal in size holds true and the 
+algorithm is able to detect corners precisely. However, the 
+condition may be too strict to detect all corners. Thus, as slack 
+variable 𝜀 increases to 3, the recall for detection quickly rises 
+to 80%. When the 𝒦 nearest neighborhood is 20-30, a slack 
+of 𝜀= 3 reaches a maximum recall, however, for 𝒦= 15 this 
+value does not improve recall scores. Additionally, it is 
+observed that for the entire parameter range, for 𝒦= 15, 
+recall value continues to be low. This can be logically 
+explained as for 𝒦= 15, if the number of clusters are N = 3, 
+each cluster needs to have 5 points to be an exact corner. In 
+this case, a slack of 3 points will result in a much larger bias 
+in the cluster size with atleast one cluster left with only 2 
+points. This size of a cluster is not significant enough to detect 
+a corner correctly. Thus, for a very small neighborhood, large 
+values for 𝜀 will result in poor performance. On the otherhand, 
+for reasonably large neighborhoods of 𝒦= 20, 30, varying 𝜀 
+by a few points will drastically improve results.  
+In the next experiment, we vary 𝜃1 and 𝜃2 with 𝜀 to show 
+that different types of corners can have a variable variation in 
+their mean curvature values. We vary 30° < 𝜃1 < 80° and 
+110° < 𝜃2 < 140° for 1 < 𝜀< 6 . All other parameters are 
+kept fixed at 𝒦= 20, and  𝜌= 0.005. The precision recall 
+curve is shown in the graph in Fig. 6b which indicates that 
+with a broader range for angular variation, the recall value 
+immediately rises to 100%, ensuring that all types of corners 
+are detected. 
+The corner detection algorithm is currently implemented in 
+MATLAB R2016b and takes an average of 1.5 seconds for a 
+point cloud of 27,000 points. We aim to increase this speed in 
+future by implementing the algorithm in C++.    
+C. Automatic Weld Seam Detection 
+In this section we introduce an application of the proposed 
+algorithms for automation of robotic welding. Traditionally, 
+welding seams (path that the robot follows during welding) 
+for straight line joints are determined by importing an 
+accurately drawn 3D CAD model of the workpiece into a 
+CAD/CAM based software. The software extracts edges and 
+the user is able to select the sequence for the robot to weld the  
+joint. We present a novel approach that is based on detecting 
+edges and corners directly from a point cloud that can be used 
+to generate weld seams, eliminating the requirement of 
+accurate 3D drawing and offline programming.   
+We test our method on 3D pointcloud of panel workpiece, 
+captured using Asus Xtion. The panel workpiece only consist 
+of straight line seams. For experimental evaluation, the point 
+clouds have been cropped at a fixed size of 0.5x0.5x0.5m, to 
+remove the surrounding walls and floor. We label the corners 
+manually in Meshlab for groundtruth. Additionally, we 
+compare our corner detection results with Harris 3D as a 
+baseline, available from PCL.  
+For the proposed corner detector, 𝜌 was fixed at 0.005m, 
+𝜃1 = 60°, 𝜃2 = 140° and 1 < 𝜀< 6 for 𝒦= 20  nearest 
+neighbors. For Harris 3D, we found the optimal threshold to 
+be 0.01 while the radius for search was varied from 0.01 <
+𝑟< 0.03. We observed that highest precision for Harris 3D 
+was achieved at 𝑟= 0.01 but with in a very small parameter 
+shift for 𝑟= 0.03, the precision drops as a high number of 
+FPs are generated. However, recall grows as the algorithm is 
+able to detect almost all corners. As opposed to this, the 
+precision for our proposed algorithm continues to stay high 
+for the entire range of  𝜀 indicating that very few FP corners 
+were generated. Additionally, with a smaller value of 𝜀, only 
+a few corners were detected, however, as 𝜀 is increased, all 
+corners from the workpiece are successfully detected. The 
+precision and recall curve for these parameters is shown in 
+Fig. 7. It can be concluded that our proposed approach can be 
+used to select specific type of corners much more accuarately 
+while the Harris 3D is more suitable for detecting all kinds of 
+sharp features together. Visually, this is demonstrated in Fig. 
+8 where Harris 3D can detect corners but misses out a few 
+desired corners for weld seam generation. On the other hand, 
+our proposed corner detector can detect all desired corners 
+from the panel point cloud.    
+V. CONCLUSION  
+We present a novel edge and corner detection algorithm 
+applicable for unorganized point clouds. We demonstrate 
+comparative evaluations on RGB-D semantic segmentation 
+and 3D washer models from ShapeNet dataset for edge and 
+corner detection respectively. Both of our methods show high 
+accuracy as compared to state-of-the-art algorithms. We also 
+implemented the two algorithms on a 3D pointcloud of panel  
+workpiece, demonstrating that weld seams can be generated  
+without the traditional CAD models.  
+
+
+--- Page 6 ---
+
+ 
+ 
+Fig. 7. Precision recall curve for Harris 3D and proposed corner detector on 
+the panel dataset.   
+ACKNOWLEDGMENT 
+The authors would like to thank the National Research 
+Foundation, Keppel Corporation and National University of 
+Singapore for supporting this research that is carried out in the 
+Keppel-NUS Corporate Laboratory. The conclusions put 
+forward reflect the views of the authors alone, and not 
+necessarily those of the institutions within the Corporate 
+Laboratory.  
+REFERENCES 
+[1] M. Kazhdan and H. Hoppe, “Screened poisson surface reconstruction,” In ACM 
+Transactions on Graphics, vol. 32(3), pp. 29, 2013.  
+[2] T. Hackel, J. D. Wegner, and K. Schindler, “Contour detection in 
+unstructured 3d point clouds,” In Proc. of the IEEE Conference on 
+Computer Vision and Pattern Recognition, pp. 1610-1618, 2016. 
+[3]  C. Weber, S Hahmann and H Hagen, "Sharp feature detection in point 
+clouds." In IEEE Shape Modeling International Conference (SMI), pp. 
+175-186, 2010. 
+[4] R. B. Rusu, and S. Cousins, “3d is here: Point cloud library (pcl),” In 
+IEEE International Conference on Robotics and automation (ICRA), 
+pp. 1-4, 2011.  
+[5] R. Bormann, J. Hampp, M. Hägele, and M. Vincze, “Fast and accurate 
+normal estimation by efficient 3d edge detection,” In IEEE/RSJ 
+International Conference on Intelligent Robots and Systems (IROS), 
+pp. 3930-3937, 2015.  
+[6] C. Choi, A. J. Trevor, and H. I. Christensen, “RGB-D edge detection 
+and edge-based registration,” In IEEE/RSJ International Conference on 
+Intelligent Robots and Systems (IROS), pp. 1568-1575, 2013. 
+[7] D. Bazazian, J. R. Casas, and J. Ruiz-Hidalgo, “Fast and robust edge 
+extraction in unorganized point clouds,” In International Conference on 
+Digital Image Computing: Techniques and Applications (DICTA), pp. 
+1-8, 2015.  
+[8] H. Ni, X. Lin, X. Ning, and J. Zhang, “Edge detection and feature line tracing in 
+3d-point clouds by analyzing geometric properties of neighborhoods,” Remote 
+Sensing, vol. 8(9), pp.710, 2016.  
+[9] C. Harris, C and M. Stephens, “ A combined corner and edge detector,” 
+In Alvey Vision Conference, Vol. 15, No. 50, pp. 10-5244, 1988. 
+[10] E. Mair, G. D. Hager, D. Burschka, M. Suppa and G. Hirzinger, 
+“Adaptive and generic corner detection based on the accelerated 
+segment test,” In European conference on Computer vision (ECCV), 
+pp. 183-196, 2010.  
+[11] T. Fiolka, J. Stückler, D. A. Klein, D. Schulz and S. Behnke, “Sure: 
+Surface entropy for distinctive 3d features,” In International Conference 
+on Spatial Cognition, pp. 74-93, 2012. 
+ 
+Fig. 8. Corner detection for panel workpiece using point clouds captured from 
+Asus Xtion. a) results of corner detection using Harris 3D, b) results of corner 
+detection from the proposed approach, c) manually labelled corners. 
+ 
+[12] B. Steder, R. B. Rusu, K. Konolige and W. Burgard, “NARF: 3D range 
+image features for object recognition,” In IEEE/RSJ International 
+Conference on Intelligent Robots and Systems (IROS), Vol. 44, 2010. 
+[13] M. Greenspan and M. Yurick "Approximate kd tree search for efficient 
+ICP, " pp. 442-448, 2003. 
+[14] A. X. Chang, T. Funkhouser, L. Guibas, P. Hanrahan, Q. Huang, Z. Li, 
+S. Savarese, M. Savva, S. Song, H. Su and J. Xiao, “Shapenet: An 
+information-rich 
+3d 
+model 
+repository,” 
+arXiv 
+preprint 
+arXiv:1512.03012. 
+[15] Cignoni, Paolo, M. Callieri, M. Corsini, M. Dellepiane, F. Ganovelli, 
+and G. Ranzuglia. "Meshlab: an open-source mesh processing tool." In 
+Eurographics Italian Chapter Conference, pp. 129-136. 2008. 
+[16] K. Demarsin, D. Vanderstraeten, T. Volodine, and D. Roose, 
+“Detection of closed sharp edges in point clouds using normal 
+estimation and graph theory,” Computer Aided Design, vol. 39(4), pp. 
+276–283, 2007. 
+[17] P. Benkő, R.R. Martin, and T. Várady, “Algorithms for reverse 
+engineering boundary representation models,” Computer-Aided 
+Design, vol 33(11), pp.839-851, 2001. 
+[18] G. R. Bradski, "Computer vision face tracking for use in a perceptual 
+user interface," 1998. 
+[19] F. Tombari, S. Salti, and L. Di Stefano, “Unique signatures of 
+histograms for local surface description,” In European conference on 
+computer vision (ECCV), pp. 356-369, 2010. 
+[20] F. Tombari, L. Di Stefano, S. Giardino, "Online Learning for Automatic 
+Segmentation of 3D Data", IEEE/RSJ Int. Conf. on Intelligent Robots 
+and Systems (IROS '11), 2011.  
+Corners  
+Ground 
+Truth 
+Proposed 
+Method
+TP Corners  
+Harris 3D 
+FN Corners  

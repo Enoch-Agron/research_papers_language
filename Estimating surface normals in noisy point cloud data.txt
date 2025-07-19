@@ -1,0 +1,1045 @@
+# Estimating surface normals in noisy point cloud data.pdf
+# Converted: 2025-07-19 12:45:30
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Estimating surface normals in noisy point cloud data.pdf
+# Output: ../layer2_completion/txt/Estimating surface normals in noisy point cloud data.txt
+
+
+--- Page 1 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+International Journal of Computational Geometry & Applications
+c⃝World Scientiﬁc Publishing Company
+Estimating Surface Normals in Noisy Point Cloud Data∗
+NILOY J. MITRA
+Stanford Graphics Laboratory, James H. Clark Center, Room S297,
+318 Campus Drive, Stanford, CA 94305 USA
+niloy@stanford.edu
+AN NGUYEN
+Stanford Graphics Laboratory, James H. Clark Center, Room S297,
+318 Campus Drive, Stanford, CA 94305 USA
+anguyen@cs.stanford.edu
+LEONIDAS GUIBAS
+Stanford Graphics Laboratory, James H. Clark Center, Room S293,
+318 Campus Drive, Stanford, CA 94305 USA
+guibas@cs.stanford.edu
+Received 7 July 2003
+Revised 16 November 2003
+Communicated by Joe Mitchell
+In this paper we describe and analyze a method based on local least square ﬁtting
+for estimating the normals at all sample points of a point cloud data (PCD) set, in the
+presence of noise. We study the eﬀects of neighborhood size, curvature, sampling density,
+and noise on the normal estimation when the PCD is sampled from a smooth curve in
+R2 or a smooth surface in R3, and noise is added. The analysis allows us to ﬁnd the
+optimal neighborhood size using other local information from the PCD. Experimental
+results are also provided.
+Keywords: normal estimation; noisy point cloud data; eigen analysis; neighborhood size
+estimation.
+1. Introduction
+Modern range sensing technology enables us to make detailed scans of complex
+objects generating point cloud data (PCD) consisting of millions of points. The data
+acquired is usually distorted by noise arising out of various physical measurement
+processes and limitations of the acquisition technologies.
+∗A preliminary version of this paper appeared in the Proc. of the 19th ACM Symp. on Computa-
+tional Geometry, 2003. The work was supported by NSF CARGO grant 0138456 and a Stanford
+Graduate Fellowship.
+1
+
+
+--- Page 2 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+2
+Niloy J. Mitra, An Nguyen, Leonidas Guibas
+The traditional way to use PCD is to reconstruct the underlying surface model
+represented by the PCD, for example as a triangle mesh, and then apply well known
+methods on that underlying manifold model. However, when the size of the PCD is
+large, such methods may be expensive. To do surface reconstruction on a PCD, one
+would ﬁrst need to ﬁlter out the noise from the PCD, usually by some smoothing
+ﬁlter 15. Such a process may remove sharp features as well, and this may be unde-
+sirable. A reconstruction algorithm, such as those proposed by Amenta et al. 2,4,
+then computes a mesh that approximates the noise free PCD. Both the smooth-
+ing and the surface reconstruction processes may be computationally expensive.
+For certain applications like rendering or visualization, such a computation is often
+unnecessary and direct rendering of PCD has been investigated by the graphics
+community 17,18.
+Alexa et al. 1 and Pauly et al. 17 have proposed to use PCD as a new modeling
+primitive. Algorithms for such a paradigm often require information about the
+normal at each of the points. For example, normals are used in rendering PCD,
+making visibility computation, answering inside–outside queries, etc. Also some
+curve (or surface) reconstruction algorithms 6,7 need to have the normal estimates
+as a part of the input data.
+The normal estimation problem has been studied by various communities such
+as computer graphics, image processing, and mathematics, but mostly in the case
+of manifold representations of the surface. We would like to estimate the normal at
+each point in a PCD, given to us only as an unstructured set of points sampled from
+a smooth curve in R2 or a smooth surface in R3, without any additional manifold
+structure.
+Hoppe et al. 13 proposed an algorithm where the normal at each point is es-
+timated as the normal to the ﬁtting plane obtained by applying the total least
+square method to the k-nearest neighbors of the point. This method is robust in
+the presence of noise due to the inherent low pass ﬁltering. In this algorithm, the
+value of k is a parameter and is chosen manually based on visual inspection of the
+computed estimates of the normals, and diﬀerent trial values of k may be needed
+before a good selection of k is found. Furthermore, the same value of k is used for
+the normal estimation at all points in the PCD ignoring the variation in curvature
+and sampling density along the PCD.
+We note that the accuracy of the normal estimation using a total least square
+method depends on (1) the noise in the PCD, (2) the curvature of the underlying
+manifold, (3) the density and the distribution of the samples, and (4) the neigh-
+borhood size used in the estimation process. In this paper, we make precise such
+dependencies and study the contribution of each of these factors on the normal
+estimation process. This analysis allows us to ﬁnd the optimal neighborhood size to
+be used in the method. The neighborhood size can be computed adaptively at each
+point based on local information, given some estimates about the noise, the local
+sampling density, and bounds on the local curvature. The computational complexity
+of estimating all normals of a PCD with m points is only O(m log m).
+
+
+--- Page 3 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+Estimating Surface Normals in Noisy Point Cloud Data
+3
+1.1. Related Work
+In this section, we summarize some of the previous works that are related to the
+computation of the normal vectors of a PCD. Many current surface reconstruction
+algorithms 2,4,10 can either compute the normals as part of the reconstruction, or
+the normals can be trivially approximated once the surface has been reconstructed.
+As the algorithms require that the input is noise free, a raw PCD with noise needs
+to go through a smoothing process before these algorithms can be applied.
+Fleishman et al. 9 and Jones et al. 14 have independently proposed the use of
+edge-preserving ﬁlters for designing fast feature-preserving mesh denoising tech-
+niques. These methods can be easily extended to PCDs using neighborhood graphs
+to approximate connectivity information. However, these denoising algorithms have
+parameters that have to be manually adjusted for good results.
+The work of Hoppe et al. 13 for surface reconstruction suggests a method to
+compute the normals for the PCD. The normal estimate at each point is done by
+ﬁtting a least square plane to its k-nearest neighbors. The value of k is selected
+experimentally. The same approach has also been adopted by Zwicker et al. 20
+for local surface estimation. Higher order surfaces have been used by Welch and
+Witkin 19 for local parameterization. However, as pointed out by Amenta and
+Bern
+3 such algorithms can fail even in cases with arbitrarily dense set of samples.
+This problem can be resolved by assuming uniformly distributed samples which
+prevents errors resulting from biased ﬁts. As noted before, all these algorithms
+work well even in presence of noise because of the inherent ﬁltering eﬀect. The
+success of these algorithms depends largely on selecting a suitable value for k, but
+usually little guidance is provided for the selection of this crucial parameter.
+1.2. Paper Overview
+In section 2, we study the normal estimation for PCD which are samples of curves
+in R2, and the eﬀects of diﬀerent parameters of the normal estimation algorithm
+on the resulting error. In section 3, we derive similar results for PCD which come
+from surfaces in R3. In section 4, we provide simulations to illustrate the results
+obtained in sections 2 and 3. We also provide an algorithm for using our theoretical
+results on practical data. We conclude in section 5.
+2. Normal Estimation in R2
+In this section, we consider the problem of approximating the normals for a point
+cloud in R2. Given a set of points, which are noisy samples of a smooth curve in R2,
+we can use the following method to estimate the normal to the curve at each of the
+sample points. For each point O, we ﬁnd all the points of the PCD inside a circle
+of radius r centered at O, and then compute the total least square line ﬁtting those
+points. The normal to the ﬁtting line gives us an approximation to the undirected
+normal of the curve at O. Note that the orientation of the normals is a global
+
+
+--- Page 4 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+4
+Niloy J. Mitra, An Nguyen, Leonidas Guibas
+property of the PCD and thus cannot be computed locally. Once all the undirected
+normals are computed, an approximation algorithm like the one suggested by Hoppe
+et al. 13 can be applied to obtain a consistent global orientation for all the normals.
+For the rest of this paper, we only consider the computation of the undirected
+normals.
+We analyze the error of the approximation when the noise is small and the
+sampling density is high enough around O. Under these assumptions, which we will
+make precise later, the computed normal approximates well the true normal. We
+observe that if r is large, the neighborhood of the point cannot be well approximated
+by a line in the presence of local curvature in the data and we may incur large
+error. On the other hand, if r is small, the noise in the data can result in signiﬁcant
+estimation error. We aim for the optimal r that strikes a balance between these
+opposing sources of error.
+2.1. Modeling
+Without loss of generality, we consider O as the origin, and the y-axis to be along
+the normal to the curve at O. We assume that the points of the PCD around O come
+from a segment of a smooth curve (a 1-D topological disk) of bounded curvature.
+More precisely, we assume that the segment of the curve near O is locally a graph
+of a single valued C2 continuous function y = g(x) deﬁned over some interval R
+containing [−r, r], and that |g′′(x)| < κ for all x ∈R where κ is some positive
+constant.
+Let pi = (xi, yi) for 1 ≤i ≤k be the points of the PCD that lie inside a circle of
+radius r centered at O. We assume the following probabilistic model for the points
+pi. Assume that xi’s are instances of a random variable X taking values in [−r, r],
+and yi = g(xi)+ni, where the noise terms ni are independent instances of a random
+variable N. X and N are assumed to be independent. We assume that the noise N
+has zero mean and standard deviation σn, and takes values in [−n, n].
+Using Taylor series, there are numbers ψi, 1 ≤i ≤k such that g(xi) =
+g′′(ψi)x2
+i /2 with |ψi| ≤|xi| ≤r. Let γi = g′′(ψi), then the bounded curvature
+assumption implies that |γi| ≤κ.
+Note that if κr is large, even when there is no noise in the PCD, the normal
+to the best ﬁt line may not be a good approximation to the tangent as shown in
+Figure 1. Similarly, if σn/r is large and the noise is biased, this normal may not be
+a good approximation even if the original curve is a straight line, see Figure 2. In
+order to keep the normal approximation error low, we assume a priori that κr and
+σn/r are suﬃciently small.
+We assume that the samples are evenly distributed; there is a radius r0 > 0
+(possibly dependent on O) so that any neighborhood of size r0 in R contains at
+least two points of the xi’s but no more than some small constant number of them.
+We observe that the number of points k inside any disk of radius r is bounded from
+above by Θ(1)rρ, and also is bounded from below by another Θ(1)rρ, where ρ is
+
+
+--- Page 5 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+Estimating Surface Normals in Noisy Point Cloud Data
+5
+r
+κr2
+Fig. 1. Curvature causes error in the estimated normal
+n
+n
+r
+Fig. 2. Noise causes error in the estimated normal
+the sampling density of the point cloud. Throughout this paper, we use Θ(1) to
+denote some positive constant, and for notational simplicity, diﬀerent appearances
+of Θ(1) may denote diﬀerent constants. We note that distributions satisfying the
+(ϵ, δ) sampling condition proposed by Dey et al. 8 are evenly distributed in our
+sense.
+Under the above assumptions, we would like to bound the normal estimation
+error and study the eﬀects of diﬀerent parameters on the estimation error. The
+analysis involves probabilistic arguments to account for the random nature of the
+noise.
+2.2. Total Least Square Method
+The normal to the total least square ﬁtting line (or hyper-plane) of a set of k
+points pi, 1 ≤i ≤k in Rd for d ≥2 can be obtained by computing the eigenvector
+corresponding to the smallest eigenvalue of the covariance matrix M deﬁned as
+M = 1
+k
+Pk
+i=1 (pi −¯p)(pi −¯p)T
+13, where ¯p = 1
+k
+Pk
+i=1 pi. We observe that M is
+always symmetric positive semi-deﬁnite, and thus M has non-negative eigenvalues
+and non-negative diagonal entries.
+2.3. Eigen-analysis of M
+We can write the 2×2 symmetric matrix M deﬁned in the previous section as
+· m11 m12
+m12 m22
+¸
+. Note that in the absence of noise and curvature, m12 = m22 = 0,
+and thus zero is the smallest eigenvalue of M with [0 1]T as the corresponding
+eigenvector. Under our assumption that the noise and the curvature are small, yi’s
+are small, and thus m12 and m22 are small. Let α = (|m12| + m22)/m11. We would
+like to estimate the smallest eigenvalue of M and its corresponding eigenvector
+when α is small.
+From the Gershgorin Circle Theorem 11 it follows that there is an eigenvalue λ1
+
+
+--- Page 6 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+6
+Niloy J. Mitra, An Nguyen, Leonidas Guibas
+such that |m11 −λ1| ≤|m12|, and an eigenvalue λ2 such that |m22 −λ2| ≤|m12|.
+When α < 1/2, we have that λ1 ≥m11 −|m12| > m22 + |m12| ≥λ2. It follows that
+the two eigenvalues are distinct, and λ2 is the smallest eigenvalue of M. Let [v 1]T
+be the eigenvector corresponding to λ2, then
+· m11 m12
+m12 m22
+¸ · v
+1
+¸
+= λ2
+· v
+1
+¸
+,
+· m11 −λ2
+m12
+¸
+v = −
+·
+m12
+m22 −λ2
+¸
+.
+Thus,
+v = −(m11 −λ2)m12 + m12(m22 −λ2)
+(m11 −λ2)2 + m2
+12
+,
+|v| = |m12|(m11 + m22 −2λ2)
+(m11 −λ2)2 + m2
+12
+≤α(1 + α)
+(1 −α)2 .
+(1)
+Thus, the estimation error, which is the angle between the estimated normal and the
+true normal (which is [0 1]T in this case), is less than tan−1(α(1+α)/(1−α)2) ≈α,
+for small α. Note that we could write the error explicitly in closed form, then
+bound it. Our approach is more complicated, though as we will show later, it can
+be extended to obtain the error bound for the 3D case. To bound the estimation
+error, we need to bound α.
+2.4. Estimating Entries of M
+The assumption that the sample points are evenly distributed in the interval [−r, r]
+implies that, given any number x in that interval, the number of points pi’s satisfy-
+ing |xi −x| ≥r/4 is at least Θ(1)k. It follows easily that m11 = 1
+k
+Pk
+i=1 (xi −¯x)2 ≥
+Θ(1)r2. The constant Θ(1) depends only on the distribution of the random variable
+X.
+For the entries m12 and m22, we use |xi| ≤r and |yi| ≤κr2/2 + n to obtain the
+following trivial bound:
+|m12| =
+¯¯¯¯¯
+1
+k
+k
+X
+i=1
+xiyi −1
+k2
+k
+X
+i=1
+xi
+k
+X
+i=1
+yi
+¯¯¯¯¯
+≤2r(κr2/2 + n) ,
+m22 ≤1
+k
+k
+X
+i=1
+y2
+i
+≤2((κr2/2)2 + n2) .
+
+
+--- Page 7 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+Estimating Surface Normals in Noisy Point Cloud Data
+7
+Thus,
+α ≤Θ(1)
+µ
+κr + n
+r + κ2r2 + n2
+r2
+¶
+≤Θ(1)
+³
+κr + n
+r
+´
+.
+(2)
+This bound illustrates the eﬀects of r, κ and n on the error. For large values of r,
+the error caused by the curvature κr dominates, while for small neighborhoods the
+term n/r dictates the error. Nevertheless, the expression depends on the absolute
+bound n of the noise N. This bound n can be unnecessarily large or unbounded
+for many distribution models of N. We would like to use our assumption on the
+distribution of the noise N to further improve our bound on α.
+Note that,
+|m12| =
+¯¯¯¯¯
+1
+k
+k
+X
+i=1
+xiyi −1
+k2
+k
+X
+i=1
+xi
+k
+X
+i=1
+yi
+¯¯¯¯¯
+≤
+¯¯¯¯¯
+1
+k
+k
+X
+i=1
+(γix3
+i /2 + xini)
+¯¯¯¯¯ +
+¯¯¯¯¯
+1
+k2
+k
+X
+i=1
+xi
+k
+X
+i=1
+(γix2
+i /2 + ni)
+¯¯¯¯¯
+≤κr3 +
+¯¯¯¯¯
+1
+k
+k
+X
+i=1
+xini
+¯¯¯¯¯ + r
+¯¯¯¯¯
+1
+k
+k
+X
+i=1
+ni
+¯¯¯¯¯ .
+Furthermore, under the assumption that X and N are independent, we have
+E[xini] = E[xi]E[ni] = 0 since E[ni] = 0, and Var(xini) = Θ(1)r2σ2
+n since
+Var(ni) = σ2
+n. Let ϵ be some small positive number. Using the Chebyshev Inequal-
+ity 16, the following bound on |m12| holds with probability at least 1 −ϵ:
+|m12| ≤κr3 + Θ(1)
+r
+r2σ2n
+ϵk
++ Θ(1)r
+r
+σ2n
+ϵk
+≤κr3 + Θ(1)
+s
+r2σ2n
+ϵrρ + Θ(1)r
+s
+σ2n
+ϵrρ
+≤κr3 + Θ(1)σn
+r r
+ϵρ .
+(3)
+For reasonable noise models, we also have that:
+m22 ≤1
+k
+k
+X
+i=1
+2(γ2
+i x4
+i /4 + n2
+i )
+≤Θ(1)κ2r4 + Θ(1)σ2
+n .
+
+
+--- Page 8 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+8
+Niloy J. Mitra, An Nguyen, Leonidas Guibas
+2.5. Error Bound for the Estimated Normal
+From the previous estimates of the entries of M, we obtain the following bound on
+α with probability at least 1 −ϵ:
+α ≤c1κr + c2
+σn
+p
+ϵρr3 + c3
+σ2
+n
+r2
+(4)
+for some small positive constants c1, c2, and c3 which depend only on the distribu-
+tion of the points. Note that this bound depends on the standard deviation σn of
+the noise N rather than its magnitude bound n.
+For a given set of parameters κ, σn, ρ, and ϵ, we can ﬁnd the optimal r that
+minimizes the right hand side of the inequality (4). As this optimal value of r is
+not easily expressed in closed form, let us consider a few extreme cases:
+• When there is no curvature (κ = 0) we can make the bound on α arbitrarily
+small by increasing r. For suﬃciently large r, the bound is linear in σn and
+it decreases as r−3/2.
+• When there is no noise, we can make the error bound small by choosing r
+as small as possible, say r = r0.
+• When both noise and curvature are present, the error bound cannot
+be arbitrarily reduced. When the density ρ of the PCD is suﬃciently
+high, α ≤c1κr + (c2 + c3)σ2
+n/r2. This error bound is minimized when
+r = Θ(1)σ2/3
+n
+κ−1/3, in which case α ≤Θ(1)κ2/3σ2/3
+n .
+• When there are both noise and curvature, and the density ρ is suﬃciently
+low, α ≤c1κr + (c2 + c3)σn/
+p
+ϵρr3. This bound is minimized when r =
+Θ(1)(σ2
+n/(ϵρκ2))1/5, in which case, α ≤Θ(1)(κ3σ2
+n/(ϵρ))1/5.
+3. Normal Estimation in R3
+We can extend the results obtained for curves in R2 to surfaces in R3. Given a point
+cloud obtained from a smooth 2-manifold in R3 and a point O on the surface, we
+can estimate the normal to the surface at O as follows: ﬁnd all the points of the
+PCD inside a sphere of radius r centered at O, then compute the total least square
+plane ﬁtting those points. The normal vector to the ﬁtting plane is our estimate of
+the undirected normal at O.
+Given a set of k points pi, 1 ≤i ≤k, let M =
+1
+k
+Pk
+i=1(pi −¯p)(pi −¯p)T
+where ¯p = 1
+k
+Pk
+i=1 pi. As pointed out in subsection 2.2, the normal to the total
+least square plane for this set of k points is the eigenvector corresponding to the
+minimum eigenvalue of the covariance matrix M. Again, we would like to bound
+the angle between this eigenvector and the true normal to the surface at O.
+3.1. Modeling
+We model the PCD in a similar fashion as in the R2 case. We assume that O is
+the origin, the z-axis is the normal to the surface at O, and that the points of the
+
+
+--- Page 9 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+Estimating Surface Normals in Noisy Point Cloud Data
+9
+PCD in the sphere of radius r around O are samples of a topological disk on the
+underlying surface that has bounded curvature. We locally represent the surface
+as the graph of a smooth single valued C2 continuous function z = g(x) where
+x = [x, y]T . Using Taylor Theorem, we can write g(x) = 1
+2xT Hx where H is the
+Hessian of g at some point ψ such that |ψ| ≤|x|.
+The assumption that the surface has bounded curvature in some neighborhood
+around O implies that there exists a positive constant κ such that the Hessian H
+of g satisﬁes ||H||2 ≤κ in that neighborhood.
+We write the points pi as pi = (xi, yi, zi) = (xi, zi). We assume that zi =
+g(xi) + ni, where the ni’s are independent instances of some random variable N
+with zero mean and standard deviation σn. We similarly assume that the points
+xi’s are evenly distributed in the xy-plane on a disk D of radius r centered at O,
+i.e. there is a radius r0 such that any disk of size r0 inside D contains at least three
+points among the xi’s but no more than some small constant number of them. We
+also assume that the noise and the surface curvature are both small.
+3.2. Eigen-analysis in R3
+We write the covariance matrix M as
+
+
+m11 m12 m13
+m12 m22 m23
+m13 m23 m33
+
+≜
+· M11 M13
+M T
+13 m33
+¸
+. As pointed
+out in subsection 2.2, M is symmetric and positive semi-deﬁnite. Under the assump-
+tion that the noise and the curvature are small, and that the points xi are evenly
+distributed, m11 and m22 are the two dominant entries in M. We assume, without
+loss of generality, that m11 ≤m22. Let α = (|m13| + |m23| + m33)/(m11 −|m12|).
+As in the R2 case, we would like to bound the angle between the computed normal
+and the true normal to the point cloud in term of α.
+Denote by λ1 ≤λ2 the eigenvalues of the 2 × 2 symmetric matrix M11. Using
+again the Gershgorin Circle Theorem, it is easy to see that m11 −|m12| ≤λ1 ≤
+λ2 ≤m22 + |m12|.
+Let λ be the smallest eigenvalue of M. From the Gershgorin Circle Theorem
+we have λ ≤|m13| + |m23| + m33 = α(m11 −|m12|) ≤αλ1. Let [vT 1]T be the
+eigenvector of M corresponding to the eigenvalue λ. Then, as with Equation (1),
+we have that:
+v = −
+¡
+(M11 −λI)2 + M13M T
+13
+¢−1 ((M11 −λI)M13 + M13(m33 −λ))
+= −(M11 −λI)−2 ¡
+I + (M11 −λI)−2M13M T
+13
+¢−1 ×
+((M11 −λI)M13 + M13(m33 −λ)) ,
+||v||2 ≤||(M11 −λI)−2||2
+¯¯¯
+¯¯¯
+¡
+I + (M11 −λI)−2M13M T
+13
+¢−1¯¯¯
+¯¯¯
+2 ×
+(||(M11 −λI)||2||M13||2 + ||M13||2|m33 −λ|) .
+
+
+--- Page 10 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+10
+Niloy J. Mitra, An Nguyen, Leonidas Guibas
+Note that,
+||(M11 −λI)−2M13M T
+13||2 ≤||(M11 −λI)−2||2||M13||2||M T
+13||2
+≤(λ1 −λ)−2(m2
+13 + m2
+23)
+≤(1 −α)−2α2 .
+Thus,
+¯¯¯
+¯¯¯
+¡
+I + (M11 −λI)−2M13M T
+13
+¢−1¯¯¯
+¯¯¯
+2 ≤
+1
+1 −(1 −α)−2α2
+≤(1 −α)2
+1 −2α .
+It follows that:
+||v||2 ≤
+1
+(1 −α)2λ2
+1
+(1 −α)2
+1 −2α (λ2αλ1 + αλ1αλ1)
+≤α(1 + α)
+1 −2α
+λ2
+λ1
+.
+When α is small, the right hand side is approximately (λ2/λ1)α, and thus the
+angle between the computed normal and the true normal, tan−1 ||v||2, is approxi-
+mately bounded by (λ2/λ1)α ≤((m22 + |m12|)/(m11 −|m12|))α.
+3.3. Estimation of the entries of M
+As in the R2 case, from the assumption that the samples are evenly distributed, we
+can show that Θ(1)r2 ≤m11, m22 ≤r2. We can also show that m33 ≤Θ(1)κ2r4 +
+Θ(1)σ2
+n. Let ρ be the sampling density of the PCD at O, then k = Θ(1)ρr2. Again,
+let ϵ be some small positive number. Using the Chebyshev inequality, we have that
+m13, m23 ≤Θ(1)κr3 + Θ(1)σnr/
+√
+ϵk ≤Θ(1)κr3 + Θ(1)σn/√ϵρ with probability at
+least 1 −ϵ. For the term m12, we note that E[xiyi] = 0 and V ar(xiyi) = Θ(1)r4,
+and so, by the Chebyshev inequality, m12 ≤Θ(1)r/√ϵρ with probability at least
+1 −ϵ.
+3.4. Error Bound for the Estimated Normal
+Let β = m12/m11. We restrict our analysis to the cases when β is suﬃciently less
+than 1, say β < 1/2. This restriction simply means that the points xi’s are not
+degenerate, i.e. not all of the points xi’s are lying on or near any given line on the
+xy-plane. With this restriction, it is clear that (λ2/λ1)α ≤(m22/m11)((1 + β)/(1 −
+β))α = Θ(1)α.
+From the estimations of the entries of M, we obtain the following bound with
+probability at least 1 −ϵ:
+λ2
+λ1
+α ≤Θ(1)κr + Θ(1)
+σn
+r2√ϵρ + Θ(1)κ2r2 + Θ(1)σ2
+n
+r2
+≤Θ(1)κr + Θ(1)
+σn
+r2√ϵρ + Θ(1)σ2
+n
+r2 .
+
+
+--- Page 11 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+Estimating Surface Normals in Noisy Point Cloud Data
+11
+This is an approximate bound on the angle between the estimated normal and
+the true normal. To minimize this error bound, it is clear that we should pick
+r =
+µ 1
+κ
+µ
+d1
+σn
+√ϵρ + d2σ2
+n
+¶¶1/3
+,
+(5)
+for some constants d1, d2. The constants d1 and d2 are small and they depend only
+on the distribution of the PCD.
+We notice from the above result, when there is no noise, we should pick the radius
+r to be as small as possible, say r = r0. When there is no curvature, the radius
+r should be as large as possible. When the sampling density is high, the optimal
+value of r that minimizes the error bound is approximately r = d1/3
+2
+(σ2
+n/κ)1/3. This
+result is similar to that for curves in R2, and it is not that intuitive.
+4. Experiments
+In this section, we describe simulations to validate our theoretical results. We then
+show how to use the theoretical results to obtain good neighborhood sizes for the
+normal computation using the least square method.
+4.1. Validation
+We consider a family of PCDs whose points are noisy samples of the curves
+(x, κx3/6), for x ∈[−1, 1] for diﬀerent choices of κ. We estimate the normals to
+the curves at the origin by applying the least square method on their correspond-
+ing PCD. As the y-axis is known to be the true normal to the curves, the angles
+between the computed normals and the y-axis give the estimation errors.
+To obtain the PCDs in our experiments, we let the sampling density ρ be 100
+points per unit length, and x to be uniformly distributed in the interval [−1, 1].
+The y-components of the data have been polluted with uniformly random noise in
+the interval [−n, n], for some value n.
+Figure 3(a) shows the error as a function of the neighborhood size r when
+n = 0.05 for three diﬀerent values of κ, κ = 0.4, 0.8, and 1.2. As predicted by Equa-
+tion (4) for large values of r, the error increases as r increases. In the experiments,
+it can be seen that the error increases as κr for r > 0.4.
+Figure 3(b) shows the estimation error as a function of the neighborhood size
+r for small r when κ = 1.2 for three diﬀerent values of n, n = 0.017, 0.033, and
+0.05. We observe that the error tends to decrease as r increases for r < 0.15. This
+is expected as from Equation (4), the bound on the error is a decreasing function
+of r when r is small. To factor out the random eﬀect of noise, the estimation error
+curves have been averaged over 50 runs of the experiment.
+4.2. Estimating Neighborhood Size for the Normal Computation
+In this section, we use the results obtained in Section 3 to estimate the normals at
+all the sample points of a PCD. The data points in the PCD are assumed to be noisy
+
+
+--- Page 12 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+12
+Niloy J. Mitra, An Nguyen, Leonidas Guibas
+0
+0.1
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+1
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+Radius
+Error Angle
+0.4
+0.8
+1.2
+(a) Error due to curvature dominates for r >
+0.4. The error–curves behave similarly for
+diﬀerent choices of κ.
+0
+0.1
+0.2
+0.3
+0.4
+0.5
+0.6
+0
+0.05
+0.1
+0.15
+0.2
+0.25
+0.3
+0.35
+0.4
+0.45
+0.5
+Radius
+Error Angle
+0.017
+0.033
+0.05
+(b) Error due to noise dominates for r <
+0.15. The error–curves behave similarly un-
+der diﬀerent amounts of noise.
+Fig. 3. Eﬀects of curvature and noise on estimation error for diﬀerent choices of r.
+samples of a smooth surface in R3. This is the case, for example, for PCD obtained
+by range scanners. We would like to use Equation (5) to obtain the neighborhood
+size for the normal computation using the least square method.
+We assume that the standard deviation σn of the noise has been provided as
+a part of the input. We estimate the other local parameters in Equation (5), then
+compute r. Note that this value of r minimizes the bound of the normal computation
+error, and there is no guarantee that this would minimize the error itself. The
+constants d1 and d2 in the equation depend on the sampling distribution of the
+PCD. While we can attempt to compute the exact values of d1 and d2, we try to
+estimate the values of d1 and d2.
+Given a PCD, we estimate the local sampling density ρ as follows. For a given
+point p in the PCD, we use the approximate nearest neighbor library ANN 5 to
+ﬁnd the distance s from p to its k0-th nearest neighbor for some small number k0.
+The local sampling density at p can then approximated as ρ = k0/(πs2) samples
+per unit area.
+To estimate the maximum local curvature κ, we use the method proposed by
+Gumhold et al. 12. Let pj, 1 ≤j ≤k be the k-nearest sample points around p,
+and let µ be the average distance from p to all the points pj. We compute the best
+ﬁt least square plane for those k points, and let d be the distance from p to that
+best ﬁt plane. The local curvature at p can then be approximated as κ = 2d/µ2.
+This method gives an estimate of the local curvature without any guarantees on
+the approximation quality.
+Once all the parameters are obtained, we compute the neighborhood size r using
+Equation (5). Note that the estimated value of r can be used to obtain a good value
+
+
+--- Page 13 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+Estimating Surface Normals in Noisy Point Cloud Data
+13
+Algorithm 1 Estimates good normals for all the points of a noisy PCD
+1: estimate d1, d2
+2: choose ϵ
+3: for each point p do
+4:
+k ←k0
+5:
+count ←MaxCount
+6:
+repeat
+7:
+rold ≈distance from p to its k-th nearest neighbor
+8:
+ρ ←k/πr2
+old
+9:
+given k, compute κ locally (Gumhold et al. 12)
+10:
+compute rnew using Equation (5)
+11:
+k ←⌈πρr2
+new⌉
+12:
+if k > kthreshold then
+13:
+break
+14:
+end if
+15:
+count ←count −1
+16:
+until count ̸= 0
+17:
+the normal to the least square ﬁt plane to the k-nearest neighbors of p gives
+a good estimate of the normal at p
+18: end for
+for k, which, in turn, can be used to re-estimate the local density and the local
+curvature. This suggests an iterative scheme in which we repeatedly estimate the
+local density, the local curvature, and the neighborhood size. In our experiments,
+we found that only a small number of iterations were enough to obtain good values
+for all the quantities. Algorithm 1 illustrates this iterative scheme. For the following
+experiments, k0 was set to 15, and MaxCount was set to 10. The value of ϵ was
+ﬁxed at 0.1.
+We still have the problem of obtaining good estimates for the constants d1 and
+d2. Fortunately, we only have to estimate the constants once for a given PCD, and
+we can use the same constants for other PCDs with a similar point distribution. We
+used Figure 6(a) for choosing d1 and d2. The PCD was created such that underlying
+model and hence the exact normals at all points (except those on the edges) are
+known. Estimation errors can then be computed exactly at almost all the points
+and this information used to estimate the constants. We found that d1 = 1, d2 = 4
+is a good pair of values and the same pair has been be used for the other data sets.
+Noisy PCD used in our experiments were obtained by adding noise to the original
+data. The x, y, and z components of the noise were chosen independently and
+uniformly random. The magnitude of the added noise was measured in a scale
+where the average spacing between neighboring points in the mesh representation
+of the original data was taken as one unit.
+Figure 4 shows the eﬀects of curvature and noise on the choice of neighborhood
+
+
+--- Page 14 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+14
+Niloy J. Mitra, An Nguyen, Leonidas Guibas
+(a) 1x noise level
+(b) 2x noise level
+Fig. 4. Eﬀects of curvature and noise on the choice of neighborhood size under diﬀerent amounts
+of noise in the input data. The neighbors determined by Algorithm 1 for a few points on the bunny
+have been highlighted.
+size. The neighborhood of a few points are shown in the ﬁgures. Figure 4(a) demon-
+strates that bigger neighborhoods have been selected in ﬂatter regions compared
+to neighborhoods in regions with more local curvature. Figure 4(b), in compari-
+son to Figure 4(a), shows that a higher noise level results in selection of larger
+neighborhoods.
+(a) 1x noise level
+(b) 2x noise level
+Fig. 5. Normal estimation errors for the bunny PCD with noise added. Points with more than 5◦
+estimation error have been highlighted.
+We compute the normals of the noisy PCD, and use the angles between those
+normals and the normals of the original PCD as estimates of the normal compu-
+
+
+--- Page 15 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+Estimating Surface Normals in Noisy Point Cloud Data
+15
+tation errors. The normals computed from the mesh representation of the original
+data set are considered to be the true normals. The mesh representation of the
+original data sets is not available to Algorithm 1. In Figure 5, we highlight the
+points with estimation error more than 5◦under two diﬀerent amounts of noise.
+Figure 6 shows the performance of the algorithm under diﬀerent noise condi-
+tions. In Figure 6(c), we observe that even in presence of signiﬁcant noise, the
+algorithm performs well in ﬂat faces of the object. As noted before, since the un-
+derlying surface model is known for this PCD, the true normals used for computing
+the estimation errors, are speciﬁed at almost all the points.
+(a) 1x noise
+(b) 2x noise
+(c) 4x noise
+Fig. 6. Performance of the algorithm under various noisy conditions. Points with more than 5◦
+estimation error have been highlighted.
+5. Conclusions
+We have analyzed the method of least square ﬁtting to a neighborhood in estimat-
+ing the normals to a point cloud data derived either from a smooth curve in R2
+or a smooth surface in R3, with noise added. In both cases, we provided theoret-
+ical bounds on the maximum angle between the estimated normal and the true
+normal of the underlying manifold. This theoretical study allowed us to ﬁnd an
+optimal neighborhood size to be used in the least square method. Application of
+the theoretical study on practical data resulted in satisfactory behavior.
+6. Acknowledgments
+We are grateful to Tamal K. Dey for his remarks and suggestions. Special thanks
+to Marc Levoy, Ron Fedkiw for their feedback and comments.
+We also want to thank the numerous referees of the previous versions of this
+paper for their extremely useful suggestions.
+
+
+--- Page 16 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+16
+Niloy J. Mitra, An Nguyen, Leonidas Guibas
+References
+1. Marc Alexa, Johannes Behr, Daniel Cohen-Or, Shachar Fleishman, David Levin, and
+Claudio T. Silva. Point set surfaces. In Proceedings of the Conference on Visualization,
+pages 21–28. IEEE Computer Society, 2001.
+2. N. Amenta, S. Choi, T. K. Dey, and N. Leekha. A simple algorithm for homeomorphic
+surface reconstruction. In Proceedings of the Symposium on Computational Geometry,
+pages 213–222. ACM Press, 2000.
+3. Nina Amenta and Marshall Bern. Surface reconstruction by voronoi ﬁltering. In Pro-
+ceedings of the Symposium on Computational Geometry, pages 39–48, 1998.
+4. Nina Amenta, Marshall Bern, and Manolis Kamvysselis. A new Voronoi-based surface
+reconstruction algorithm. Computer Graphics, 32(Annual Conference Series):415–421,
+1998.
+5. Sunil Arya, David M. Mount, Nathan S. Netanyahu, Ruth Silverman, and Angela Y.
+Wu. An optimal algorithm for approximate nearest neighbor searching ﬁxed dimen-
+sions. Journal of the ACM, 45(6):891–923, 1998.
+6. Jean-Daniel Boissonnat and Frederic Cazals. Smooth surface reconstruction via nat-
+ural neighbour interpolation of distance functions. In Proceedings of the Symposium
+on Computational Geometry, pages 223–232, 2000.
+7. J. C. Carr, R. K. Beatson, J. B. Cherrie, T. J. Mitchell, W. R. Fright, B. C. McCallum,
+and T. R. Evans. Reconstruction and representation of 3d objects with radial basis
+functions. In Proceedings of the 28th Annual Conference on Computer Graphics and
+Interactive Techniques, pages 67–76. ACM Press, 2001.
+8. T. K. Dey, J. Giesen, S. Goswami, and W. Zhao. Shape dimension and approximation
+from samples. In Proceedings of the Symposium on Discrete Algorithms, pages 772–
+780, 2002.
+9. Shachar Fleishman, Iddo Drori, and Daniel Cohen-Or. Bilateral mesh denoising. ACM
+Transactions on Graphics (TOG), 22(3):950–953, 2003.
+10. Stefan Funke and Edgar A. Ramos. Smooth-surface reconstruction in near-linear time.
+In Proceedings of the Symposium on Computational Geometry, pages 781–790. Society
+for Industrial and Applied Mathematics, 2002.
+11. Gene H. Golub and Charles F. Van Loan. Matrix computations (3rd ed.). Johns Hop-
+kins University Press, 1996.
+12. S. Gumhold, X. Wang, and R. MacLeod. Feature extraction from point clouds. In
+10th International Meshing Roundtable, Sandia National Laboratories, pages 293–305,
+October 2001.
+13. Hugues Hoppe, Tony DeRose, Tom Duchamp, John McDonald, and Werner Stuet-
+zle. Surface reconstruction from unorganized points. Computer Graphics, 26(2):71–78,
+1992.
+14. Thouis R. Jones, Fr´edo Durand, and Mathieu Desbrun. Non-iterative, feature-
+preserving mesh smoothing. ACM Transactions on Graphics (TOG), 22(3):943–949,
+2003.
+15. In-Kwon Lee. Curve reconstruction from unorganized points. Computer Aided Geo-
+metric Design, 17(2):161–177, 2000.
+16. A. Leon-Garcia. Probability and Random Processes for Electrical Engineering. Addi-
+son Wesley, 1994.
+17. Mark Pauly, Richard Keiser, Leif P. Kobbelt, and Markus Gross. Shape modeling
+with point-sampled geometry. ACM Transaction on Graphics, 22(3):641–650, 2003.
+18. Szymon Rusinkiewicz and Marc Levoy. Qsplat: a multiresolution point rendering sys-
+tem for large meshes. In Proceedings of the 27th Annual Conference on Computer
+Graphics and Interactive Techniques, pages 343–352. ACM Press/Addison-Wesley
+
+
+--- Page 17 ---
+
+January 23, 2004
+15:13
+WSPC/Guidelines
+normalEst
+Estimating Surface Normals in Noisy Point Cloud Data
+17
+Publishing Co., 2000.
+19. William Welch and Andrew Witkin. Free-form shape design using triangulated sur-
+faces. Computer Graphics, 28(Annual Conference Series):247–256, 1994.
+20. Matthias Zwicker, Mark Pauly, Oliver Knoll, and Markus Gross. Pointshop 3d: an
+interactive system for point-based surface editing. In Proceedings of the 29th Annual
+Conference on Computer Graphics and Interactive Techniques, pages 322–329. ACM
+Press, 2002.

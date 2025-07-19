@@ -1,0 +1,1086 @@
+# Estimating differential quantities using polynomial fitting of osculating jets.pdf
+# Converted: 2025-07-18 12:58:57
+# Method: pdfplumber
+# Domain: pixel2physics
+# Source: /home/user/vekt/papers/pixel2physics/pdfs/layer2/Estimating differential quantities using polynomial fitting of osculating jets.pdf
+# Output: /home/user/vekt/papers/pixel2physics/dot_txt/layer2/Estimating differential quantities using polynomial fitting of osculating jets.txt
+
+
+--- Page 1 ---
+
+ComputerAidedGeometricDesign22(2005)121–146
+www.elsevier.com/locate/cagd
+Estimating differential quantities using polynomial fitting of
+osculating jets✩
+F. Cazals∗, M. Pouget
+INRIASophia-Antipolis,2004routedesLucioles,F-06902Sophia-Antipolis,France
+Received14October2003;receivedinrevisedform30September2004;accepted30September2004
+Availableonline14October2004
+Abstract
+This paper addresses the point-wise estimation of differential properties of a smooth manifold S—a curve in
+theplaneorasurfacein3D—assumingapointcloudsampledoverS isprovided.Themethodconsistsoffitting
+thelocalrepresentationofthemanifoldusingajet,andeitherinterpolationorapproximation.Ajetisatruncated
+Taylorexpansion,andtheincentiveforusingjetsisthattheyencodealllocalgeometricquantities—suchasnormal,
+curvatures,extremaofcurvature.
+On the way to using jets, the question of estimating differential properties is recasted into the more general
+framework of multivariate interpolation/approximation,a well-studied problem in numericalanalysis. On a the-
+oreticalperspective,we proveseveralconvergenceresultswhenthesamplesgetdenser.Forcurvesandsurfaces,
+theseresultsinvolveasymptoticestimateswithconvergenceratesdependinguponthedegreeofthejetused.For
+theparticularcaseofcurves,anerrorboundisalsoderived.Tothebestofourknowledge,theseresultsareamong
+the firstonesprovidingaccurateestimatesfordifferentialquantitiesoforderthreeandmore.On thealgorithmic
+side,wesolvetheinterpolation/approximationproblemusingVandermondesystems.Experimentalresultsforsur-
+facesofR3 arereported.Theseexperimentsillustratetheasymptoticconvergenceresults,butalsotherobustness
+ofthemethodsongeneralComputerGraphicsmodels.
+2004ElsevierB.V.Allrightsreserved.
+Keywords:Meshes;Pointclouds;Differentialgeometry;Interpolation;Approximation
+✩ AnextendedabstractofthispaperispartoftheSymposiumonGeometryProcessing(SGP),2003.Thispaperprovidesthe
+proofsoftheSGPpaperandalsofeaturesanenhancedexperimentalsection.WorkpartiallysupportedbytheEuropeanProject
+EffectiveComputationalGeometryforCurvesandSurfaces,Shared-costRTD(FETOpen)ProjectNoIST-2000-26473.
+* Correspondingauthor.
+E-mailaddresses:frederic.cazals@inria.fr(F.Cazals),marc.pouget@inria.fr(M.Pouget).
+0167-8396/$–seefrontmatter 2004ElsevierB.V.Allrightsreserved.
+doi:10.1016/j.cagd.2004.09.004
+
+--- Page 2 ---
+
+122 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+1. Introduction
+1.1. Estimatingdifferential quantities
+Several applications from Computer Vision, Computer Graphics, Computer Aided Design or Com-
+putational Geometry require estimating local differential quantities. Examples of such applications are
+surfacesegmentation,surfacesmoothing/denoising,surfacereconstruction,shapedesign.Inanycase,the
+input consists ofapointcloudoramesh.Mostofthetime,estimating firstandsecondorder differential
+quantities,thatisthetangentplaneandcurvature-relatedquantities,issufficient.However,someapplica-
+tionsinvolving shapeanalysisrequireestimatingthirdorderdifferentialquantities (Hallinanetal.,1999;
+Porteous, 2001).
+Given these ubiquitous needs, a wealth of different estimators have been proposed in the vast lit-
+erature of applied geometry (Petitjean, 2001; Goldfeather and Interrante, 2004). Most of these are
+adaptations to the discrete setting of smooth differential geometry results. For example, several def-
+initions of normals, principal directions and curvatures over a mesh can be found in (Taubin, 1995;
+Csàkàny and Wallace, 2000). Ridges of polyhedral surfaces as well as cuspidal edges of the focal sets
+are computed in (Watanabe and Belyaev, 2001). Geodesics and discrete versions of the Gauss-Bonnet
+theorem areconsidered in(PolthierandSchmies,1998).
+Out ofall these contributions, few of them address the question of the accuracy of the estimates pro-
+posed or that of their convergence when the mesh or the sample points get denser. This lack of sound
+theoretical analysis is however a major issue since discrete versions of smooth operators may not con-
+verge, or may converge to unexpected values. Examples of such phenomena are the surface area of a
+mesh which may not converge to that of the discretized surface (Morvan and Thibert, 2002), or the an-
+gular defect at a vertex of a triangulation which usually does not provide any information on the Gauss
+curvature oftheunderlying smoothsurface (Borrellietal.,2002).
+The estimation methods providing convergence guarantees are all concerned with first and second
+orderdifferentialquantities.In(AmentaandBern,1999),anerrorboundisprovedonthenormalestimate
+to asmooth surface sampled according toa criterion involving the skeleton. The surface area of amesh
+and its normal vector field versus those of a smooth surface are considered in (Morvan and Thibert,
+2002). Asymptotic estimates for the normal and the Gauss curvature of a sampled surface for several
+methods are given in (Meek and Walton, 2000). Based upon the normal cycle and restricted Delaunay
+triangulations, anestimate forthesecond fundamental form ofasurface isdeveloped in(Cohen-Steiner
+andMorvan,2003).
+Another striking fact about the estimation of first and second order differential quantities is that for
+plane curves, these quantities are often estimated using the osculating circle, while for surfaces, using
+osculating paraboloids areubiquitous. Whynotosculatingparabolasforcurvesandosculating ellipsoids
+or hyperboloids for surfaces? Answering this question and developing estimation methods providing
+guarantees forthirdandhigherorderestimatesmotivatesthefollowingcontributions.
+1.2. Contributions
+Themaincontributionofthispaperistorecasttheproblemofestimatingdifferentialpropertiestothat
+of fitting thelocal representation ofthe manifold byajet. A jetisatruncated Taylor expansion, and the
+incentive for using jets is that they encode all local geometric quantities—such as normal, curvatures,
+
+--- Page 3 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 123
+extrema ofcurvature. Accurate estimates of thecoefficients ofthe jet therefore translate immediately to
+accurateestimatesofdifferentialquantities.Sincethemethodproposedconsistsofperformingapolyno-
+mialfitting,connectionswiththeclassicalquestionsofinterpolationandapproximationdeserveacareful
+discussion.
+Interpolation isawellstudied topics innumerical analysis. Mostofthetimehowever, theparameter-
+ization domain of interest is a subset of Rn. In particular, convergence results on the coefficients of the
+Lagrange interpolation polynomial versus the Taylor expansion of afunction are proved in(Coatmelec,
+1966;CiarletandRaviart,1972;QuarteroniandValli,1994).Ourresultsdifferfromtheseinseveralcon-
+cerns. On one hand, we are interested in interpolation and approximation over a manifold rather than a
+Euclideandomain.Ontheotherhand,theafore-mentioned papersproveerrorboundswhileweestablish
+asymptoticerrorestimates.Itshouldhoweverbenoticedthatthedominanttermsofthese—asafunction
+ofthesamplingdensity—are thesame.
+Regarding polynomial fitting of differential properties for a surface, our results are closely related to
+(MeekandWalton,2000,Lemma4.1).Inthatpaper,adegreetwointerpolationisusedandanalyzed.We
+generalize thisresultforjetsorarbitrarydegree, underinterpolation andapproximation.
+Tocomplete the description, twocomments arein order. First, itshould emphasized that our focus is
+a local interpolation/approximation problem, that is we are not concerned with the convergence of the
+Lagrange interpolation polynomial to the height function on a whole given set. This problem requires
+specific conditions onthefunction and theposition ofthepoints, asillustrated bytheRunge divergence
+phenomena (Lancaster and Salkauskas, 1986, Chapter 2). Therefore, our study is not to be confused
+with global fitting such as piecewise polynomial fitting encountered in CAD. Second, our focus is on
+the estimation of point-wise differential quantities and not the identification of loci of points exhibiting
+prescribed differential properties—examples ofsuchlociareridges orparabolic lines. Whiletheformer
+problemislocal,thelatterisglobalandthereforefacestheissueofreportinglociwithaglobaltopological
+coherence (Porteous,2001;CazalsandPouget,2004).
+1.3. Paperoverview
+Fundamentals about jets and numerical issues are recalled in Sections 2 and 3. The case of surfaces
+and curves are examined in Sections 4 and 5. Finally, the overall algorithm together with experimental
+resultsarepresented inSections6and7.
+2. Geometricpre-requisites
+2.1. Curvesandsurfaces, heightfunctions andjets
+Itiswellknown(doCarmo,1976;Spivak,1999)thatanyregularembeddedsmooth1 curveorsurface
+canbelocallywrittenasthegraphofaunivariateorbivariatefunctionwithrespecttoanyzdirectionthat
+1 Regular means that the tangent space has dimension one/two for a curve/surface everywhere. Embedded forbids self-
+intersections.Smoothmeansasmanytimesdifferentiableasweneed,typicallyC3orC4.
+
+--- Page 4 ---
+
+124 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+does not belong to the tangent space. Weshall call such a function a height function. Taking an order n
+Taylorexpansion oftheheightfunction overacurveyields:
+f(x)=J (x)+O(xn+1), (1)
+B,n
+with
+J (x)=B +B x+B x2+B x3+···+B xn. (2)
+B,n 0 1 2 3 n
+Similarlyforasurface:
+(cid:1)(cid:2) (cid:2) (cid:3)
+f(x,y)=J (x,y)+O (cid:2) (x,y) (cid:2)n+1 , (3)
+B,n
+with
+(cid:4)n (cid:4)k
+J B,n (x,y)= H B,k (x,y), H B,k (x,y)= B k−j,j xk−jyj. (4)
+k=0 j=0
+NoticethatinEq.(3),thetermO((cid:2)(x,y)(cid:2)n+1)standsfortheremainderinTaylor’smultivariateformula.
+Borrowingtothejargonofsingularitytheory(BruceandGiblin,1992),thetruncatedTaylorexpansion
+J (x) or J (x,y) is called a degree n jet, or n-jet. Since the differential properties of a n-jet match
+B,n B,n
+thoseofitsdefiningcurve/surface uptoordern,thejetissaidtohaveanordercontactwithitsdefining
+curveorsurface.Thisalsoaccountsforthetermosculatingjet—althoughosculating2 wasinitiallymeant
+for2-jets.Thedegreen-jetofacurveinvolvesn+1terms.Forasurface,sincetherearei+1monomials
+of degree i, the n-jet involves N =1+2+···+(n+1)=(n+1)(n+2)/2 terms. Notice that when
+n
+the z direction used is aligned with the normal vector to the curve/surface, one has B =0 or B =
+1 1,0
+B =0. The osculating n-jet encloses differential properties of the curve/surface up to order n, that is
+0,1
+anydifferentialquantityoforderncanbecomputedfromthen-jet.Inparticular,thetangentspacecanbe
+computedfromthe1-jet,thecurvaturerelatedinformation canbeobtainedfromthe2-jet,....Toclarify
+thepresentation, wesummarizeasfollows:
+Definition1.Foragivenpointonacurveorsurfaceandn(cid:1)1:
+• given a coordinate system, the osculating n-jet is the Taylor expansion of the height function trun-
+catedatorder n;
+• theosculatingn-jetisprincipalinagivencoordinatesystemifthelineartermsvanish(i.e.,thez-axis
+is the normal direction of the manifold). Note that this is rather a property of the coordinate system
+whichreadsonthejet;
+• an osculating conic/quadric is a conic/quadric whose 2-jet matches that of the curve/surface (inde-
+pendently ofagivencoordinate system);
+• an osculating conic/quadric is degenerate if the quadratic form this conic/quadric is defined with is
+degenerate (thatistheformdoesnothavefullrank);
+• anosculating conic/quadric isprincipal if,inthegivencoordinate system,itsn-jetareprincipal.
+Degenerateosculating conics/quadrics arespecificcurvesandsurfacessince:
+2 FromtheLatinosculare,tokiss.
+
+--- Page 5 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 125
+Theorem1(Berger, 1987,Chapter15).Thereare9Euclidean conicsand17Euclideanquadrics.
+Observation 1. The degenerate osculating conics to a smooth curve are parabola or lines. The degen-
+erate osculating quadrics to a smooth surface are either paraboloids (elliptic, hyperbolic), parabolic
+cylinders, orplanes.
+Degenerateosculating conicsandquadricsarethereforerespectively 2outof9conicsand4outof17
+quadrics.
+The Monge coordinate system of a curve is defined by its tangent and normal vectors. For a surface,
+the Monge coordinate system is such that the z axis is aligned with the normal and the x,y axis are
+alignedwiththeprincipaldirections.Notethatthen-jetisprincipalintheMongecoordinatesystem.The
+Monge form ofthe curveorsurface atoneofitspoint isthelocal Taylorexpansion ofthecurve/surface
+intheMongecoordinate system.Inthisparticular system,theheightfunction iscalledtheMongeform,
+andletting k ,k standfortheprincipalcurvatures, onehas
+1 2
+(cid:1)(cid:2) (cid:2) (cid:3)
+f(x,y)= 1 (k x2+k y2)+O (cid:2) (x,y) (cid:2)3 . (5)
+1 2
+2
+Fromtheseobservations,thequestionweendedSection1.1withcannowbeanswered.ByTheorem1
+andObservation1,usingageneralconic/quadric oradegenerateonetoapproximateacurveorasurface
+does not make any difference. In both case and up to order two, the local differential properties of the
+curve/surface, degenerate conic/quadric, or full rank conic/quadric are identical. All these local differ-
+ential properties are enclosed is the 2-jet of the manifold. Yet, from a practical point of view, finding a
+conic/quadric requires moreconstrains thanfindingadegenarate onesincethelatter reduces toadegree
+twopolynomialfitting.Noticealsothatthenormaldirectiontothemanifoldbeingaprioriunknown,this
+polynomial fittinghastobeperformedinacoordinate systemwheretheosculating jetis(ingeneral)not
+principal.
+As an example, consider Fig. 1(a,b,c,d). Fig. 1(a) features a curve C and an osculating conic.3 In
+(b), the osculating circle is drawn, in (c), the osculating circle is replaced by the principal osculating
+parabola—whose symmetry axis is the normal to C and whose curvature matches that of C. At last, in
+(d) a general parabola locally approximates C in a coordinate system where the jet is not principal (its
+symmetry axis isnotaligned withthe normalto C). Thislast case illustrates the setting weareworking
+withinthesequel.
+2.2. Interpolation, approximation andrelatedvariations
+Ourmethodology toretrievedifferential quantities consists offittingtheosculating jet.Thefollowing
+variations need to be discussed in order to state our contributions precisely. The case of curves and
+surfaces being tantamount, our description focuses on surfaces. Assume we are given a set of N points
+p (x ,y ,z ), i =1,...,N, in the neighborhood of a given point p on the surface processed. Point p
+i i i i
+itself may or may not be one of the N samples, and one can assume without loss of generality that p is
+located attheoriginofthecoordinate system used.
+3 A point worth noticing is the relative position of C and an osculating curve: the former usually crosses the latter at the
+intersectionpoint.Toseewhy,comparetheorderthreeTaylorexpansionsoftheoftwocurves.
+
+--- Page 6 ---
+
+126 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+(a) (b) (c) (d)
+Fig.1.Acurveand(a)anosculatingellipse,(b)itsosculatingcircle(specialcaseofosculatingconic),(c)itsprincipaldegenerate
+conic,(d)andegenerateosculatingconic:aparabola.
+Interpolation versus approximation. Interpolating consists of finding a polynomial that fits exactly a
+setofdatapoints.InourcaseandfollowingEq.(3),letB indexacoefficientofthejetofthesurface,and
+Aindexacoefficientofthejetsought.4 Weaimatfindingan-jetJ suchthat
+A,n
+(cid:1)(cid:2) (cid:2) (cid:3)
+f(x ,y )=J (x ,y )+O (cid:2) (x ,y ) (cid:2)n+1 =J (x ,y ), ∀i=1,...,N. (6)
+i i B,n i i i i A,n i i
+Approximation, on the other hand, gives up on exactness, that is the graph of the jet sought may not
+contain the sample points. Weshall focus onleast-square approximation, which consists of minimizing
+the sum of the square errors between the value of the jet and that of the function. The quantity to be
+minimizedistherefore
+(cid:4)N (cid:1) (cid:3)
+J (x ,y )−f(x ,y ) 2 . (7)
+A,n i i i i
+i=1
+The two problems can actually be written in the same matrix form. To see why, let us write the jets
+in the polynomial basis consisting of monomials xiyj. Examples of other basis that could be used are
+theBezier–Bernstein basisortheNewtonbasis. Weusethemonomialssincethisbasisisconvenient for
+the asymptotic analysis but also the design of effective algorithms. Denote by A the N -vector of the
+n
+coefficients ofthejetsought, thatis
+A=(A ,A ,A ,...,A )t.
+0,0 1,0 0,1 0,n
+DenotebyZ theN-vectoroftheordinates, i.e.,withz =f(x ,y ),
+i i i
+(cid:1) (cid:1)(cid:2) (cid:2) (cid:3)(cid:3)
+Z=(z ,z ,...,z )t = J (x ,y )+O (cid:2) (x ,y ) (cid:2)n+1 .
+1 2 N B,n i i i i i=1,...,N
+Eqs.(6)and(7)yieldthefollowing N ×N Vandermonde matrix
+n
+M =(1,x i ,y i ,x i 2,...,x i y i n−1,y i n) i=1,...,N . (8)
+For the interpolation case, the number of points matches the number of parameters, so that matrix M is
+square and Eq. (6) can be written as MA=Z. For the approximation case, M is a rectangular N ×N
+n
+matrix,andEq.(7)issummarizedasmin(cid:2)MA−Z(cid:2) .
+2
+Choosing between interpolation and approximation depends upon the problem tackled. For noisy
+datasets,approximationisthemethodofchoice.Otherwise,thealternativedependsoftherelativevalues
+4 Asamnemonic,thereadermaywanttoremindthatindexAstandsfortheAnswertothefittingproblem.
+
+--- Page 7 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 127
+ofthenumberofmodelparameters versus thenumberofavailable points. Ifthetwomatchone-another,
+anaturalchoiceisinterpolation. Inanycase,fittingyieldsalinearsystem,sothatnumericalissuesarise.
+FacingthesedifficultiesisthetopicofSection3.
+Meshormesh-lessmethods. Animportant difference betweenlocalgeometryestimation algorithms is
+whether or not they require some topological information—typically the connectivity of amesh. Mesh-
+based methods are usually faster. Mesh-less techniques are more general and better suited for noisy
+datasets. A difficulty of the latter methods, however, is to select the relevant points used to perform
+the estimates. While one can always resort to heuristics of the k-nearest-neighbors type, user defined
+parameters shouldbeavoided. Thisissueisaddressed inSection6.
+Oneortwostagesmethods. Fittinga2-jetprovidesestimatesofthetangentplaneandthecurvaturere-
+latedinformation. Thesestepscanbecarriedoutsequentially orsimultaneously. Followingtheguideline
+of (Sander and Zucker, 1990), most of the methods already mentioned proceed sequentially. The prov-
+ablygoodalgorithmweproposeproceedssimultaneously. Alongitsanalysis,wealsoprovidetheoretical
+resultsontheaccuracyofsequential methods.
+2.3. Contributions revisited
+Equipped with the language of jets, we can now state our contributions precisely. Consider Eqs. (6)
+and (7). We expect J and J to be equivalent in some sense. To specify this, we shall study the
+A,n B,n
+convergence properties of the coefficients of J when the points p converge to p. More precisely,
+A,n i
+assume that the coordinates of the p are given by p (x =a h,y =b h,z =f(x ,y )). Parameters a
+i i i i i i i i i i
+and b arearbitrary realnumbers, while h specifies that the p uniformly tend totheorigin. Weactually
+i i
+expect
+(cid:1) (cid:3)
+A =B +O r(h) .
+ij ij
+Function r(h) describes the convergence rate or the precision of the fitting, and the main contribution
+of this paper is to quantify r(h) for interpolation and approximation methods. This is done applying
+classical results of numerical analysis. These results are then translated for geometric quantities such
+as normal and curvatures. As we shall see, interpolation or approximation of the same degree yield the
+same convergence rate. The difficulties posed are also similar and are essentially to deal with singular
+matrices. Thisenablethedesignofanalgorithm fortheestimation ofgeometricquantities together with
+someknowledgeaboutthequalityoftheseestimates.
+3. Numericalpre-requisites
+In this section, we recall the fundamentals of the fitting methods used, namely interpolation and ap-
+proximation, together withthenumericalissuesarisingfromtheresolutions.
+3.1. Interpolation
+The interpolation fitting is based upon the Lagrange interpolation, that is the construction of a poly-
+nomial constrained to fit a set of data points. Although this problem is classical for the univariate case,
+
+--- Page 8 ---
+
+128 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+themultivariatecaseisstillanactiveresearchfieldfromboththetheoreticalandcomputationalpointsof
+view.Webrieflyreviewtheunivariate andmultivariate basicsofLagrangeinterpolation.
+Univariate Lagrange interpolation. Let X ={x ,...,x } be n+1 distinct real values, the so-called
+0 n
+nodes. Then, for any real function f, there is a unique polynomial P of degree n so that P(x ) =
+i
+f(x ),∀i =0,...,n. Polynomial P is called the Lagrange interpolation polynomial of f at the nodes
+i
+X. For any choice of distinct nodes, this polynomial exists and is unique, and in that case the Lagrange
+interpolation issaidtobepoised.
+Multivariate Lagrange interpolation. Consider now the following bivariate problem. Let Π
+n
+b(cid:1)e th(cid:3)e
+subspace of bivariate polynomials of total degree equal or less than n, whose dimension is N = n+2 ,
+n n
+and let X ={x ,...,x } consist of N =N values in R2 called nodes. (Notice that N is exactly the
+1 N n
+number of monomials found in the jet of Eq. (3).) The Lagrange interpolation problem is said to be
+poised for X if for any function f :R2→R, there exists a unique polynomial P in Π so that P(x )=
+n i
+f(x ), ∀i =1,...,N.Itisintuitive and wellknownthat this problem ispoised iffthe setofnodes X is
+i
+not a subset of any algebraic curve of degree at most n, or equivalently the Vandermonde determinant
+formed by the interpolation equations does not vanish. Asnoticed in (Sauer and Yuan, 1995), the set of
+nodesforwhichtheproblemisnotpoisedhasmeasurezero,henceitisalmostalwayspoised.
+Howeverletusillustratenon-poisedcasesordegenerateconfigurationsofnodes,togetherwithalmost
+degenerate configurations—a moreprecise definition willbegivenwiththeconditioning inSection 3.3.
+Considerthetwoquadricsq (x,y,z)=2x+x2−y2−zandq (x,y,z)=x2+y2−z,whoseintersection
+1 2
+curve I projects in the (x,y) plane to the conic C(x,y)=0 with C(x,y)=x −y2 (cf. Fig. 2). If one
+tries to interpolate a height function using points on I, uniqueness of the interpolant is not achieved
+since any quadric in the pencil of q and q goes through I. A similar example featuring the four one-
+1 2
+ring and one two-ring neighbors of a point p is depicted on Fig. 3. Notice that being able to figure out
+Fig. 2. Two quadrics whose intersec- Fig.3.TheKite(almost)degenerateconfig-
+tion curve I projects onto the parabola uration—tangentplaneseenfromabove:the
+C: x =y2. Interpolation points located on 6pointsusedforadegreetwointerpolation
+I do not uniquely define an interpolating are (almost) located on a conic, that is two
+heightfunction. intersectinglines.
+
+--- Page 9 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 129
+such configurations is rather a strength than a weakness of the method since a surface is sought and,
+the amount of information available does not determine uniquely such a surface. A first fundamental
+difference between theunivariate and multivariate cases istherefore thecritical issue ofchoosing nodes
+sothattheinterpolation ispoised.
+In the particular case where the points lies on a regular square grid of the plane, the geometry of the
+configuration leadstothefollowingremarks.Ononehand,anon-poised degreeninterpolation occursif
+thepointsliesonnlines,sincetheydefineanalgebraiccurveofdegreen.Onetheotherhand,triangular
+lattices yield poised problems for every degree. These results and further extensions can be found in
+(GascaandSauer,2000)andreferences therein.
+3.2. Leastsquareapproximation
+It is well known that the minimization problem of Eq. (7) has a unique solution iff the matrix M is
+of maximum rank N . In that case, the minimum value ρ is called the residual of the system, that is
+n
+ρ =min(cid:2)MA−Z(cid:2) . The important issue is again the rank of the matrix M. In terms of the relative
+2
+valuesofN versus N ,usingtoomanypointscertainly smoothesoutgeometricfeatures, butalsomakes
+n
+rankdeficientmatriceslesslikely.
+3.3. Numericalissues
+Thedifficulties ofsolving linear andleast-squares systems consist ofdealing withrank-deficient ma-
+trices.Wenowdiscusstheseissuesinmoredetail.Distancesbetweenmatricesandmatrixnormsreferto
+theEuclideannorm.
+Singular systems and condition numbers. Toquantify degeneracies, weresort to a Singular Value De-
+composition (SVD)(Golub and van Loan, 1983). Denote by σ ,...,σ the singular values of M sorted
+n 1
+in decreasing order. It is well known that the least singular value of M is the distance from M to rank
+deficient matrices. The singular values also characterizes the sensitivity of the problem, that is the way
+errorsontheinputdatainduceerrorsonthecomputedsolution.Noticethaterrorsrefertotheuncertainty
+attachedtotheinputdataandnottotheroundingerrorsinherenttothefloatingpointcalculations. Inour
+case,inputdataarethesamplepoints, sothaterrorsaretypically relatedtotheacquisition system—e.g.,
+alaserrangescanner.
+Toquantify theprevious arguments, weresort tothe conditioning orcondition number ofthesystem
+(GolubandvanLoan,1983;Higham,1996).Theconditioning isdefinedasamagnificationfactorwhich
+relatestheafore-mentioned errorsbythefollowingrule:
+Erroronsolution=Erroroninput×conditioning.
+Denoteby
+κ (M)=(cid:2)M(cid:2) (cid:2)M −1(cid:2) =σ /σ
+2 2 2 n 1
+the condition number of the matrix M. The conditioning of the linear problem MX =Z and the least
+squareproblem min(cid:2)MX−Z(cid:2) arerespectively givenby
+2
+(cid:5)
+linearsquaresystem: 2κ (M),
+2
+leastsquaresystem: 2κ (M)+ κ2(M)(κ2(M)+1)ρ withρ=(cid:2)MX−Z(cid:2) theresidual. (9)
+2 (cid:2)M(cid:2)
+2
+(cid:2)X(cid:2)
+2
+2
+
+--- Page 10 ---
+
+130 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+Thefollowingtheorem provides preciseerrorbounds:
+(cid:6)
+Theorem2(Higham,1996,pp.133and392). Suppose X andX arethesolutions oftheproblems
+(cid:5)
+linearsquaresystem: MX=Z and(M +(cid:5)M)X (cid:6)=Z+(cid:5)Z,
+(10)
+leastsquaresystem: min(cid:2)MX−Z(cid:2) and min(cid:2)(M+(cid:5)M)X (cid:6)−(Z+(cid:5)Z)(cid:2) ,
+2 2
+with ε a positive real value such that (cid:2)(cid:5)M(cid:2) (cid:2)ε(cid:2)M(cid:2) , (cid:2)(cid:5)Z(cid:2) (cid:2)ε(cid:2)Z(cid:2) , and εκ (M)<1. Then one
+2 2 2 2 2
+has:
+(cid:2)X−X (cid:6)(cid:2) ε
+2 (cid:2) conditioning. (11)
+(cid:2)X(cid:2) 1−κ (M)ε
+2 2
+In practice, if the conditioning is of order 10a and the relative error on the input is ε≈10−b—with
+εκ (M)<1,thentherelativeerroronthesolution isoforder10a−b.
+2
+Pre-conditioning the Vandermonde system. As already discussed, a convenient way to solve Eqs. (6)
+and (7) consists ofusing thebasis of monomials. Oneends upwiththe Vandermonde matrix ofEq.(8),
+thatcanbesolvedwithusualmethodsoflinearalgebra.Unfortunately, Vandermondesystemsareknown
+to be ill-conditioned due to the change of magnitude of the terms. We therefore pre-condition so as to
+improve the condition number. Assuming the {x }, {y } are of order h, the pre-conditioning consists of
+i i
+performing acolumnscalingbydividingeachmonomial xkyl byhk+l.
+i i
+ThenewsystemisM(cid:6)Y =MDY =ZwithDthediagonalmatrixD=(1,h,h,h2,...,hn,hn),sothat
+the solution A of the original system is A=DY. The condition number used in the sequel is precisely
+κ(M(cid:6)). (Notice it has the geometric advantage to be invariant under homothetic transformations of the
+input points.) Thentheaccuracy ofthe result canbeestimated aposteriori, andalmost degenerate cases
+hight-lighted bylargeconditioning.
+Alternativesfortheinterpolation case. AnalternativetotheVandermondesystemconsistsofusingthe
+basis of Newton polynomials. Resolution of the system can be done using divided differences (Sauer,
+1995), anumerically accurate yetinstable method(Higham,1996).
+4. Surfaces
+4.1. Problemaddressed
+Let S be a surface and p be a point of S. Without loss of generality, we assume p is located at the
+origin and we aim at investigating differential quantities at p. Consider the height function f given by
+Eq. (3) in any coordinate system whose z axis is not in the tangent plane. We shall interpolate S by a
+bivariate n-jetJ (x,y) whosegraphisdenoted Q.
+A,n
+ThenormaltoasurfacegivenbyEq.(3)is
+(cid:7)
+n =(−B ,−B ,1)t/ 1+B2 +B2 . (12)
+S 10 01 10 01
+In order to characterize curvature properties, we resort to the Weingarten map A of the surface also
+called the shape operator, that is the tangent map of the Gauss map. (Recall that the first and second
+
+--- Page 11 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 131
+fundamental forms I,II and A satisfy II(v,v)=I(A(v),v) for any vector v of the tangent space.) The
+principal curvatures and principal directions are the eigenvalues (eigenvectors) of A, and the reader is
+referred to (do Carmo, 1976, Section 3.3). If the z axis is aligned with the normal, the linear terms of
+Eq. (3) vanish, and the second fundamental form reduces to the Hessian of the height function. Further
+simplifications are obtained in the Monge coordinate system, where I =Id , the Hessian is a diagonal
+2
+matrix,andtheprincipal curvatures aregivenby2B and2B .
+20 02
+4.2. Polynomialfittingoftheheightfunction
+We begin by an approximation result on the coefficients of the height function. We focus on the
+convergence rategivenbythevalueoftheexponent ofparameter h.
+Proposition1.Let{(x i ,y i )} i=1,...,N beasetofpointsofR2 definingapoisedpolynomialinterpolationor
+approximation problem of degree n, with x =O(h),y =O(h) (N =N for interpolation and N >N
+i i n n
+forapproximation). LetJ bethepolynomial solution oftheproblem associated tothefunction f that
+A,n
+is,forinterpolation
+J (x ,y )=f(x ,y ), ∀i=1,...,N;
+A,n i i i i
+andforapproximation
+(cid:8) (cid:9)
+(cid:4)N (cid:1) (cid:3)
+J =argmin J (x ,y )−f(x ,y ) 2 .
+A,n A,n i i i i
+i=1
+Thenthecoefficients B k−j,j ofdegreek oftheTaylorexpansion off areestimatedbythoseofJ A,n upto
+accuracy O(hn−k+1):
+A k−j,j =B k−j,j +O(hn−k+1) ∀k=0,...,n, ∀j =0,...,k.
+Moreover, iftheoriginisoneofthechosenpointsandinterpolation isused, thenA =B =0.
+0,0 0,0
+Proof of Proposition 1, interpolation case. Let K be the convex hull of the set {(x i ,y i )} i=1,...,N , d max
+bethediameterof K and d bethesupremum ofthediameter ofdisks inscribed inK.Alsodenote by
+min
+Dk thedifferential oforderk.
+The result is a direct consequence of Theorem 2 of (Ciarlet and Raviart, 1972) or Remark 3.4.2 of
+(Quarteroni andValli,1994), whichstatesthat
+(cid:10)(cid:2) (cid:2) (cid:11)
+sup (cid:2) Dkf(x,y)−DkJ (x,y) (cid:2);(x,y)∈K =O(hn−k+1). (13)
+A,n
+Rephrasing itwithournotations yields:
+(cid:12) (cid:12)
+|B k−j,j −A k−j,j |= j!(k 1 −j)! (cid:12) Dk(f −J A,n ) (0,0) (1,0)k−j(0,1)j (cid:12)
+(cid:10)(cid:12) (cid:12) (cid:11)
+(cid:2)sup (cid:12) Dk(f −J ) (ζ ,...,ζ ) (cid:12);ζ ∈R2,(cid:2)ζ (cid:2)(cid:2)1
+(cid:2) A,n(cid:2)(0,0) 1 k i i
+(cid:2)(cid:2) Dk(f −J ) (cid:2)
+(cid:10)(cid:2) A,n (0,0) (cid:2) (cid:11)
+(cid:2)sup (cid:2) Dkf(x,y)−DkJ (x,y) (cid:2);(x,y)∈K .
+A,n
+For the particular case where the origin is one of the samples, notice that the equation involving the
+point (0,0)isA =f(0,0)=0. (cid:1)
+0,0
+
+--- Page 12 ---
+
+132 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+Asoutlinedbytheproof,theconstanthiddeninthetermO(hn−k+1)dependsuponsup{(cid:2)Dn+1f(x,y)(cid:2);
+(x,y) ∈K}, and the geometry of K. In particular, the estimates are better when the ratio d /d is
+max min
+small,whichintuitively meansthatthesetK isnottoo“flat”.
+Forthe approximation case, the result might be aconsequence of Theorem 5 of(Ciarlet and Raviart,
+1972) formulated in the Sobolev setting. But in order to meet its hypothesis, one must prove that the
+operatorofdiscreteleastsquareapproximationiscontinuous,whichisnotstraightforward.Alternatively,
+wegivethefollowingpedestrian proof.
+Proof of Proposition 1, approximation case. Using the notations introduced in Section 2.2, consider
+the least-square system min(cid:2)MA−Z(cid:2)
+2
+.With the assumption that M isof rank N
+n
+,(cid:13)the approximation
+isequivalent totheinvertible linearsystem MTMA=MTZ.Withthenotation Σk= N xkyl andthe
+l i=1 i i
+assumption (cid:2)(x ,y )(cid:2)=O(h):
+i i
+ 
+B Σ0+B Σ1+B Σ0+··· +B Σ0+O(hn+1)
+0,0 0 1,0 0 0,1 1 0,n n
+  B Σ1+··· +B Σ1+O(hn+2)  
+ 0,0 0 0,n n 
+MTZ=  B 0,0 Σ 1 0+··· +O(hn+2)  ,
+ . . 
+ . . 
+. .
+B Σ0+··· +O(hn+n+1)
+0,0 n
+ 
+Σ0 Σ1 Σ0 ... Σ0
+0 0 1 n
+ 
+Σ1 Σ2 Σ1 ... Σ1 
+ 0 0 1 n 
+MTM =  Σ 1 0 Σ 1 1 Σ 2 0 ... Σ n 0 +1  .
+ 
+. . . . .
+ . . . . . 
+. . . . .
+Σ0 Σ1 Σ0 ... Σ0
+n n n+1 2n
+LetD bedet(MTM),applying theCramer’srulegives:
+ 
+Σ0 ... B Σ0+B Σ1+B Σ0+···+B Σ0+O(hn+1) ... Σ0
+0 0,0 0 1,0 0 0,1 1 0,n n n
+ 
+Σ1 ... B Σ1+···+B Σ1+O(hn+2) ... Σ1 
+ 0 0,0 0 0,n n n 
+A j,k−j =det    Σ 1 0 ... B 0,0 Σ 1 0+···+O(hn+2) ... Σ n 0 +1    (cid:20) D.
+ . . . . . 
+ . . . . . 
+. . . . .
+Σ0 ... B Σ0+···+O(hn+n+1) ... Σ0
+n 0,0 n 2n
+Linearcombinations ofthecolumnsgives:
+ 
+Σ 0 0 ... B j,k−j Σ k j −j +O(hn+1) ... Σ n 0
+ 
+   Σ 0 1 ... B j,k−j Σ k j − + j 1+O(hn+2) ... Σ n 1   (cid:20)
+A j,k−j =det  Σ 1 0 ... B j,k−j Σ k j −j+1 +O(hn+2) ... Σ n 0 +1   D.
+ 
+. . . . .
+ . . . . . 
+. . . . .
+Σ n 0 ... B j,k−j Σ k j −j+n +O(hn+n+1) ... Σ 2 0 n
+The numerator of this formula splits due to the multi-linearity of the determinant, and noticing that
+Σ
+l
+k =O(hk+l)givesA j,k−j =B j,k−j +O(hn−k+1). (cid:1)
+
+--- Page 13 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 133
+With respect to the order of convergence, it is equivalent to performing the fitting in any coordinate
+system. Nevertheless, as noted above, the error estimates are better if the convex hull of the sample
+points is not too flat. Consequently, it means that for the best estimates one should take a coordinate
+system as close as possible to the Monge system. Using the previous proposition, the order of accuracy
+of a differential quantity is easily related to the degree of the interpolant and the order of this quantity.
+Moreprecisely:
+Theorem 3. A polynomial fitting of degree n estimates any kth-order differential quantity to accuracy
+O(hn−k+1).Inparticular:
+• thecoefficients ofthefirstfundamental formandtheunitnormalvectorareestimatedwithaccuracy
+O(hn),andsoistheanglebetweenthenormalandtheestimatednormal;
+• thecoefficients ofthesecondfundamental formandtheshapeoperatorareapproximated withaccu-
+racy O(hn−1), and so are the principal curvatures and directions (as long as they are well defined,
+i.e.,awayfromumbilics).
+Proof. It is easily checked that the formula corresponding to the geometric quantities (as long as
+they are well defined) are C1 functions of the coefficients. The result follows from Proposition 1 and
+LemmaA.1—seeAppendix A. (cid:1)
+The previous theorem generalizes (Meek and Walton, 2000, Lemma 4.1) where 2-jet interpolations
+onlyarestudied. TheO(hn)boundonthenormalshould alsobecomparedtotheestimateofthenormal
+vector using specific Voronoi centers called poles considered in (Amenta and Bern, 1999). The error
+bound proved there is equivalent to 2ε with ε the sampling density of the surface. Letting lfs stand for
+local feature size, setting h=εlfs and assuming lfs is bounded from above, the estimation stemming
+from apolynomial fitting therefore yields moreaccurate results for the tangent plane, and also provides
+information onhigherorderquantities.
+4.3. Influence ofnormalaccuracyonhigherorderestimates
+Following the guideline initiated in (Sander and Zucker, 1990) several algorithms first estimate the
+normaltothesurfaceandthenproceedwithHessianoftheheightfunction.Weanalyzetheerrorincurred
+bythelatterasafunctionoftheaccuracyontheformer.Wedenotebyθ theanglebetweenthenormaln
+S
+to the surface and the normal n estimated by the two-stages method. In order to simplify calculations,
+Q
+we assume that n is aligned with the z-axis and n is in the (x,z)-plane, so that f(x,y) =B x +
+Q S 10
+B x2 +B xy +B y2+O((cid:2)(x,y)(cid:2)3), with B =−tanθ. Expressed in the same coordinate system,
+20 11 02 10
+theinterpolant—a 2-jettosimplifycalculations—reads asJ (x,y)=A x2+A xy+A y2.
+A,2 20 11 02
+Proposition 2. If a small error θ is done on the estimated normal, a 2-jet interpolation give the Gauss
+curvature withalinearerrorwrtθ:
+k −k =θO(h −1)+O(h)+O(θ2).
+Q S
+Proof. Thesystemofequations fortheinterpolation is:
+
+--- Page 14 ---
+
+134 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+(cid:1)(cid:2) (cid:2) (cid:3)
+A x2h+A x y +A y2=B x +B x2+B x y +B y2+O (cid:2) (x ,y ) (cid:2)3 ,
+2,0 i 1,1 i i 0,2 i 1,0 i 2,0 i 1,1 i i 0,2 i i i
+i=1,...,3.
+LetD bethedeterminant: D=det(x i 2,x i y i ,y i 2) i=1,...,3 ,Cramer’srulegives:
+(cid:1) (cid:1)(cid:2) (cid:2) (cid:3) (cid:3)
+A =det B x +B x2+B x y +B y2+O (cid:2) (x ,y ) (cid:2)3 ,x y ,y2 /D
+2,0 1,0 i 2,0 i 1,1 i i 0,2 i i i i i i i=1,...,3
+=B O(h −1)+B +O(h).
+1,0 2,0
+Similarcalculationsgives:A =B O(h−1)+B +O(h),andA =B O(h−1)+B +O(h).The
+1,1 1,0 1,1 0,2 1,0 0,2
+Gaussiancurvature ofQisthen:
+4A A −A2
+k = 2,0 0,2 1,1
+Q 1+A2
+1,0
+=4A A −A2
+(cid:1) 2,0 0,2 1,1 (cid:3)(cid:1) (cid:3) (cid:1) (cid:3)
+=4 B O(h −1)+B +O(h) B O(h −1)+B +O(h) − B O(h −1)+B +O(h) 2
+1,0 2,0 1,0 0,2 1,0 1,1
+=4B B −B2 +B O(h −1)+B2 O(h −2)+O(h)
+2,0 0,2 1,1 1,0 1,0
+=4B B −B2 +tanθO(h −1)+tan2θO(h −2)+O(h).
+2,0 0,2 1,1
+TheGaussiancurvature ofS is
+4B B −B2 4B B −B2
+k = 2,0 0,2 1,1 = 2,0 0,2 1,1 =(4B B −B2 )cos4θ.
+S (1+B2 )2 (1+tan2θ)2 2,0 0,2 1,1
+1,0
+Thustheerroronthecurvatureis:
+k −k =(4B B −B2 )cos4θ +tanθO(h −1)+tan2θO(h −2)+O(h)
+Q S 2,0 0,2 1,1
+=θO(h −1)+O(h)+O(θ2). (cid:1)
+For a fixed h, the curvature error is a linear function of the angle between the normals. The term
+θO(h−1) shows that if θ is fixed, the smaller h the worse the accuracy. Hence estimating the normal
+deserves specificcare.
+5. Planecurves
+Alltheresults proved forsurfaces inthe previous section can also beproved for curves, and weomit
+them. Instead, for the interpolation case, we prove an error bound between the coefficients of the curve
+andthoseofthejet.
+5.1. Problemaddressed
+LetC beacurve,andconsidertheheightfunctionf followingEq.(1)inanycoordinatesystemwhose
+y axisisnottangenttothecurveand,whoseoriginisonthecurve(thisimpliesthatB =0).Weshallfit
+0
+C byan-jetJ (x).Asalreadymentioned,therearen+1unknowncoefficientsA ,weassumeN data
+A,n i
+points P (x =a h,y =f(x )) are given, where N =n+1 for interpolation fitting. Notice again that
+i i i i i
+
+--- Page 15 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 135
+parameter h specifies the uniform convergence of these data points to the origin. The fitting equations
+are:
+y =f(x )=J (x )+O(xn+1)=J (x ).
+i i B,n i i A,n i
+SincecurveC isgivenbyEq.(1),thenormalandthecurvature ofC attheoriginaregivenby
+(cid:7)
+n =(−B ,1)t/ 1+B2, k =2B /(1+B2)3/2. (14)
+C 1 1 C 2 1
+Moreover, in the Monge coordinate system—B = 0, these expressions simplify to n = (0,1)t and
+1 C
+k =2B .
+C 2
+5.2. Errorboundsfortheinterpolation
+The equivalent of Proposition 1 for curves gives the magnitude of the accuracy of the interpolation.
+Wecanactuallybemorepreciseandprovideerrorboundsdepending uponthefunctioninterpolated and
+theposition oftheinterpolation points.
+Proposition 3. Consider a degree n (n (cid:1) 1) interpolation problem for a curve y = f(x). Let h
+be a positive number so that the interpolation point abscissa lie in the interval [−h,h], and c =
+sup |f(n+1)(x)|.Thenfork=0,...,n:
+x∈[−h,h]
+hn−k+1c
+|A −B |(cid:2) .
+k k k!(n−k+1)!
+Proof. Thisresultisasimpleapplication oftheanalysis oftheLagrange interpolation remainder which
+can be found in (Isaacson and Keller, 1966). Let R (x)=f(x)−J (x), Theorem 1, p. 289 states that
+n A
+∀k=0,...,nand∀x∈[−h,h]:
+n(cid:21)−k f(n+1)(η)
+R(k)(x)= (x−ξ )
+n j (n+1−k)!
+j=0
+withx,ξ ,η∈[−h,h].
+j
+Forx=0,thisleadsto:
+(cid:12)
+(cid:12) R(k)(0)
+(cid:12)
+(cid:12)=|k!A −k!B |(cid:2)
+hn−k+1c
+,
+n k k (n−k+1)!
+hn−k+1c
+|A −B |(cid:2) . (cid:1)
+k k k!(n−k+1)!
+Here is an application of the previous result. Let θ denote the angle between the normal and the
+estimated normal.Wehave
+(cid:7)
+sin(θ)=(cid:2)n ∧n (cid:2)=|A −B |/ (1+A2)(1+B2)(cid:2)|A −B |.
+Q C 1 1 1 1 1 1
+Itisfoundthat
+θ (cid:2)arcsin(hnc/n!).
+
+--- Page 16 ---
+
+136 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+6. Algorithm
+The fitting algorithm to estimate the differential properties at a point p consists of (i) collecting the
+N points used for the fitting. (Recall that a n-jet involves N =(n+1)(n+2)/2 coefficients, so that
+n
+when interpolating (approximating) we assume N =N (N >N ).) (ii) Solving the linear system (iii)
+n n
+recovering thedifferential properties.
+Weexamineinturnthedetails ofthesethreesteps.
+6.1. Collecting N neighbors
+Themeshcase. Althoughnotopologicalinformationisrequiredbythefittingmethod,theconnectivity
+information of a mesh can be used as follows. We sequentially visit the one-ring neighbors, two-ring
+neighbors, and so on until N points have been collected. Let R ,...,R be the k rings of neighbors
+1 k
+necessary tocollect N neighbors. Allthe points ofthe k−1 firstrings areused. Thecomplement upto
+N pointsischosenarbitrarily outofthekthring.
+The point-cloud case. The normal at p is first estimated, and the neighbors of p are further retrieved
+from apowerdiagram intheestimated tangent plane(Boissonnat andFlototto, 2002)—a provably good
+procedure if the samples are dense enough. If the number of neighbors collected is less than N, we
+recursively collecttheneighbors oftheneighbors.
+Collectingthepointsthereforeboilsdowntoestimatingthetangentplane.Onesolutionistoconstruct
+the Voronoi diagram of the point set and use these Voronoi vertices called poles (Amenta and Bern,
+1999). Polesyieldanaccurateestimateofthenormalvectorbutrequireaglobalconstruction.
+AnalternativeistoresorttothealgorithmofSection4,andsolveadegreeoneinterpolationproblem—
+whichrequiresthreepointsandiswellpoisedassoonasthethreepointsarenotcollinear.Geometrically,
+thecloserthethreepointstobeingaligned,themoreunstablethetangentplaneestimate.Toseehowone
+can get around this difficulty, denote by q the nearest neighbor of p. Also, let r be the sample point so
+thatthecircum-radiusr ofthetrianglepqr isminimum.Theestimatednormalatpisthenormaltothe
+circ
+plane through pqr. Intuitively, minimizing thecircum-radius r prevents twodifficulties: ononehand
+circ
+triangleswithalargeangle(neartoπ)exhibitalargecircum-circleandarediscarded;ontheotherhand,
+triangles involving a third point r which is not a local neighbor of p cannot minimize r and are also
+circ
+discarded. Amoreformalargumentadvocating thechoiceofthetrianglewithminimumr isprovided
+circ
+in (Shewchuk, 2002), where it is shown that the worst error on the approximation of the gradient of a
+bivariate functionbyalinearinterpolant precisely involves r .
+circ
+6.2. Solving thefittingproblem
+Thenextstageconsists ofchoosing thezdirection toworkwith.Sincethetangent planehasnotbeen
+estimated, we use a principal component analysis to compute a rough estimate of the normal with the
+collectedpoints.Thepolynomialfittingcanbedoneinanycoordinatesystemwhosezaxisisnottangent
+to the surface. Hence at least one of the three axis of the world coordinate system matches this require-
+ment. A natural choice is to select the coordinate axis whose angle with the rough estimated normal
+is minimum. Another choice is that of a coordinate system for which the z axis is the rough estimated
+normal. This choice may increase the ratio d /d and improve the results as explained in Section 4,
+max min
+
+--- Page 17 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 137
+butthisrequiresthecalculationofanontrivialcoordinatetransformation. Theimprovementofthislatter
+choicehasnotbeenstudiedexperimentallysincethefirstalternativeperformswellenoughtoconfirmthe
+theoretical ordersofconvergence—cf. Section7.1.Forthechosencoordinates, wefilltheVandermonde
+matrix.Thematrixisfurtherpre-conditioned asexplainedinSection3.3,withhtheaveragevalueofthe
+norms(cid:2)(x ,y )(cid:2).ThecorrespondingsystemissolvedusingaSingularValueDecomposition.Practically,
+i i
+weusetheSVDoftheGnuScientificLibrary,available fromhttp://sources.redhat.com/gsl.
+As pointed out in Section 3.3, the instability of the system is provided by the condition number.
+Whenever degenerate configurations are detected, one can proceed as follows. For the approximation
+strategy, one caneither keep the samedegree and increase thenumber of points used, orreuse thesame
+points with a lower degree. These changes are likely to provide a non singular matrix M. In the worst-
+case,adegreeonefittingmustbepossiblesincethenonlythreelinearlyindependent pointsarerequired!
+For the interpolation, things are a bit more involved since reducing the interpolation degree requires
+discarding some points. Selecting the subset yielding the best conditioning is a challenging problem
+(Lassak, 1999; Higham, 1996). Notice also that for the approximation case, one can always retrieve a
+solution from an under-constrained least-square problem by choosing, e.g., the solution vector of least
+norm.
+6.3. Retrievingdifferential quantities
+We have already mentioned how to compute the normal. For the second order information, we com-
+pute the Weingarten map of the surface (do Carmo, 1976, Section 3.3). Its eigenvalues (eigenvectors)
+providetheprincipalcurvatures(directions) ofthesurface.Foraparameterizedsurfacegivenasaheight
+function, one ends up with the formula given on Table 1. Notice that a basis of the tangent space asso-
+ciated to the parameterization X(u,v)=(u,v,h(u,v)) consists of the two vectors X =(1,0,h )t and
+u u
+X =(0,1,h )t. A Gram–Schmidt orthonormalization of the basis {X ,X } gives another basis {Y,Z}
+v v u v
+of the tangent space. The diagonalization of the symmetric matrix representing the Weingarten map in
+the basis {Y,Z} provides the expression of the principal curvature directions with respect to the {Y,Z}
+orthonormal basis. Note that the sign of principal curvatures and hence the definition of minimal and
+maximaldirectionsrelyontheorientationofthenormal.Aslongasourexperimentalstudyisperformed
+on meshes of oriented surfaces, it is straightforward to find a global and coherent orientation of the
+normals.
+Table1
+ComputingthematrixAoftheWeingartenmapofh(u,v)=a1u+a2v+a3u2+a4uv+a5v2
+inthebasis{Xu,Xv }
+E=1+a1 2 e=√
+a1 2
+2
++
+a
+1
+3
++a2 2 (cid:22) (cid:23)(cid:22) (cid:23)
+F =a2a1 f = √
+a1 2+
+a4
+1+a2 2
+At =−
+f
+ef
+g
+E
+FG
+F
+−1
+G=1+a 2 g= √ 2a5
+2 a1 2+1+a2 2
+
+--- Page 18 ---
+
+138 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+7. Experimentalstudy
+Wepresent results along twolines. First, weillustrate the convergence theorems proved inSection 4.
+Second, wepresentillustrations onstandard computergraphics models.
+7.1. Convergence estimatesonagraph
+Setup. We illustrate the convergence properties with the smooth height fields f(u,v)=0.1e2u+v−v2
+and g(u,v)=4u2 +2v2 defined over the parametric domain (u,v)∈ [−0.5,0.5]2—see Figs. 4 and 5.
+At selected points on the graphs of f and g, we study the angle between the normals—more precisely
+its sine sin(n,n˜), and the relative errors on principal curvatures. The values output by our algorithm
+are compared against the exact values computed analytically with arbitrary precision under Maple, and
+we report both average and maximum errors over sample points. More precisely, the graph of f or g
+aresampledwithpoints p (x ,y ,f(x ,y )) wherethe(x ,y )liesonarandomly perturbed triangulated
+i i i i i i i
+squaregridofsideh.Thetriangulation israndomlyperturbed toavoidsimpledegenerate configurations
+such as points lying on lines. The perturbation for the point (u,v) of the regular grid is the point (x,y)
+withx=u+δh,y=v+δ(cid:6)handδ,δ(cid:6)randomnumbersin[0,0.9].Theconnectivityofthegraphisthatof
+thetriangulated grid.Noticealsothatsincecalculations arecarriedoutonasurface patchparameterized
+over a square grid, the direction chosen for the polynomial fitting is the z direction near the origin, and
+eitherthex ory directions attheperiphery ofthedomain.
+Theconvergence properties areillustrated (i)withrespect tothediscretization step hofthegrid—for
+a given fitting degree n (ii) with respect to the fitting degree n—for a given discretization step h. We
+compare the convergence properties ofthe interpolation and approximation schemes, for fitting degrees
+ranging from one to nine. To quantify the observations, notice that according to Theorem 3, the error δ
+onakth-order differential quantityisO(hn−k+1),hence
+δ≈chn−k+1⇔log(1/δ)≈log(1/c)+(n−k+1)log(1/h)
+(15)
+log(1/δ) log(1/c)
+⇔ ≈ +(n−k+1). (16)
+log(1/h) log(1/h)
+Convergence wrt to h. To highlight the convergence properties with respect to the size of the neigh-
+borhood, we consider sequences of meshes with h→0, more precisely h ranges from 2−2 to 2−6. The
+resultsforf andg beingalike,wefocusontheexponential f.
+Curves of Figs. 6–11 show the average convergence behavior as the size of the neighborhood de-
+creases. For a given degree and following Eq. (15), curves of Figs. 6–11 should be lines of slope
+(n−k +1). The behavior is more regular for the approximation case, and the estimate is also better:
+againofaboutadigitcanbeobserved between k estimatesofFigs.10and11.
+max
+Convergence wrt to the interpolation degree. For the convergence wrt to the interpolation degree—
+withhfixed,wepresentresultsforthepolynomialg (cf.Figs.12–17).Conclusionsaresimilarforf (cf.
+Figs. 24–29), but it should however be noticed that since the graph of g is more curvy than that of f, a
+finer grid is required. (The higher the degree the more points required by the fitting ...andwecompute
+localquantities!) Tobeprecise, weranexperiments withh=2−5 forf andh=2−7 forg.
+Curves of Figs. 12 and 13 show the convergence as a function of the degree of the fitted polynomial
+forafixedneighborhoodsize.AccordingtoEq.(16),curvesofthesefiguresshouldbelinesofunitslope,
+
+--- Page 19 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 139
+Fig.4.f(u,v)=0.1e2u+v−v2 . Fig.5.g(u,v)=4u2+2v2.
+Fig.6.Exponentialmodel:Convergenceofthenormalesti- Fig.7.Exponentialmodel:Convergenceofthenormalesti-
+matewrth,interpolationfitting. matewrth,approximationfitting.
+Fig. 8. Exponential model: Convergence of the kmin esti- Fig. 9. Exponential model: Convergence of the kmin esti-
+matewrth,interpolationfitting. matewrth,approximationfitting.
+
+--- Page 20 ---
+
+140 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+Fig.10.Exponentialmodel:Convergenceofthekmax esti- Fig.11.Exponentialmodel:Convergenceofthekmax esti-
+matewrth,interpolationfitting. matewrth,approximationfitting.
+Fig.12.Polynomialmodel:Convergenceofnormalandcur- Fig.13.Polynomialmodel:Convergenceofnormalandcur-
+vatureestimateswrtthedegreeoftheinterpolationfitting. vatureestimateswrtthedegreeoftheapproximationfitting.
+Fig.14.Polynomialmodel:Conditioningwrtthedegreeof Fig.15.Polynomialmodel:Conditioningwrtthedegreeof
+theinterpolationfitting. theapproximationfitting.
+
+--- Page 21 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 141
+Fig.16.Polynomialmodel:Leastsingularvaluewrtthede- Fig.17.Polynomialmodel:Leastsingularvaluewrtthede-
+greeoftheinterpolationfitting. greeoftheapproximationfitting.
+Fig.18.Ellipticparaboloid.(Forcoloursseeon- Fig.19.Surfaceofrevolution.(Forcolourssee
+lineversion.) onlineversion.)
+with a vertical shift of one unit between normal and curvatures errors since curvature is a 2nd order
+quantity whereas normal is 1st order. The gap between the average values and the maximal values is
+greater for interpolation than forapproximation. Theother charts provide theconditioning and the least
+singular value. Interpolation fitting is always more ill-conditioned than approximation, and closer to a
+degenerateproblem(theleastsingularvalueisthedistanceofthematrixsystemtosingularmatrices).The
+particularcaseofadegree7approximationrevealstobebadlyconditionedduetotheregularconnectivity
+of the mesh used to find the neighbors: there is only one more point than for the degree 7 interpolation
+fitting.
+7.2. Illustrations
+We depict differential informations on several models. When principal directions are displayed, blue
+and red respectively correspond to k and k —that is k (cid:2) k —assuming the surface normal
+min max min max
+
+--- Page 22 ---
+
+142 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+Fig.20.Michelangelo’sDavid:Principaldirectionsassociatedwithkmaxscaledbykmin.(Forcoloursseeonlineversion.)
+Fig.21.Mechanic:Closeup.(Forcoloursseeonlineversion.)
+pointstotheoutside.Todisplaypatchesofosculatingn-jets,itissufficienttoselectarectangulardomain
+inparameterspace,sampleitwithagrid,andplotthecorresponding mesh.
+
+--- Page 23 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 143
+Fig.22.f(u,v)=u+3v+e2u+v−v2
+with Fig.23.Principaldirectionsonanoisyellipsoid.
+noise.(Forcoloursseeonlineversion.) (Forcoloursseeonlineversion.)
+Consider the mesh models of th√e elliptic paraboloid z = 2x2 +y2—16k points, Fig. 18—and the
+surfaceofrevolution z=0.1sin(10 (x2+y2))—8k points,Fig.19.Thearrangement ofcurvaturelines
+providesinformations onumbilicalpoints—whereprincipal directionsarenotdefinedsincek =k .
+min max
+On the paraboloid, it is easy to follow curvature lines and see how they turn around an umbilic. The
+surface of revolution provides an example of two parabolic lines (where the principal curvature k
+max
+vanishes), that is a curve along which the Gauss curvature K vanishes. This specific line splits the
+Gauss
+surface into elliptic (K >0) and hyperbolic regions (K <0). This model also illustrates a line
+Gauss Gauss
+ofumbilicalpointswhereminimumandmaximumprincipal directions swapeachover.
+For a standard example from Computer Graphics, consider the Michelangelo’s David of Fig. 20. On
+this modelof95922 pts, theprincipal curvatures provide meaningful information forshape perception.5
+Tofinishup,weillustratetherobustnessofthemethod.Fig.21displaysrandompatchesontheMechanic
+model, a 12,500 points model reconstructed from the output of a range scanner. In spite of the coarse
+sampling, patches andprincipal directions providefaithfulinformation. Inasimilarvein,approximation
+fitting with large neighborhoods Fig. 22 features a noisy triangulation of a graph. In spite of the severe
+levelofnoise,surfacepatches averagetheavailable information. OnFig.23,anoisytriangulation ofan
+ellipsoid, 15k points, principal directions areenoughprecisetorecognize anumbilic.
+8. Conclusion
+Estimatingdifferential quantities isofprimeimportanceinmanyapplications fromComputerVision,
+Computer Graphics, Computer Aided Design or Computational Geometry. This importance accounts
+for the many different differential estimators one can find in the vast literature of applied geometry.
+Unfortunately, few of these have undergone a precise theoretical analysis. Another striking fact is that
+estimates of second order differential quantities are always computed using degenerate conics/quadrics
+withoutevenmentioning theclassification ofEuclidean conics/quadrics.
+Themaincontribution ofthepaperistobridgethegapbetweenthequestionofestimatingdifferential
+propertiesofarbitraryorderandmultivariateinterpolationandapproximation.Inmakingthisconnection,
+5 Seealso(HilbertandCohn-Vossen,1952,p.197)aswellas(Hallinanetal.,1999).
+
+--- Page 24 ---
+
+144 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+Fig. 24. Exponential model: Convergence of normal and Fig. 25. Exponential model: Convergence of normal and
+curvature estimateswrt the degree of the interpolation fit- curvatureestimateswrtthedegreeoftheapproximationfit-
+ting. ting.
+Fig.26.Exponentialmodel:Conditioningwrtthedegreeof Fig.27.Exponentialmodel:Conditioningwrtthedegreeof
+theinterpolationfitting. theapproximationfitting.
+Fig. 28. Exponential model: Least singular value wrt the Fig. 29. Exponential model: Least singular value wrt the
+degreeoftheinterpolationfitting. degreeoftheapproximationfitting.
+
+--- Page 25 ---
+
+F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146 145
+the use of jets—truncated Taylor expansions—is advocated. Precise asymptotic convergence rates are
+provedforcurvesandsurfaces, bothfortheinterpolation andapproximation schemes.Tothebestofour
+knowledge, theseresults areamong thefirstonesproviding accurate estimates fordifferential quantities
+oforderthreeandmore.ExperimentalresultsforsurfacesofR3arereported.Theseexperimentsillustrate
+theasymptoticconvergenceresults,butalsotherobustnessofthemethodsongeneralComputerGraphics
+models.
+Acknowledgements
+TheauthorswishtothankP.CheninforpointingoutRef.(IsaacsonandKeller,1966),andthereview-
+ersforproviding anindirect linktoRef.(Quarteroni andValli,1994).
+AppendixA. Ausefullemma
+Inseveral occasions wederivedifferential quantities—unit normal vectors, curvatures—as afunction
+F ofthecoefficientsofthejet.Thefollowinglemmamakesiteasytoderivetheprecisiononthequantity
+investigated ifF isregularenoughandifthesomeprecision ofthejet’scoefficientsisknown.
+Lemma A.1. Define a kth-order differential quantity—for a curve or a surface—as a C1 function F of
+theofthecoefficients ofthe k-jet oftheheight function. Alsoassume thatadegree nfitting yields apre-
+cision A j =B j +O(hn+1−j),k=1,...,n for acurve, and A k−j,j =B k−j,j +O(hn−k+1),j =0,...,n,
+k=0,...,nforasurface.
+Then, a polynomial fitting of degree n estimates a kth-order differential quantity to accuracy
+O(hn−k+1).
+Proof. Theproofisthesameforcurvesandsurfaces,andweusethenotationscorresponding toacurve.
+Tobeginwith,weperformasubstitution ontheerrortermsintheexpression of F:
+(cid:1) (cid:3) (cid:1)(cid:1) (cid:3) (cid:3) (cid:1)(cid:1) (cid:3) (cid:3)
+F (A i ) i=0,...,k =F B i +O(hn−i+1) i=0,...,k =F B i +O(hn−k+1) i=0,...,k .
+Since F((B i ) i=0,...,k ) is a C1 function, and denoting DF p the differential of F at point p, an order one
+Taylorformulayields:
+(cid:1)(cid:1) (cid:3) (cid:3)
+F B
++O(hn−k+1)
+i
+(cid:1) (cid:3)
+i=0,...,k
+(cid:1) (cid:3)
+=F (cid:1) (B i ) i=0,...,k(cid:3) +DF (Bi +uO(hn−k+1))i=0,...,k O(hn−k+1),...,O(hn−k+1) t
+=F (B i ) i=0,...,k +O(hn−k+1), u∈]0,1[. (cid:1)
+References
+Amenta,N.,Bern,M.,1999.SurfacereconstructionbyVoronoifiltering.DiscreteComput.Geom.22(4),481–504.
+Borrelli,V.,Cazals,F.,2002.Ontheangulardefectoftriangulationsandthepointwiseapproximationofcurvatures.In:Curves
+andSurfaces,StMalo,France.INRIAResearchReportRR-4590.
+
+--- Page 26 ---
+
+146 F.Cazals,M.Pouget/ComputerAidedGeometricDesign22(2005)121–146
+Berger,M.,1987.Geometry,vols.1–2.Springer,Berlin.
+Boissonnat, J.-D.,Flototto,J.,2002. Alocalcoordinatesystemonasurface. In:ACMSymposiumonSolidModelingSaar-
+brücken.
+Bruce,J.W.,Giblin,P.J.,1992.CurvesandSingularities,seconded.Cambridge.
+Coatmelec,C.,1966.Approximationetinterpolationdesfonctionsdifferentiellesdeplusieursvariables.Ann.Sci.EcoleNorm.
+Sup.83.
+Cazals,F.,Pouget,M.,2004.Smoothsurfaces,umbilics,linesofcurvatures,foliations,ridgesandthemedialaxis:aconcise
+overview.TechnicalReport5138,INRIA.
+Ciarlet, P.G., Raviart, P.-A., 1972. General lagrange and hermit interpolation in Rn with applications to the finite element
+method.Arch.RationalMesh.Engrg.46,177–199.
+Cohen-Steiner,D.,Morvan,J.-M.,2003.RestrictedDelaunaytriangulationsandnormalcycle.In:ACMSymposiumonCom-
+putationalGeometry.
+Csàkàny,P.,Wallace,A.M.,2000.Computationoflocaldifferentialparametersonirregularmeshes.In:Cipolla,R.,Martin,R.
+(Eds.),MathematicsofSurfaces.Springer,Berlin.
+doCarmo,M.,1976.DifferentialGeometryofCurvesandSurfaces.Prentice-Hall,EnglewoodCliffs,NJ.
+Isaacson,E.,Keller,H.B.,1966.AnalysisofNumericalMethods.Wiley,NewYork.
+Goldfeather,J.,Interrante,V.,2004.Anovelcubic-orderalgorithmforapproximatingprincipaldirectionvectors.ACMTrans.
+Graph.23(1),45–63.
+Gasca,M.,Sauer,T.,2000.Polynomialinterpolationinseveralvariables.Adv.Comp.Math.12(4).
+Golub,G.,vanLoan,C.,1983.MatrixComputations.JohnsHopkinsUniv.Press,Baltimore,MD.
+Hilbert,D.,Cohn-Vossen,S.,1952.GeometryandtheImagination.Chelsea.
+Hallinan, P.W.,Gordon, G., Yuille,A.L.,Giblin,P.,Mumford, D.,1999. Two- and Three-Dimensional Patternsof the Face.
+A.K.Peters.
+Higham,N.J.,1996.AccuracyandStabilityofNumericalAlgorithms.SIAM.
+Lassak,M.,1999.Parallelotopesofmaximumvolumesinasimplex.Disc.Comput.Geom.21.
+Lancaster,P.,Salkauskas,K.,1986.CurveandSurfaceFitting:AnIntroduction.Academic,NewYork.
+Morvan,J.-M.,Thibert,B.,2002.Smoothsurfaceandtriangularmesh:Comparisonofthearea,thenormalsandtheunfolding.
+In:ACMSymposiumonSolidModelingandApplications.
+Meek, D., Walton, D., 2000. On surface normal and Gaussian curvature approximations given data sampled froma smooth
+surface.ComputerAidedGeometricDesign17,521–543.
+Petitjean,S.,2001.Asurveyofmethodsforrecoveringquadricsintrianglemeshes.ACMComput.Surv.34(2).
+Porteous,I.,2001.GeometricDifferentiation,seconded.CambridgeUniversityPress,Cambridge.
+Polthier,K.,Schmies,M.,1998.Straightestgeodesicsonpolyhedralsurfaces.In:Hege,H.C.,Polthier,K.(Eds.),Mathematical
+Visualization.
+Quarteroni,A.,Valli,A.,1994.NumericalApproximationofPartialDifferentialEquations.Springer,Berlin.
+Sauer,T.,1995.Computationalaspectsofmultivariatepolynomialinterpolation.Adv.Comp.Math.3(3).
+Shewchuk,J.R.,2002.Whatisagoodlinearelement?Interpolation,conditioning,andqualitymeasures.In:11thInternational
+MeshingRoundtable,Ithaca,NY,USA.
+Spivak,M.,1999.AComprehensiveIntroductiontoDifferentialGeometry,thirded.PublishorPerish.
+Sauer,T.,Xu,Yuan,1995.Onmultivariatelagrangeinterpolation.Math.Comput.64.
+Sander, P., Zucker, S., 1990. Inferring surface trace and differential structure from 3-D images. IEEE Trans. Pattern Anal.
+MachineIntell.12(9),833–854.
+Taubin, G., 1995. Estimating the tensor of curvature of a surface from a polyhedral approximation. In: Fifth International
+ConferenceonComputerVision.
+Watanabe,K.,Belyaev,A.G.,2001.Detectionofsalientcurvaturefeaturesonpolygonalsurfaces.In:Eurographics.

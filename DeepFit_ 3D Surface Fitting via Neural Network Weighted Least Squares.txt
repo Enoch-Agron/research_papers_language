@@ -1,0 +1,988 @@
+# DeepFit_ 3D Surface Fitting via Neural Network Weighted Least Squares.pdf
+# Converted: 2025-07-18 12:58:57
+# Method: pdfplumber
+# Domain: pixel2physics
+# Source: /home/user/vekt/papers/pixel2physics/pdfs/layer1/DeepFit_ 3D Surface Fitting via Neural Network Weighted Least Squares.pdf
+# Output: /home/user/vekt/papers/pixel2physics/dot_txt/layer1/DeepFit_ 3D Surface Fitting via Neural Network Weighted Least Squares.txt
+
+
+--- Page 1 ---
+
+DeepFit: 3D Surface Fitting via Neural Network
+Weighted Least Squares
+Yizhak Ben-Shabat and Stephen Gould
+The Australian National University, Australian Centre for Robotic Vision
+{yizhak.benshabat,stephen.gould}@anu.edu.au
+Abstract. We propose a surface fitting method for unstructured 3D
+point clouds. This method, called DeepFit, incorporates a neural net-
+work to learn point-wise weights for weighted least squares polynomial
+surface fitting. The learned weights act as a soft selection for the neigh-
+borhood of surface points thus avoiding the scale selection required of
+previousmethods.Totrainthenetworkweproposeanovelsurfacecon-
+sistencylossthatimprovespointweightestimation.Themethodenables
+extractingnormalvectorsandothergeometricalproperties,suchasprin-
+cipal curvatures, the latter were not presented as ground truth during
+training.Weachievestate-of-the-artresultsonabenchmarknormaland
+curvature estimation dataset, demonstrate robustness to noise, outliers
+and density variations, and show its application on noise removal.
+Keywords: Normal estimation, surface fitting, least squares, unstruc-
+tured 3D point clouds, 3D point cloud deep learning
+1 Introduction
+Commodity 3D sensors are rapidly becoming an integral component of au-
+tonomous systems. These sensors, e.g., RGB-D cameras or LiDAR, provide a
+3D point cloud representing the geometry of the scanned objects and surround-
+ings. This raw representation, however, is challenging to process since it lacks
+connectivityinformationorstructure,andisoftenincomplete,noisyandcontains
+point density variations. In particular, processing it by means of convolutional
+neural networks (CNNs)—highly effective for images—is problematic because
+CNNs require structured, grid-like data as input.
+When available, additional local geometric information, such as the surface
+normal and principal curvatures at each point, induces a partial local structure
+and improves performance of different tasks for interpreting the scene, such as
+over-segmentation [1], classification [18] and surface reconstruction [9].
+Estimatingthenormalsandcurvaturesfromarawpointcloudwithnoaddi-
+tional information is a challenging task due to difficulties associated with sam-
+plingdensity,noise,outliers,anddetaillevel.Thecommonapproachistospecify
+aneighborhoodaroundapointandthenfitalocalbasicgeometricsurface(e.g.,a
+plane)tothepointsinthisneighborhood.Thenormalatthepointunderconsid-
+erationisestimatedfromthefittedgeometricsurface.Thechosensize(orscale)
+0202
+raM
+32
+]VC.sc[
+1v62801.3002:viXra
+
+--- Page 2 ---
+
+2 Y. Ben-Shabat, S. Gould
+Point cloud
+Query point
+𝑞𝑞𝑖𝑖 sruobhgien
+tseraen
+k
+Point-wise weight estimation Point-wise
+(512, 256, 128, 1) weights
+𝑆𝑆𝑖𝑖 Local features mlp
+𝑥𝑥𝑖 𝑦𝑦𝑖 𝑧𝑧𝑖 𝑤𝑤𝑖 Fit n-𝑊𝑊Jet
+𝑥𝑥𝑖 𝑦𝑦𝑖 𝑧𝑧𝑖 𝑤𝑤𝑖
+PointNet Global
+feature Normal vector
+Local features
+𝑥𝑥𝑖𝑖 𝑦𝑦𝑖𝑖 𝑧𝑧𝑖𝑖
+Concatenate 𝑤𝑤𝑖𝑖 𝛽𝛽=(𝑀𝑀𝑇𝑇 𝑇𝑇 𝑊𝑊𝑀𝑀) −𝑖
+Max pool Global 𝑀𝑀 𝑊𝑊𝑊𝑊
+feature
+𝑀𝑀,𝑊𝑊 Principal
+curvatures
+Compute Vandermondematrix (M), and height function vector (B)
+Fig.1: DeepFit pipeline for normal and principal curvature estimation. For each
+point in a given point cloud, we compute a global and local representation and
+estimate a point-wise wight. Then, we fit an n-jet by solving a weighted least
+squares problem.
+of the neighborhood introduces an unavoidable trade-off between robustness to
+noiseandaccuracyoffinedetails.Alargeneighborhoodover-smoothssharpcor-
+nersandsmalldetailsbutisotherwiserobusttonoise.Asmallneighborhood,on
+theotherhand,mayreproducethenormalsmoreaccuratelyaroundsmalldetails
+butismoresensitivetonoise.Evidently,arobust,scale-independent,data-driven
+surface fitting approach should improve normal estimation performance.
+We propose a surface fitting method for unstructured 3D point clouds. It
+features a neural network for point-wise weight prediction for weighted least
+squaresfittingofpolynomialsurfaces.Thisapproachremovesthemulti-scalere-
+quiremententirelyandsignificantlyincreasesrobustnesstodifferentnoiselevels,
+outliers, and varying levels of detail. Moreover, the approach enables extracting
+normalvectorsandadditionalgeometricpropertieswithouttheneedforretrain-
+ingoradditionalgroundtruthinformation.Themaincontributionsofthispaper
+are:
+– A method for per-point weight estimation for weighted least squares fitting
+using deep neural networks.
+– A scale-free method for robust surface fitting and normal estimation.
+– A method for principal curvature and geometric properties estimation with-
+out using ground truth labels.
+2 Background and Related Work
+2.1 Deep learning for unstructured 3D point clouds
+The point cloud representation of a 3D scene is challenging for deep learning
+methodsbecauseitisbothunstructuredandunordered.Inaddition,thenumber
+ofpointsinthepointcloudvariesfordifferentscenes.Severalmethodshavebeen
+
+--- Page 3 ---
+
+DeepFit 3
+proposed to overcome these challenges. Voxel-based methods embed the point
+cloudintoavoxelgridbutsufferfromseveralaccuracy-complexitytradeoffs[14].
+The PointNet approach [17,18] applies a symmetric, order-insensitive, function
+on a high-dimensional representation of individual points. The Kd-Network [12]
+imposes a kd-tree structure on the points and uses it to learn shared weights for
+nodesinthetree.Therecentlyproposed3Dmodifiedfishervectors(3DmFV)[2]
+representsthepointsbytheirdeviationfromaGaussianMixtureModel(GMM)
+whose Gaussians are uniformly positioned on a coarse grid.
+InthispaperweuseaPoinNetarchitectureforestimatingpoint-wiseweights
+for weighted least squares surface fitting. We chose PointNet since it operates
+directly on the point cloud, does not require preprocessing, representation con-
+version or structure, and contains a relatively low number of parameters,
+2.2 Normal Estimation
+A classic method for estimating normals uses principal component analysis
+(PCA) [10]. Here a neighborhood of points within some fixed scale is chosen
+and PCA regression used to estimate a tangent plane. Variants that fit local
+spherical surfaces [8] or Jets [6] (truncated Taylor expansion) have also been
+proposed. Further detail on Jet fitting is given in Section 2.3. To be robust to
+noise,thesemethodsusuallychoosealarge-scaleneighborhood,leadingthemto
+smooth sharp features and fail to estimate normals near 3D edges. Computing
+theoptimalneighborhoodsizecandecreasetheestimationerror[15]butrequires
+the(usuallyunknown)noisestandarddeviationvalueandacostlyiterativepro-
+cess to estimate the local curvature and additional density parameters.
+A few deep learning approaches have been proposed to estimate normal vec-
+tors from unstructured point clouds. Boulch and Marlet proposed to transform
+local point cloud patches into a 2D Hough space accumulator by randomly se-
+lecting point triplets and voting for that plane’s normal. Then, the normal is
+estimated from the accumulator by designing explicit criteria [4] for bin selec-
+tion or, more recently, by training a 2D CNN [5] to estimate it continuously
+as a regression problem. This method does not fully utilize available 3D in-
+formation since it loses information during the transformation stage. Another
+method,namedPCPNnet[9],usesaPointNet[17]architectureoverlocalneigh-
+borhoodsatmultiplescales.Itachievesgoodnormalestimationperformanceand
+has been extended to estimating principal curvatures. However, it processes the
+multi-scale point clouds jointly and requires selecting a predefined set of scales.
+A more recent work, Nesti-Net [3] tries to predict the appropriate scale using
+a mixture of experts network and a local representation for different scales. It
+achieves high accuracy but suffers from high computation time due to the mul-
+tiple scale computations. Nesti-Net shares PCPNet’s drawback of requiring a
+predefined set of scales. A contemporary work [13] uses an iterative plane fit-
+ting approach which tries to predict all normals of a local neighborhood and
+iteratively adjusts the point weights to best fit the plane.
+Inthispaperweproposeanovelapproachfornormalestimationbylearning
+to fit an n-order Jet while predicting informative points’ weights. Our approach
+
+--- Page 4 ---
+
+4 Y. Ben-Shabat, S. Gould
+removes the need of predefined scales and optimal scale selection since the in-
+formative points are extracted at any given scale. Our method generalizes the
+contemporary method proposed by Lenssen et. al. [13], avoids the iterative pro-
+cess, and enables the computation of additional geometric properties.
+2.3 Jet fitting using least squares and weighted least squares
+We now provide background and mathematical notation for truncated Taylor
+expansion surface fitting using least-squares (LS) and weighted least-squares
+(WLS).WerefertheinterestedreadertoCazalsandPouget[6]forfurtherdetail.
+Any regular embedded smooth surface can be locally written as the graph
+of a bi-variate “height function” with respect to any z-direction that does not
+belongtothetangentspace[19].WeadoptthenamingconventionofCazalsand
+Pouget [6] andrefer to thetruncated Taylor expansionas a degree n jet or n-jet
+for short. An n-jet of the height function over a surface is given by:
+n k
+(cid:88)(cid:88)
+f(x,y)=J (x,y)= β xk−jyj (1)
+β,n k−j,j
+k=0j=0
+Hereβ isthejetcoefficientsvectorthatconsistsofN =(n+1)(n+2)/2terms.
+n
+In this work we wish to fit a surface to a set of N 3D points. For clarity,
+p
+we move to the matrix notation and specify the Vandermonde matrix M =
+(1,x
+i
+,y
+i
+,...,x
+i
+y
+i
+n−1,y
+i
+n)
+i=1,...,Np
+∈ RNp×Nn and the height function vector B =
+(z ,z ,...z )T ∈ RN representing the sampled points. We require that every
+1 2 Np p
+point satisfy Eq. 1, yielding the system of linear equations:
+Mβ =B (2)
+When N > N the system is over-determined and an exact solution may not
+n p
+exist. Therefore we use an LS approximation that minimizes the sum of square
+errors between the value of the jet and the height function over all points:
+β =arg min (cid:107)Mz−B(cid:107)2 (3)
+z∈RNn
+It is well known that the solution can be expressed in closed-form as:
+β =(MTM)−1MTB (4)
+Typically the sampled points include noise and outliers that heavily reduce the
+fitting accuracy. To overcome this, the formulation given in Eq. 4 can be ex-
+tended to a weighted least square problem. In this setting, some points have
+more influence on the fitted model than others. Let W ∈RNp×Np be a diagonal
+weightmatrixW =diag(w ,w ,...,w ).Eachelementinthematrix’sdiagonal
+1 2 Np
+
+--- Page 5 ---
+
+DeepFit 5
+w corresponds to the weight of that point.
+i
+The optimization problem becomes:
+(cid:13) (cid:13)2
+β =arg min (cid:13)W1/2(Mz−B)(cid:13)
+(cid:13) (cid:13)
+z∈RNn
+ 2
+(cid:88)
+Np
+(cid:88)
+Nn
+=arg min w i M ij z j −B i
+z∈RNn
+i=1 j=1
+and its solution:
+β =(MTWM)−1MTWB (5)
+Inthiswork,wechoosetofocusonn-jetfittingbecauseanyorderndifferen-
+tialquantitycanbecomputedfromthen-jet.Thisisoneofthemainadvantages
+ofourmethod.Thatis,ourmethodistrainedforestimatingnormalvectorsbut
+is then able to estimate other differential quantities, e.g., principal curvatures,
+depending on the jet order.
+3 DeepFit
+3.1 Learning point-wise weights
+The full pipeline for our method is illustrated in Fig. 1. Given a 3D point cloud
+S and a query point q ∈ S we first extract a local subset of points S using
+i i
+k-nearest neighbors. We then use a neural network to estimate the weight of
+each point in the neighborhood, which will subsequently be used for weighted
+leastsquaressurfacefitting.Specifically,wefeedS intoaPointNet[17]network,
+i
+whichoutputsaglobalpointcloudrepresentationG(S ).Additionally,weextract
+i
+local representations from an intermediate layer for each of the points p ∈ S
+j i
+separately to give g(p ). These representations are then concatenated and fed
+j
+into a multi-layer perceptron h(·) followed by a sigmoid activation function. We
+choose a sigmoid in order to limit the output values to be between 0 and 1.
+The output of this network is a weight per point that is used to construct the
+diagonal point-weight matrix, W =diag(w ) with
+j
+w =sigmoid(h(G(S ),g(p )))+(cid:15) (6)
+j i ij
+Fornumericalstability,weaddaconstantsmall(cid:15)inordertoavoidthedegenrate
+case of a zero or poorly conditioned matrix. This weight matrix is then used to
+solve the WLS problem of Eq. 5 and approximate the n-jet coefficients β. All
+parts of the network are differentiable and therefore it is trained end-to-end.
+3.2 Geometric quantities estimation
+Giventhen-jetcoefficientsβseveralgeometricquantitiescanbeeasilyextracted:
+
+--- Page 6 ---
+
+6 Y. Ben-Shabat, S. Gould
+Normal estimation. The estimated normal vector is given by:
+(−β ,−β ,1)
+N = 1 2 (7)
+i (cid:107)(−β ,−β ,1)(cid:107)
+1 2 2
+Shape operator and principal curvatures. For the second order informa-
+tion we compute the Weingarten map of the surface by multiplying the inverse
+of the first fundamental form and the second fundamental form. Its eigenval-
+ues are the principal curvatures (k ,k ), and its eigenvectors are the principal
+1 2
+directions. The computation is done in the tangent space associated with the
+parametrization.
+1 (cid:20) 1+β2 β β (cid:21)−1(cid:20) 2β β (cid:21)
+M =− 1 1 2 3 4 (8)
+Weingarten (cid:112) β 1 2+β 2 2+1 β 1 β 2 1+β 2 2 β 4 2β 5
+Generally, the principal curvatures can be used as ground truth in training,
+however, due to the eigenvalue decomposition, with the high probability of out-
+putting two zero principal curvatures (planes) it suffers from numerical issues
+when computing the gradients for backpropagation [7]. Therefore, we compute
+thecurvaturesonlyattesttime.NotethatMongebasisandhigherorderMonge
+coefficients can also be computed, similar to [6].
+3.3 Consistency loss
+In order to learn point-wise weights, we introduce a local consistency loss L .
+con
+This loss is composed of two terms, the weighted normal difference term and a
+regularization term. The weighted normal difference term computes a weighted
+average of the sine of the angle between the ground truth normal and the esti-
+mated normal at every local neighborhood point. These normals are computed
+analyticallybyconvertingthen-jettotheimplicitsurfaceformofF(x,y,z)=0.
+Therefore,foreveryquerypointq anditslocalneighborhoodS wecancompute
+i i
+the normal at each neighboring point p ∈S using:
+j i
+(cid:12)
+N j = (cid:107) ∇ ∇ F F(cid:107) (cid:12) (cid:12) (cid:12) (cid:12) = (−β i ∂ ∂ M x (cid:107) T ∇ , F β i (cid:107) ∂ ∂ M y T ,1)(cid:12) (cid:12) (cid:12) (cid:12) (9)
+pj (cid:12)
+pj
+Notethatthisformulationassumesallpointstolieonthesurface,forpointsthat
+arenotonthesurface,thenormalerrorwillbelarge,thereforethatpointsweight
+will be encouraged to be small. This term can easily converge to an undesired
+local minimum by setting all weights to zero. In order to avoid that, we add a
+regularization term which computes the negative average log of all weights. In
+summary, the consistency loss for a query point q is then given by:
+i
+ 
+1 (cid:88)
+Nqi
+(cid:88)
+Nqi
+L
+con
+=
+N
+− log(w
+j
+)+ w
+j
+|N
+GT
+×N
+j
+| (10)
+qi
+j=1 j=1
+
+--- Page 7 ---
+
+DeepFit 7
+In contrast to Lenssen et. al. [13], this formulation allows us to avoid solving
+multiple linear systems iteratively for each point in the local neighborhood.
+Intotal,totrainthenetwork,wesumseverallossterms:Thesinlossbetween
+theestimatedunorientednormalandthegroundtruthnormalatthequerypoint,
+the consistency loss, and PointNet’s transformation matrix regularization terms
+(cid:12) (cid:12)
+L
+reg
+=(cid:12)I−AAT(cid:12).
+L =|N ×N |+α L +α L (11)
+tot GT i 1 con 2 reg
+Here, α , and α are weighting factors, chosen empirically.
+1 2
+3.4 Implementation notes
+In our experiments we report results using DeepFit with the following configu-
+ration, unless otherwise stated. A four layer MLP with sizes 512, 256, 128, and
+1; a neighborhood size of 256 points, and a 3-order jet. In order to avoid numer-
+ical issues, simplify the notation, and reduce the linear algebra operations, we
+perform the following pre-processing stages on every local point cloud:
+1. Normalization: we translate the point cloud to position the query point in
+the origin and scale the point cloud to fit a unit sphere.
+2. Basis extraction: we perform principal component analysis (PCA) on the
+pointcloud.Wethenusetheresultingthreeorthonormaleigenvectorsasthe
+fitting basis so that the vector associated with the smallest eigenvalue is the
+last vector of the basis.
+3. Coordinate frame transformation: We perform a change of coordinates to
+move the points into the coordinate system of the fitting basis.
+4. Preconditioning: we precondition the Vandermonde matrix by performing
+column scaling. Each monomial xkyl is divided by hk+l. That is, M(cid:48) =
+i i
+MD−1 with D the diagonal matrix D = diag(1,h,h2,...,hn). We use the
+mean of the norm (cid:107)(x ,y )(cid:107) as h. The new system is then M(cid:48)(Dβ)=B and
+i i
+β =D−1(M(cid:48)TWM(cid:48))−1M(cid:48)TWB.
+Notethatafterthenormalisestimatedweapplytheinversetransformtooutput
+the result in the original coordinate frame.
+4 Results
+4.1 Dataset and training details
+FortrainingandtestingweusedthePCPNetshapedataset[9].Thetrainingset
+consists of eight shapes: four CAD objects (fandisk, boxunion, flower, cup) and
+four high quality scans of figurines (bunny, armadillo, dragon and turtle). All
+shapes are given as triangle meshes and densely sampled with 100k points. The
+data is augmented by introducing i.i.d. Gaussian noise for each point’s spacial
+location with a standard deviation of 0.012, 0.006, 0.00125 w.r.t the bounding
+
+--- Page 8 ---
+
+8 Y. Ben-Shabat, S. Gould
+box size. This yields a set with 3.2M training examples. The test set consists of
+22shapes,includingfigurines,CADobjects,andanalyticshapes.Forevaluation
+we use the same 5000 point subset per shape as in Guerrero et al. [9].
+All variations of our method were trained using 32,768 (1024 samples by
+32 shapes) random subsets of the 3.2M training samples at each epoch. We
+used a batch size of 256, the Adam optimizer and a learning rate of 10−3. The
+implementation was done in PyTorch and trained on a single Nvidia RTX 2080
+GPU.
+4.2 Normal estimation performance
+We use the RMSE metric for comparing the proposed DeepFit to other deep
+learning based methods [9,3,13] and classical geometric methods [10,6]. Addi-
+tionally, we analyze robustness for two types of data corruption:
+– Pointdensity—applyingtwosamplingregimesforpointsubsetselection:gra-
+dient, simulating effects of distance from the sensor, and stripes, simulating
+local occlusions.
+– Point perturbations–adding Gaussian noise to the points coordinates with
+threelevelsofmagnitudespecifiedbyσ,givenasapercentageofthebound-
+ing box.
+For the geometric methods, we show results for three different scales: small,
+medium and large, which correspond to 18, 112, 450 nearest neighbors. For the
+deep learning based methods we show the results for the single-scale (ss) and
+multi-scale (ms) versions.
+Table1showstheunorientednormalRMSEresultsforthemethodsdetailed
+above. It can be seen that our method slightly outperforms all other methods
+for low, medium and no noise augmentation and for gradient density augmenta-
+tion. For high noise, and striped occlusion augmentation we are a close second
+tothecontemporaryworkofLenssenetal.[13]whichonlyestimatesthenormal
+vectors while DeepFit also estimates other geometric properties, e.g., principal
+curvatures. The results also show that all method’s performance deteriorate as
+the noise level rises. In this context, both PCA and Jet perform well for specific
+noise-scalepairs.Inaddition,forPCPNet,usingamultiplescalesonlymildlyim-
+proves performance. Nesti-Net’s mixture of experts mitigate the scale-accuracy
+tradeoffwellatthecostofcomputationalcomplexity.DeepFit’ssoftpointselec-
+tion process overcomes this tradeoff. In the supplemental materials we perform
+additional evaluation using the percentage of good points (PGPα) metric.
+Figure 2a depicts a visualization of DeepFit’s results on three point clouds.
+HerethenormalvectorsaremappedtotheRGBcube.Itshowsthatforcomplex
+shapes(pillar,liberty)withhighnoiselevels,thegeneraldirectionofthenormal
+vectorispredictedcorrectly,but,thefinedetailsandexactnormalvectorarenot
+obtained. For a basic shape (Boxysmooth) the added noise does not affect the
+results substantially. Most notably, DeepFit shows robustness to point density
+corruptions. Figure 2b depicts a visualization of the angular error in each point
+
+--- Page 9 ---
+
+DeepFit 9
+Len-
+Our
+PCA Jet PCPNet ssen Nesti-
+Aug. Deep-
+[10] [6] [9] et. al Net
+Fit
+[13]
+scale ss small med largesmall med large ss ms ss ms (MoE)
+None 6.51 8.31 12.2916.77 7.60 12.3517.35 9.68 9.62 6.72 6.99
+Noise σ
+0.00125 9.21 12.0012.8716.8712.3612.8417.4211.46 11.37 9.95 10.11
+0.006 16.72 40.3618.3818.9441.3918.3318.8518.26 18.87 17.18 17.63
+0.012 23.12 52.63 27.5 23.5 53.2127.6823.41 22.8 23.28 21.96 22.28
+Density
+Gradient 7.31 9.14 12.8117.26 8.49 13.13 17.8 13.42 11.7 7.73 9.00
+Stripes 7.92 9.42 13.6619.87 8.61 13.3919.2911.74 11.16 7.51 8.47
+average 11.8 21.9716.2518.8721.9516.2919.0214.56 14.34 11.84 12.41
+Table 1: Comparison of the RMSE angle error for unoriented normal vector
+estimationofourDeepFitmethodtoclassicalgeometricmethods(PCA[10]and
+Jet[6]-forthreescalessmall,med,andlargecorrespondingtok =18,122,450),
+and deep learning methods (PCPNet [9], Lenssen et. al [13], and Nesti-Net [3])
+for the different methods using a heat map. For the Jet method [6] we display
+the results for medium scale. For all methods, it can be seen that more errors
+occur in regions with small details, high curvature e.g. edges and corners, and
+complexgeometry.DeepFitsufferstheleastfromthiseffectduetoitspoint-wise
+weight estimation, which allows it to adapt to the different local geometryand
+disregard irrelevant points in the fitting process.
+Figure 3 qualitatively visualizes the performance of DeepFit’s point-wise
+weight prediction network. The colors of the points correspond to weight mag-
+nitude, mapped to a heatmap ranging from 0 to 1 i.e. red points highly affect
+the fit while blue points have low influence. It shows that the network learns to
+adaptwelltocornerregions(columnn=1),assigninghighweightstopointson
+one plane and excluding points on the perpendicular one. Additionally, it shows
+howthenetworkadaptedtheweighttoachieveagoodfitforcomplexgeometries
+(column n=2,3,4).
+Fig. 4 shows the unoriented normal RMSE results for different parameter
+choices of our method. We explore different Jet orders n = 1,2,3,4, and a
+different number of neighboring points k = 64,128,256, It shows that using a
+large neighborhood size highly improves the performance in high noise cases
+while only minimally affecting the performance in low noise. It also shows that
+all jet orders are comparable with a small advantage for order 1-jet (plane) and
+order3-jetwhichisanindicationforabiasinthedatasettowardslowcurvature
+geometry. Additional ablation results, including more augmentations and the
+PGPα metric are provided in the supplemental material.
+Timingandefficiencyperformanceareprovidedinthesupplementalmaterial.
+DeepFitisfasterandhasfewerparametersthanPCPNetandNesti-Netandhas
+the potential of only being slightly slower than CGAL implementation of Jet
+
+--- Page 10 ---
+
+10 Y. Ben-Shabat, S. Gould
+(b)
+(a)
+Fig.2:(a)DeepFit’snormalestimationresultsfordifferentnoiselevels(columns
+1-4), and density distortions (columns 5-6). The colors of the points are normal
+vectors mapped to RGB. (b) Normal estimation error visualization results of
+DeepFit compared to other methods for three types of point clouds without
+noise. The colors of the points correspond to angular difference, mapped to a
+heatmap ranging from 0-60 degrees.
+Fig.3: DeepFit point-wise weight prediction. Three views of different n-jet sur-
+face fits. The colors of the points correspond to weight magnitude , mapped to
+a heatmap ranging from 0 to 1; see color bar on the right i.e. red points highly
+affect the fit while blue points have low influence.
+.
+
+--- Page 11 ---
+
+DeepFit 11
+n=1 n=2 n=3 n=4
+8.0
+7.5
+7.0
+6.5
+6.0
+64 128 256
+Number of points
+ESMR
+elgna
+No Noise
+32
+30
+28
+26
+24
+64 128 256
+Number of points
+(a)
+ESMR
+elgna
+High Noise
+(b)
+Fig.4: Normal estimation RMSE results for DeepFit ablations for (a) no noise
+and(b)highnoiseaugmentations.Comparingtheeffectofnumberofneighboring
+points and jet order.
+fitting because the forward pass for weight estimation is linear with respect to
+the number of points and the network weights.
+4.3 Principal curvature estimation performance
+Figure 5 qualitatively depicts DeepFit’s results on five point clouds. For vi-
+sualization, the principal curvatures are mapped to RGB values according to
+the commonly used mapping given in its bottom right corner i.e. both positive
+(dome) are red, both negative (bowl) are blue, one positive and one negative
+(saddle) are green, both zero (plane) are white, and one zero and one posi-
+tive/negative (cylinder) are yellow/cyan. For consistency in color saturation we
+mapeachmodeldifferentlyaccordingtothemeanandstandarddeviationofthe
+principal curvatures. Note that the curvature sign is determined by the ground
+truth normal orientation.
+For quantitative evaluation we use the normalized RMSE metric curvature
+estimation evaluation proposed in Guerrero et. al. [9] and given in Eq. 12, for
+comparing the proposed method to other deep learning based [9] and geometric
+methods [6]. Table 2 summarizes the results and shows an average error reduc-
+tion of 35% and 13.7% for maximum and minimum curvatures respectively. We
+analyze robustness for the same types of data corruptions as in normal estima-
+tion i.e. point perturbation and density. DeepFit significantly outperforms all
+other methods for maximum principal curvature k . For the minimum principal
+1
+curvature k DeepFit outperforms all methods for low and no noise augmenta-
+2
+tioninadditiontogradientandstripeddensityaugmentation,howeverPCPNet
+has a small advantage for medium and high noise levels. The results for the
+
+--- Page 12 ---
+
+12 Y. Ben-Shabat, S. Gould
+Fig.5: Curvature estimation results visualization. The colors of the points cor-
+responds to the mapping of k ,k to the color map given in the bottom right.
+1 2
+Values in the range [−(µ(|k |)+σ(|k |)),µ(|k |)+σ(|k |)]| .
+i i i i i=1,2
+minimum curvature are very sensitive since most values are close to zero.
+(cid:12) (cid:12)
+D kj = (cid:12) (cid:12) (cid:12)ma k x j { − |k k GT |,1} (cid:12) (cid:12) (cid:12) , for j =1,2. (12)
+GT
+ThenormalizedRMSEmetricisvisualizedinFig.6forDeepFitandPCPNet
+as the magnitude of the error vector mapped to a heatmap. It can be seen that
+more errors occur near edges, corners and small regions with a lot of detail and
+high curvature. These figures show that for both simple and complex geometric
+shapes DeepFit is able to predict the principal curvatures reliably.
+4.4 Surface reconstruction and noise removal
+Wefurtherinvestigatetheeffectivenessofoursurfacefittinginthecontextoftwo
+subsequent applications—Poisson surface reconstruction [11] and noise removal.
+Surface reconstruction. Fig. 7a shows the results for the classical Jet fitting
+and our DeepFit approach. Since the reconstruction requires oriented normals,
+we orient the normals, in both methods, according to the ground truth normal.
+It shows that using DeepFit, the poisson reconstruction is moderately more
+satisfactory by being smoother overall, and crispier near corners. It also retains
+small details (liberty crown, cup rim).
+Noise removal. The point-wise weight prediction network enables a better
+fit by reducing the influence of neighboring points. This weight can also be
+interpretedasthenetwork’sconfidenceofthatpointtolieontheobject’ssurface.
+Therefore, we can use the weight to remove points with low confidence. We first
+
+--- Page 13 ---
+
+DeepFit 13
+Our PCP- Our PCP-
+Jet Jet
+Aug. Deep- Net Aug. Deep- Net
+[6] [6]
+Fit [9] Fit [9]
+output k +n k +n k k k output k +n k +n k k k
+1 1 1 1 1 2 2 2 2 2
+scale ss ms small med. large scale ss ms small med. large
+None 1.00 1.36 2.19 6.55 2.97 None 0.46 0.54 1.61 2.91 1.59
+Noise σ Noise σ
+0.00125 1.00 1.48 57.35 6.68 2.90 0.00125 0.47 0.53 25.83 2.98 1.53
+0.006 0.98 1.46 60.91 9.86 3.30 0.006 0.57 0.51 22.27 4.88 1.73
+0.012 1.21 1.59 49.4010.78 3.58 0.012 0.68 0.53 18.17 5.22 1.84
+Density Density
+Gradient 0.59 1.32 2.07 1.40 1.53 Gradient 0.31 0.61 2.04 0.79 0.83
+Stripes 0.6 1.09 2.04 1.54 1.89 Stripes 0.31 0.55 1.92 0.89 1.09
+average 0.89 1.38 28.99 6.13 2.69 average 0.466 0.54 11.97 2.94 1.43
+reduc. 35.5% reduc. 13.7%
+Table 2: Comparison of normalized RMSE for (left) maximal (k ) and (right)
+1
+minimal(k )principalcurvatureestimationofourDeepFitmethodtotheclassic
+2
+Jet [6] with three scales, and PCPNet [9]
+Fig.6: Curvature estimation error results for DeepFit compared PCPNet. The
+numbers under each point cloud are its normalized RMSE errors in the format
+(k , k ). The color corresponds to the L2 norm of the error vector mapped to a
+1 2
+heatmap ranging from 0-5.
+
+--- Page 14 ---
+
+14 Y. Ben-Shabat, S. Gould
+(b)
+(a)
+Fig.7: DeepFit performance in two subsequent application pipelines: (a) Pois-
+son surface reconstruction using estimated normal vectors from the classical Jet
+fitting and the proposed DeepFit. (b) Noise removal results using DeepFit pre-
+dicted weights.
+aggregate the weights by summing all of its weight prediction from all of its
+neighbors.Thenwecomputethemeanandstandarddeviationoftheaggregateed
+(cid:80) (cid:80)
+weightsandremovepointsunderathresholdofµ( w )−σ( w ).Theoutput
+i i
+point cloud contains less points than the original one and the removed points
+are mostly attributed to outliers or noise. The results are depicted in Fig. 7b.
+5 Summary
+In this paper we presented a novel method for deep surface fitting for unstruc-
+tured3Dpointclouds.Themethodconsistsofestimatingpoint-wiseweightsfor
+solvingaweightedleastsquarefittingofann-jetsurface.Ourmodelisfullydif-
+ferentiable and can be trained end-to-end. The estimated weights (at test time)
+canbeinterpretedastheaconfidencemeasureforeverypointinthepointcloud
+and used for noise removal. Moreover, the formulation enables the computation
+ofnormalvectorsandhigherordergeometricquantitieslikeprincipalcurvatures.
+The approach demonstrates high accuracy, robustness and efficiency compared
+to state-of-the-art methods. This is attributed to its ability to adaptively select
+the neighborhood of points through a learned model while leveraging classic ro-
+bust surface fitting approaches, allowing the network to achieve high accuracy
+with a low number of parameters and computation time.
+References
+1. Yizhak Ben-Shabat, Tamar Avraham, Michael Lindenbaum, and Anath Fischer.
+Graph based over-segmentation methods for 3d point clouds. Computer Vision
+and Image Understanding, 2018.
+
+--- Page 15 ---
+
+DeepFit 15
+2. Yizhak Ben-Shabat, Michael Lindenbaum, and Anath Fischer. 3dmfv: Three-
+dimensional point cloud classification in real-time using convolutional neural net-
+works. IEEE Robotics and Automation Letters, 3(4):3145–3152, 2018.
+3. Yizhak Ben-Shabat, Michael Lindenbaum, and Anath Fischer. Nesti-net: Normal
+estimationforunstructured3dpointcloudsusingconvolutionalneuralnetworks.In
+ProceedingsoftheIEEEConferenceonComputerVisionandPatternRecognition,
+pages 10112–10120, 2019.
+4. Alexandre Boulch and Renaud Marlet. Fast and robust normal estimation for
+pointcloudswithsharpfeatures. InComputer Graphics Forum,volume31,pages
+1765–1774. Wiley Online Library, 2012.
+5. AlexandreBoulchandRenaudMarlet. Deeplearningforrobustnormalestimation
+in unstructured point clouds. Computer Graphics Forum, 35(5):281–290, 2016.
+6. Fr´ed´ericCazalsandMarcPouget. Estimatingdifferentialquantitiesusingpolyno-
+mial fitting of osculating jets. Computer Aided Geometric Design, 22(2):121–146,
+2005.
+7. Zheng Dang, Kwang Moo Yi, Yinlin Hu, Fei Wang, Pascal Fua, and Mathieu
+Salzmann.Eigendecomposition-freetrainingofdeepnetworkswithzeroeigenvalue-
+based losses. In Proceedings of the European Conference on Computer Vision
+(ECCV), pages 768–783, 2018.
+8. Ga¨el Guennebaud and Markus Gross. Algebraic point set surfaces. ACM Trans-
+actions on Graphics (TOG), 26(3):23, 2007.
+9. PaulGuerrero,YanirKleiman,MaksOvsjanikov,andNiloyJMitra. Pcpnetlearn-
+ing local shape properties from raw point clouds. Computer Graphics Forum,
+37(2):75–85, 2018.
+10. HuguesHoppe,TonyDeRose,TomDuchampt,JohnMcDonald,andWernerStuet-
+zle. Surface reconstruction from unorganized points. Computer Graphics, 26:2,
+1992.
+11. Michael Kazhdan, Matthew Bolitho, and Hugues Hoppe. Poisson surface recon-
+struction. InProceedings of the fourth Eurographics symposium on Geometry pro-
+cessing, volume 7, 2006.
+12. RomanKlokovandVictorLempitsky. Escapefromcells:Deepkd-networksforthe
+recognition of 3d point cloud models. In The IEEE International Conference on
+Computer Vision (ICCV), pages 863–872, Oct 2017.
+13. Jan Eric Lenssen, Christian Osendorfer, and Jonathan Masci. Differentiable iter-
+ative surface normal estimation. arXiv preprint arXiv:1904.07172, 2019.
+14. Daniel Maturana and Sebastian Scherer. Voxnet: A 3d convolutional neural net-
+work for real-time object recognition. In IEEE/RSJ International Conference on
+Intelligent Robots and Systems (IROS), pages 922–928. IEEE, 2015.
+15. Niloy J Mitra and An Nguyen. Estimating surface normals in noisy point cloud
+data. In Proceedings of the Nineteenth Annual Symposium on Computational ge-
+ometry, pages 322–328. ACM, 2003.
+16. Pushmeet Kohli Nathan Silberman, Derek Hoiem and Rob Fergus. Indoor seg-
+mentationandsupportinferencefromRGBDimages. InEuropean Conference on
+Computer Vision (ECCV), pages 746–760, 2012.
+17. CharlesR.Qi,HaoSu,KaichunMo,andLeonidasJ.Guibas.Pointnet:Deeplearn-
+ing on point sets for 3d classification and segmentation. In The IEEE Conference
+on Computer Vision and Pattern Recognition (CVPR), July 2017.
+18. CharlesRuizhongtaiQi,LiYi,HaoSu,andLeonidasJGuibas. Pointnet++:Deep
+hierarchicalfeaturelearningonpointsetsinametricspace. InAdvancesinneural
+information processing systems, pages 5099–5108, 2017.
+
+--- Page 16 ---
+
+16 Y. Ben-Shabat, S. Gould
+19. MichaelDSpivak. A comprehensive introduction to differential geometry. Publish
+or perish, 1970.
+
+--- Page 17 ---
+
+DeepFit 17
+6 Supplementary Material
+6.1 Normal and principal curvature estimation performance
+Performance on real data. Wequalitativelyevaluatetheperformanceofour
+method on the NYU Depth V2 dataset [16]. This dataset was captured using a
+Kinect v1 RGBD camera and contains indoor scene environment and includes
+missing data and a noise pattern thatis significantly different than the PCPNet
+dataset. Specifically, the noise often has the same magnitude as some of the
+features. Most importantly, this dataset, much like other real-world datasets,
+does not have ground truth normals. Fig. 8 and Fig. 9 show the performance of
+DeepFit’s normal and principal curvature estimation respectively compared to
+Jet. DeepFit was trained with 256 points, however, since the network’s weights
+are shared between the points it can be used with any neighborhood size. In
+theseresultsweshowtheperformancefor128,256,512,1024neighboringpoints.
+It shows that DeepFit is less sensitive to noise and is able to overcome the over-
+smoothing affect commonly attributed to using a large neighborhood while also
+preserving fine details.
+Additional normal estimation results. We evaluate the normal estimation
+performanceonthePCPNetdatastusingthepercentageofgoodpoints(PGPα)
+metric.Fig10showstheresultsofdifferentlearningbasedmethodsforincreasing
+α values . It shows that for low and medium noise levels, DeepFit is comparable
+to Lenssen et.al. [13] while in all other categories their performance is better.
+This is most likely attributed to the dataset bias towards flat and low curvature
+surfaces, in which case, our method does not pose an advantage. DeepFit main
+advantage is in curvy surfaces where an n-jet yields a better fit than a plane.
+We evaluate DeepFit’s normal estimation performance using RMSE for dif-
+ferent n-jet orders and number of points in the neighborhood. The results are
+showninFig.11.Itshowsthattheincreaseinthenumberofneighboringpoints
+slightly decreases the performance in the no noise augmentation however it sig-
+nificantly improves the performance in high noise. This is mainly attributed to
+theweightestimationnetworkthatsoftlyselectsthemostrelevantpointsforthe
+fit.Italsoshowsthat1-jet(planes)performwell,howeverhigherorderjetshave
+an advantage in the low and medium noise augmentation categories. In theory,
+thehigherorderjetshavethecapacitytofitplanes,howeverinpracticeitisnot
+always the case.
+Fig. 12 depicts a visualization of DeepFit’s results on PCPNet point clouds.
+Here the normal vectors are mapped to the RGB cube. Fig. 13 depicts a visu-
+alization of the angular error in each point for the PCPNet dataset. Here, the
+points’ color correspond to angular difference, mapped to a heatmap ranging
+from 0-60 degrees. It shows that for complex shapes with high noise levels, the
+generaldirectionofthenormalvectorispredictedcorrectly,but,thefinedetails
+andexactnormalvectorarenotobtained.Forbasicshapestheaddednoisedoes
+not affect the results substantially. Most notably, DeepFit shows robustness to
+point density corruptions.
+
+--- Page 18 ---
+
+18 Y. Ben-Shabat, S. Gould
+Fig.8:NormalestimationresultsforDeepFitandJetonNYUDepthV2dataset
+for different neighborhoods sizes (128,256,512,1024). The colors of the points
+are normal vectors mapped to RGB and projected to the image plane.
+Fig.9:PrincipalcurvatureestimationresultsforDeepFitandJetonNYUDepth
+V2 dataset for different neighborhoods sizes (128,256,512,1024). The colors of
+the points correspond to their principal curvature values using the colormap in
+the bottom-left corner and projected to the image plane.
+
+--- Page 19 ---
+
+DeepFit 19
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+0 5 10 15 20 25 30
+PGP
+No Noise
+1.0
+0.8
+0.6
+0.4
+DeepFit
+Lenssen et. al.
+Nesti-Net 0.2
+PCPNet
+0.0
+0 5 10 15 20 25 30
+PGP
+Low Noise
+1.0
+0.8
+0.6
+0.4
+DeepFit
+Lenssen et. al.
+Nesti-Net 0.2
+PCPNet
+0.0
+0 5 10 15 20 25 30
+PGP
+Medium Noise
+DeepFit
+Lenssen et. al.
+Nesti-Net
+PCPNet
+1.0
+0.8
+0.6
+0.4
+0.2
+0.0
+0 5 10 15 20 25 30
+PGP
+High Noise
+1.0
+0.8
+0.6
+0.4
+DeepFit
+Lenssen et. al.
+Nesti-Net 0.2
+PCPNet
+0.0
+0 5 10 15 20 25 30
+PGP
+Variable Density: Gradient
+1.0
+0.8
+0.6
+0.4
+DeepFit
+Lenssen et. al.
+Nesti-Net 0.2
+PCPNet
+0.0
+0 5 10 15 20 25 30
+PGP
+Variable Density: Striped
+DeepFit
+Lenssen et. al.
+Nesti-Net
+PCPNet
+Fig.10: Comparison of the percentage of good points (PGP) metric for unori-
+entednormalestimationoftheproposedDeepFittootherdeeplearningmethods
+(PCPNet[9],Nesti-Net[3],Lenssenet.al.[13]).Here,αisthethresholdformea-
+suring the percentage of good points.
+.
+n=1 n=2 n=3 n=4
+8.0
+7.5
+7.0
+6.5
+6.0
+64 128 256
+Number of points
+ESMR
+elgna
+No Noise
+10.0
+9.8
+9.6
+9.4
+9.2
+64 128 256
+Number of points
+ESMR
+elgna
+Low Noise
+21
+20
+19
+18
+17
+64 128 256
+Number of points
+ESMR
+elgna
+Medium Noise
+32
+30
+28
+26
+24
+64 128 256
+Number of points
+ESMR
+elgna
+High Noise
+9.0
+8.5
+8.0
+7.5
+7.0
+64 128 256
+Number of points
+ESMR
+elgna
+Variable Density: Gradient
+9.5
+9.0
+8.5
+8.0
+7.5
+64 128 256
+Number of points
+ESMR
+elgna
+Variable Density: Striped
+Fig.11: Comparison of the angle RMSE metric for different DeepFit variants.
+Ablations include different n-jet order (1,2,3,4) and number of neighboring
+points (64,128,256).
+.
+
+--- Page 20 ---
+
+20 Y. Ben-Shabat, S. Gould
+Additional principal curvature estimation results. Fig. 14 qualitatively
+depictsDeepFit’sresultsonthePCPNetdataset.Forvisualization,theprincipal
+curvaturesaremappedtoRGBvaluesaccordingtothecommonlyusedmapping
+given in Fig. 5 i.e. both positive (dome) are red, both negative (bowl) are blue,
+onepositiveandonenegative(saddle)aregreen,bothzero(plane)arewhite,and
+one zero and one positive/negative (cylinder) are yellow/cyan. For consistency
+in color saturation we map each model differently according to the mean and
+standard deviation of the principal curvatures. Note that the curvature sign is
+determinedbythegroundtruthnormalorientation.DeepFit’snormalizedRMSE
+metric is visualized in Fig. 15 as the magnitude of the error vector mapped to
+a heatmap. It can be seen that more errors occur near edges, corners and small
+regions with a lot of detail and high curvature. Moreover, these visualizations
+show that for low noise levels, the principal curvature estimation is reliable, as
+expected, the reliability declines with the insertion of high magnitude noise.
+6.2 Efficiency
+Table 3 shows a comparison between the number of parameters and run time
+between different deep learning based normal estimation methods. It can be
+seen that DeepFit has a significantly lower number of parameters compared to
+Nesti-Net and PCPNet and more parameters than Lenssen et. al.. This gap in
+thenumberofparameterscanbeexplainedbythelackofpointstructureinour
+method while Lessen et. al. construct a graph. Constructing a graph introduces
+a limitation with respects to the number of neighboring points, i.e. training and
+testing has to be done on the same neighborhood size, using a PointNet archi-
+tecture allows to train and test on different sizes of neighborhoods. DeepFit’s ,
+number of parameters is mainly attributed to the PointNet transformation sub-
+networks. The reported run time is the average run time for a batch of size 64
+(i.e. computing normals for 64 points simultaneously). We chose a batch of 64
+in order to fairly compare to the more resource intensive methods (Nesti-Net).
+Most methods, including ours, can compute in larger batches for faster perfor-
+mance, particularly Lenssen et. al. that are able to fit a full size point cloud
+(100k points) in a single batch on the GPU.
+Lenssen et.
+Method Our DeepFit Nesti-Net [3] PCPNet [9]
+al. [13]
+Parameters 3.5M 179M 22M 7981
+Exec time (per
+0.35ms 266ms 0.61ms 0.13ms
+point)
+Table3:Numberofparametersandexecutiontimeperformancefordeeplearning
+normals estimation methods. Run time is averaged for batches of size 64.
+
+--- Page 21 ---
+
+DeepFit 21
+Fig.12: DeepFit’s normal estimation results for different noise levels (columns
+1-4), and density distortions (columns 5-6). The colors of the points are normal
+vectors mapped to RGB.
+
+--- Page 22 ---
+
+22 Y. Ben-Shabat, S. Gould
+Fig.13: Normal estimation error visualization for different noise levels (columns
+1-4), and density distortions (columns 5-6). The colors of the points correspond
+to angular difference, mapped to a heatmap ranging from 0-60 degrees. The
+number above each point cloud is the RMSE.
+
+--- Page 23 ---
+
+DeepFit 23
+Fig.14: Curvature estimation results visualization. The colors of the points cor-
+responds to the mapping of k ,k to the color map given in Fig 5. Values in the
+1 2
+range [−(µ(|k |)+σ(|k |)),µ(|k |)+σ(|k |)]| .
+i i i i i=1,2
+
+--- Page 24 ---
+
+24 Y. Ben-Shabat, S. Gould
+Fig.15:Curvatureestimationerrorresults.Thenumbersundereachpointcloud
+are its RMSE and normalized RMSE. The color corresponds to the L2 norm of
+the error vector mapped to a heatmap ranging from 0-5.

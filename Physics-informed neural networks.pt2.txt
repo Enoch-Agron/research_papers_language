@@ -1,0 +1,928 @@
+# Physics-informed neural networks.pt2.pdf
+# Converted: 2025-07-18 12:59:06
+# Method: pdfplumber
+# Domain: pixel2physics
+# Source: /home/user/vekt/papers/pixel2physics/pdfs/layer2/Physics-informed neural networks.pt2.pdf
+# Output: /home/user/vekt/papers/pixel2physics/dot_txt/layer2/Physics-informed neural networks.pt2.txt
+
+
+--- Page 1 ---
+
+Physics Informed Deep Learning (Part II): Data-driven
+Discovery of Nonlinear Partial Differential Equations
+Maziar Raissi1, Paris Perdikaris2, and George Em Karniadakis1
+1Division of Applied Mathematics, Brown University,
+Providence, RI, 02912, USA
+2Department of Mechanical Engineering and Applied Mechanics,
+University of Pennsylvania,
+Philadelphia, PA, 19104, USA
+Abstract
+Weintroducephysics informed neural networks–neuralnetworksthatare
+trained to solve supervised learning tasks while respecting any given law of
+physics described by general nonlinear partial differential equations. In this
+second part of our two-part treatise, we focus on the problem of data-driven
+discovery of partial differential equations. Depending on whether the avail-
+able data is scattered in space-time or arranged in fixed temporal snapshots,
+we introduce two main classes of algorithms, namely continuous time and
+discrete time models. The effectiveness of our approach is demonstrated us-
+ing a wide range of benchmark problems in mathematical physics, including
+conservationlaws, incompressiblefluidflow, andthepropagationofnonlinear
+shallow-water waves.
+Keywords:
+Data-driven scientific computing, Machine learning, Predictive modeling,
+Runge-Kutta methods, Nonlinear dynamics
+1. Introduction
+Deep learning has gained unprecedented attention over the last few years,
+anddeservedlyso,asithasintroducedtransformativesolutionsacrossdiverse
+scientific disciplines [1, 2, 3, 4]. Despite the ongoing success, there exist many
+scientific applications that have yet failed to benefit from this emerging tech-
+nology, primarily due to the high cost of data acquisition. It is well known
+Preprint submitted to Journal Name November 30, 2017
+7102
+voN
+82
+]IA.sc[
+1v66501.1171:viXra
+
+--- Page 2 ---
+
+that the current state-of-the-art machine learning tools (e.g., deep/convolu-
+tional/recurrent neural networks) are lacking robustness and fail to provide
+any guarantees of convergence when operating in the small data regime, i.e.,
+the regime where very few training examples are available.
+In the first part of this study, we introduced physics informed neural net-
+works as a viable solution for training deep neural networks with few training
+examples, forcaseswheretheavailabledataisknowntorespectagivenphys-
+icallawdescribedbyasystemofpartialdifferentialequations. Suchcasesare
+abundant in the study of physical, biological, and engineering systems, where
+longstanding developments of mathematical physics have shed tremendous
+insight on how such systems are structured, interact, and dynamically evolve
+in time. We saw how the knowledge of an underlying physical law can in-
+troduce structure that effectively regularizes the training of neural networks,
+and enables them to generalize well even when only a few training examples
+are available. Through the lens of different benchmark problems, we high-
+lighted the key features of physics informed neural networks in the context
+of data-driven solutions of partial differential equations [5, 6].
+In this second part of our study, we shift our attention to the problem of
+data-driven discovery of partial differential equations [7, 8, 9]. To this end,
+let us consider parametrized and nonlinear partial differential equations of
+the general form
+u + [u;λ] = 0, x Ω, t [0,T], (1)
+t
+N ∈ ∈
+where u(t,x) denotes the latent (hidden) solution, [ ;λ] is a nonlinear op-
+erator parametrized by λ, and Ω is a subset of RD. T N hi · s setup encapsulates a
+wide range of problems in mathematical physics including conservation laws,
+diffusion processes, advection-diffusion-reaction systems, and kinetic equa-
+tions. As a motivating example, the one dimensional Burgers’ equation [10]
+corresponds to the case where [u;λ] = λ uu λ u and λ = (λ ,λ ).
+1 x 2 xx 1 2
+N −
+Here, the subscripts denote partial differentiation in either time or space.
+Now, the problem of data-driven discovery of partial differential equations
+poses the following question: given a small set of scattered and potentially
+noisy observations of the hidden state u(t,x) of a system, what are the pa-
+rameters λ that best describe the observed data?
+2
+
+--- Page 3 ---
+
+In what follows, we will provide an overview of our two main approaches
+to tackle this problem, namely continuous time and discrete time models, as
+well as a series of results and systematic studies for a diverse collection of
+benchmarks. In the first approach, we will assume availability of scattered
+and potential noisy measurements across the entire spatio-temporal domain.
+In the latter, we will try to infer the unknown parameters λ from only two
+data snapshots taken at distinct time instants. All data and codes used in
+this manuscript are publicly available on GitHub at https://github.com/
+maziarraissi/PINNs.
+2. Continuous Time Models
+We define f(t,x) to be given by the left-hand-side of equation (1); i.e.,
+f := u + [u;λ], (2)
+t
+N
+and proceed by approximating u(t,x) by a deep neural network. This as-
+sumption along with equation (2) result in a physics informed neural network
+f(t,x). This network can be derived by applying the chain rule for differ-
+entiating compositions of functions using automatic differentiation [11]. It
+is worth highlighting that the parameters of the differential operator λ turn
+into parameters of the physics informed neural network f(t,x).
+2.1. Example (Burgers’ Equation)
+As a first example, let us consider the Burgers’ equation. This equation
+arises in various areas of applied mathematics, including fluid mechanics,
+nonlinear acoustics, gas dynamics, and traffic flow [10]. It is a fundamen-
+tal partial differential equation and can be derived from the Navier-Stokes
+equations for the velocity field by dropping the pressure gradient term. For
+small values of the viscosity parameters, Burgers’ equation can lead to shock
+formation that is notoriously hard to resolve by classical numerical methods.
+In one space dimension the equation reads as
+u +λ uu λ u = 0. (3)
+t 1 x 2 xx
+−
+Let us define f(t,x) to be given by
+f := u +λ uu λ u , (4)
+t 1 x 2 xx
+−
+3
+
+--- Page 4 ---
+
+and proceed by approximating u(t,x) by a deep neural network. This will
+result in the physics informed neural network f(t,x). The shared parameters
+of the neural networks u(t,x) and f(t,x) along with the parameters λ =
+(λ ,λ ) of the differential operator can be learned by minimizing the mean
+1 2
+squared error loss
+MSE = MSE +MSE , (5)
+u f
+where
+N
+1 (cid:88)
+MSE = u(ti,xi) ui 2,
+u N | u u − |
+i=1
+and
+N
+1 (cid:88)
+MSE = f(ti,xi) 2.
+f N | u u |
+i=1
+Here, ti,xi,ui N denote the training data on u(t,x). The loss MSE cor-
+{ u u }i=1 u
+responds to the training data on u(t,x) while MSE enforces the structure
+f
+imposed by equation (3) at a finite set of collocation points, whose number
+and location is taken to be the same as the training data.
+To illustrate the effectiveness of our approach, we have created a train-
+ing data-set by randomly generating N = 2,000 points across the entire
+spatio-temporal domain from the exact solution corresponding to λ = 1.0
+1
+and λ = 0.01/π. The locations of the training points are illustrated in the
+2
+top panel of figure 1. This data-set is then used to train a 9-layer deep
+neural network with 20 neurons per hidden layer by minimizing the mean
+square error loss of (5) using the L-BFGS optimizer [12]. Upon training,
+the network is calibrated to predict the entire solution u(t,x), as well as the
+unknown parameters λ = (λ ,λ ) that define the underlying dynamics. A
+1 2
+visual assessment of the predictive accuracy of the physics informed neural
+network is given in the middle and bottom panels of figure 1. The network is
+able to identify the underlying partial differential equation with remarkable
+accuracy, even in the case where the scattered training data is corrupted with
+1% uncorrelated noise.
+Tofurtherscrutinizetheperformanceofouralgorithm,wehaveperformed
+a systematic study with respect to the total number of training data, the
+noise corruption levels, and the neural network architecture. The results are
+summarized in tables 1 and 2. The key observation here is that the proposed
+4
+
+--- Page 5 ---
+
+1.0
+0.5
+0.0
+0.5
+−
+1.0
+−
+0.0 0.2 0.4 0.6 0.8
+t
+x
+u(t,x)
+1.00
+0.75
+0.50
+0.25
+0.00
+0.25
+−
+0.50
+−
+0.75
+−
+1.00
+−
+Data(2000points)
+1
+0
+1
+−
+1 0 1
+−
+x
+)x,t(u
+t=0.25
+1
+0
+1
+−
+1 0 1
+−
+x
+)x,t(u
+t=0.50
+1
+0
+1
+−
+1 0 1
+−
+x
+Exact Prediction
+)x,t(u
+t=0.75
+Correct PDE u +uu 0.0031831u =0
+t x xx
+−
+Identified PDE (clean data) u +0.99915uu 0.0031794u =0
+t x xx
+−
+Identified PDE (1% noise) u +1.00042uu 0.0032098u =0
+t x xx
+−
+Figure 1: Burgers equation: Top: Predicted solution u(t,x) along with the training data.
+Middle: Comparison of the predicted and exact solutions corresponding to the three tem-
+poral snapshots depicted by the dashed vertical lines in the top panel. Bottom: Correct
+partial differential equation along with the identified one obtained by learning λ and λ .
+1 2
+methodology appears to be very robust with respect to noise levels in the
+data, andyieldsareasonableidentificationaccuracyevenfornoisecorruption
+upto10%. Thisenhancedrobustnessseemstogreatlyoutperformcompeting
+approaches using Gaussian process regression as previously reported in [7] as
+well as approaches relying on sparse regression that require relatively clean
+data for accurately computing numerical gradients [13].
+2.1.1. Example (Navier-Stokes Equation)
+Our next example involves a realistic scenario of incompressible fluid flow
+as described by the ubiquitous Navier-Stokes equations. Navier-Stokes equa-
+tions describe the physics of many phenomena of scientific and engineering
+5
+
+--- Page 6 ---
+
+% error in λ % error in λ
+1 2
+noise
+0% 1% 5% 10% 0% 1% 5% 10%
+N
+u
+500 0.131 0.518 0.118 1.319 13.885 0.483 1.708 4.058
+1000 0.186 0.533 0.157 1.869 3.719 8.262 3.481 14.544
+1500 0.432 0.033 0.706 0.725 3.093 1.423 0.502 3.156
+2000 0.096 0.039 0.190 0.101 0.469 0.008 6.216 6.391
+Table 1: Burgers’ equation: Percentage error in the identified parameters λ and λ for
+1 2
+different number of training data N corrupted by different noise levels. Here, the neural
+network architecture is kept fixed to 9 layers and 20 neurons per layer.
+% error in λ % error in λ
+1 2
+Neurons
+10 20 40 10 20 40
+Layers
+2 11.696 2.837 1.679 103.919 67.055 49.186
+4 0.332 0.109 0.428 4.721 1.234 6.170
+6 0.668 0.629 0.118 3.144 3.123 1.158
+8 0.414 0.141 0.266 8.459 1.902 1.552
+Table 2: Burgers’ equation: Percentage error in the identified parameters λ and λ
+1 2
+for different number of hidden layers and neurons per layer. Here, the training data
+is considered to be noise-free and fixed to N =2,000.
+interest. They may be used to model the weather, ocean currents, water flow
+in a pipe and air flow around a wing. The Navier-Stokes equations in their
+full and simplified forms help with the design of aircraft and cars, the study
+of blood flow, the design of power stations, the analysis of the dispersion of
+pollutants, and many other applications. Let us consider the Navier-Stokes
+equations in two dimensions1 (2D) given explicitly by
+u +λ (uu +vu ) = p +λ (u +u ),
+t 1 x y − x 2 xx yy (6)
+v +λ (uv +vv ) = p +λ (v +v ),
+t 1 x y y 2 xx yy
+−
+where u(t,x,y) denotes the x-component of the velocity field, v(t,x,y) the
+y-component, and p(t,x,y) the pressure. Here, λ = (λ ,λ ) are the unknown
+1 2
+1It is straightforward to generalize the proposed framework to the Navier-Stokes equa-
+tions in three dimensions (3D).
+6
+
+--- Page 7 ---
+
+parameters. Solutions to the Navier-Stokes equations are searched in the set
+of divergence-free functions; i.e.,
+u +v = 0. (7)
+x y
+This extra equation is the continuity equation for incompressible fluids that
+describes the conservation of mass of the fluid. We make the assumption
+that
+u = ψ , v = ψ , (8)
+y x
+−
+for some latent function ψ(t,x,y).2 Under this assumption, the continuity
+equation (7) will be automatically satisfied. Given noisy measurements
+ti,xi,yi,ui,vi N
+{ }i=1
+of the velocity field, we are interested in learning the parameters λ as well as
+the pressure p(t,x,y). We define f(t,x,y) and g(t,x,y) to be given by
+f := u +λ (uu +vu )+p λ (u +u ),
+t 1 x y x − 2 xx yy (9)
+g := v +λ (uv +vv )+p λ (v +v ),
+t 1 x y y 2 xx yy
+−
+(cid:2) (cid:3)
+and proceed by jointly approximating ψ(t,x,y) p(t,x,y) using a single
+neuralnetworkwithtwooutputs. Thispriorassumptionalongwithequations
+(cid:2) (cid:3)
+(8)and(9)resultsintoaphysicsinformedneuralnetwork f(t,x,y) g(t,x,y) .
+The parameters λ of the Navier-Stokes operator as well as the parameters of
+(cid:2) (cid:3) (cid:2) (cid:3)
+the neural networks ψ(t,x,y) p(t,x,y) and f(t,x,y) g(t,x,y) can be
+trained by minimizing the mean squared error loss
+N
+1 (cid:88)(cid:0) (cid:1)
+MSE := u(ti,xi,yi) ui 2 + v(ti,xi,yi) vi 2 (10)
+N | − | | − |
+i=1
+N
+1 (cid:88)(cid:0) (cid:1)
++ f(ti,xi,yi) 2 + g(ti,xi,yi) 2 .
+N | | | |
+i=1
+Hereweconsidertheprototypeproblemofincompressibleflowpastacircular
+cylinder; a problem known to exhibit rich dynamic behavior and transitions
+2This construction can be generalized to three dimensional problems by employing the
+notion of vector potentials.
+7
+
+--- Page 8 ---
+
+for different regimes of the Reynolds number Re = u D/ν. Assuming a
+∞
+non-dimensional free stream velocity u = 1, cylinder diameter D = 1, and
+∞
+kinematic viscosity ν = 0.01, the system exhibits a periodic steady state
+behavior characterized by a asymmetrical vortex shedding pattern in the
+cylinder wake, known as the Ka´rm´an vortex street [14].
+To generate a high-resolution data set for this problem we have employed
+the spectral/hp-element solver NekTar [15]. Specifically, the solution domain
+is discretized in space by a tessellation consisting of 412 triangular elements,
+andwithin eachelementthe solution isapproximatedas alinear combination
+of a tenth-order hierarchical, semi-orthogonal Jacobi polynomial expansion
+[15]. We have assumed a uniform free stream velocity profile imposed at the
+left boundary, a zero pressure outflow condition imposed at the right bound-
+ary located 25 diameters downstream of the cylinder, and periodicity for the
+top and bottom boundaries of the [ 15,25] [ 8,8] domain. We integrate
+− × −
+equation (6) using a third-order stiffly stable scheme [15] until the system
+reaches a periodic steady state, as depicted in figure 2(a). In what follows,
+a small portion of the resulting data-set corresponding to this steady state
+solution will be used for model training, while the remaining data will be
+used to validate our predictions. For simplicity, we have chosen to confine
+our sampling in a rectangular region downstream of cylinder as shown in
+figure 2(a).
+Given scattered and potentially noisy data on the stream-wise u(t,x,y)
+and transverse v(t,x,y) velocity components, our goal is to identify the un-
+known parameters λ and λ , as well as to obtain a qualitatively accurate
+1 2
+reconstructionoftheentirepressurefieldp(t,x,y)inthecylinderwake, which
+by definition can only be identified up to a constant. To this end, we have
+created a training data-set by randomly sub-sampling the full high-resolution
+data-set. To highlight the ability of our method to learn from scattered and
+scarce training data, we have chosen N = 5,000, corresponding to a mere
+1% of the total available data as illustrated in figure 2(b). Also plotted are
+representative snapshots of the predicted velocity components u(t,x,y) and
+v(t,x,y) after the model was trained. The neural network architecture used
+here consists of 9 layers with 20 neurons in each layer.
+A summary of our results for this example is presented in figure 3. We
+observe that the physics informed neural network is able to correctly identify
+8
+
+--- Page 9 ---
+
+5
+0
+5
+−
+15 10 5 0 5 10 15 20 25
+− − −
+x
+y
+Vorticity
+3
+2
+1
+0
+1
+−
+2
+−
+3
+−
+u(t,x,y) v(t,x,y)
+y t y t
+x x
+Figure 2: Navier-Stokes equation: Top: Incompressible flow anddynamic vortexshedding
+past a circular cylinder at Re = 100. The spatio-temporal training data correspond to
+the depicted rectangular region in the cylinder wake. Bottom: Locations of training data-
+points for the the stream-wise and transverse velocity components, u(t,x,y) and v(t,x,t),
+respectively.
+the unknown parameters λ and λ with very high accuracy even when the
+1 2
+training data was corrupted with noise. Specifically, for the case of noise-
+free training data, the error in estimating λ and λ is 0.078%, and 4.67%,
+1 2
+respectively. The predictions remain robust even when the training data are
+corrupted with 1% uncorrelated Gaussian noise, returning an error of 0.17%,
+and 5.70%, for λ and λ , respectively.
+1 2
+A more intriguing result stems from the network’s ability to provide a
+qualitatively accurate prediction of the entire pressure field p(t,x,y) in the
+absence of any training data on the pressure itself. A visual comparison
+against the exact pressure solution is presented in figure 3 for a represen-
+9
+
+--- Page 10 ---
+
+2
+1
+0
+1
+−
+2
+−
+2 4 6 8
+x
+y
+Predicted pressure
+2
+1.4
+1.3 1
+1.2
+0
+1.1
+1.0 1
+−
+0.9
+2
+−
+2 4 6 8
+x
+y
+Exact pressure
+0.0
+0.1
+−
+0.2
+−
+0.3
+−
+0.4
+−
+0.5
+−
+u +(uu +vu )= p +0.01(u +u )
+Correct PDE t x y − x xx yy
+v +(uv +vv )= p +0.01(v +v )
+t x y y xx yy
+−
+u +0.999(uu +vu )= p +0.01047(u +u )
+Identified PDE (clean data) t x y − x xx yy
+v +0.999(uv +vv )= p +0.01047(v +v )
+t x y y xx yy
+−
+u +0.998(uu +vu )= p +0.01057(u +u )
+Identified PDE (1% noise) t x y − x xx yy
+v +0.998(uv +vv )= p +0.01057(v +v )
+t x y y xx yy
+−
+Figure 3: Navier-Stokes equation: Top: Predicted versus exact instantaneous pressure
+field p(t,x,y) at a representative time instant. By definition, the pressure can be recov-
+ered up to a constant, hence justifying the different magnitude between the two plots.
+This remarkable qualitative agreement highlights the ability of physics-informed neural
+networkstoidentifytheentirepressurefield, despitethefactthatnodataonthepressure
+are used during model training. Bottom: Correct partial differential equation along with
+the identified one obtained by learning λ ,λ and p(t,x,y).
+1 2
+tative pressure snapshot. Notice that the difference in magnitude between
+the exact and the predicted pressure is justified by the very nature of the
+Navier-Stokes system, as the pressure field is only identifiable up to a con-
+stant. This result of inferring a continuous quantity of interest from auxiliary
+measurements by leveraging the underlying physics is a great example of the
+enhanced capabilities that physics informed neural networks have to offer,
+and highlights their potential in solving high-dimensional inverse problems.
+Our approach so far assumes availability of scattered data throughout the
+entire spatio-temporal domain. However, in many cases of practical interest,
+one may only be able to observe the system at distinct time instants. In the
+next section, we introduce a different approach that tackles the data-driven
+discovery problem using only two data snapshots. We will see how, by lever-
+aging the classical Runge-Kutta time-stepping schemes, one can construct
+discrete time physics informed neural networks that can retain high predic-
+tive accuracy even when the temporal gap between the data snapshots is
+10
+
+--- Page 11 ---
+
+very large.
+3. Discrete Time Models
+We begin by applying the general form of Runge-Kutta methods with q
+stages to equation (1) and obtain
+un+ci = un ∆t
+(cid:80)q
+a [un+cj;λ], i = 1,...,q,
+− j=1 ij N (11)
+un+1 = un ∆t
+(cid:80)q
+b [un+cj;λ].
+− j=1 j N
+Here, un+cj(x) = u(tn + c ∆t,x) for j = 1,...,q. This general form en-
+j
+capsulates both implicit and explicit time-stepping schemes, depending on
+the choice of the parameters a ,b ,c . Equations (11) can be equivalently
+ij j j
+{ }
+expressed as
+un = un, i = 1,...,q,
+i (12)
+un+1 = un+1, i = 1,...,q.
+i
+where
+un := un+ci +∆t
+(cid:80)q
+a [un+cj;λ], i = 1,...,q,
+i j=1 ij N (13)
+un+1 := un+ci +∆t (cid:80)q (a b ) [un+cj;λ], i = 1,...,q.
+i j=1 ij − j N
+We proceed by placing a multi-output neural network prior on
+(cid:2) (cid:3)
+un+c1(x),...,un+cq(x) . (14)
+This prior assumption along with equations (13) result in two physics in-
+formed neural networks
+(cid:2) (cid:3)
+un(x),...,un(x),un (x) , (15)
+1 q q+1
+and
+(cid:2) (cid:3)
+un+1(x),...,un+1(x),un+1(x) . (16)
+1 q q+1
+Given noisy measurements at two distinct temporal snapshots xn,un and
+{ }
+xn+1,un+1 of the system at times tn and tn+1, respectively, the shared
+{ }
+parameters of the neural networks (14), (15), and (16) along with the pa-
+rameters λ of the differential operator can be trained by minimizing the sum
+11
+
+--- Page 12 ---
+
+of squared errors
+SSE = SSE +SSE , (17)
+n n+1
+where
+(cid:88)
+q
+(cid:88)
+Nn
+SSE := un(xn,i) un,i 2,
+n | j − |
+j=1 i=1
+and
+q Nn+1
+(cid:88) (cid:88)
+SSE := un+1(xn+1,i) un+1,i 2.
+n+1 | j − |
+j=1 i=1
+Here, xn = xn,i Nn, un = un,i Nn, xn+1 = xn+1,i Nn+1, and un+1 =
+{ }i=1 { }i=1 { }i=1
+un+1,i Nn+1.
+{ }i=1
+3.1. Example (Burgers’ Equation)
+Let us illustrate the key features of this method through the lens of the
+Burgers’ equation. Recall the equation’s form
+u +λ uu λ u = 0, (18)
+t 1 x 2 xx
+−
+and notice that the nonlinear operator in equation (13) is given by
+[un+cj] = λ un+cjun+cj λ un+cj.
+N 1 x − 2 xx
+Given merely two training data snapshots, the shared parameters of the
+neural networks (14), (15), and (16) along with the parameters λ = (λ ,λ )
+1 2
+of the Burgers’ equation can be learned by minimizing the sum of squared
+errors in equation (17). Here, we have created a training data-set comprising
+of N = 199 and N = 201 spatial points by randomly sampling the exact
+n n+1
+solution at time instants tn = 0.1 and tn+1 = 0.9, respectively. The training
+data are shown in the top and middle panel of figure 4. The neural network
+architecture used here consists of 4 hidden layers with 50 neurons each, while
+the number of Runge-Kutta stages is empirically chosen to yield a temporal
+error accumulation of the order of machine precision (cid:15) by setting3
+q = 0.5log(cid:15)/log(∆t), (19)
+3ThisismotivatedbythetheoreticalerrorestimatesforimplicitRunge-Kuttaschemes
+suggesting a truncation error of (∆t2q) [16].
+O
+12
+
+--- Page 13 ---
+
+% error in λ % error in λ
+1 2
+noise
+0% 1% 5% 10% 0% 1% 5% 10%
+∆t
+0.2 0.002 0.435 6.073 3.273 0.151 4.982 59.314 83.969
+0.4 0.001 0.119 1.679 2.985 0.088 2.816 8.396 8.377
+0.6 0.002 0.064 2.096 1.383 0.090 0.068 3.493 24.321
+0.8 0.010 0.221 0.097 1.233 1.918 3.215 13.479 1.621
+Table 3: Burgers’ equation: Percentage error in the identified parameters λ and λ for
+1 2
+different gap size ∆t between two different snapshots and for different noise levels.
+where the time-step for this example is ∆t = 0.8. The bottom panel of
+figure 4 summarizes the identified parameters λ = (λ ,λ ) for the cases of
+1 2
+noise-free data, as well as noisy data with 1% of Gaussian uncorrelated noise
+corruption. For both cases, the proposed algorithm is able to learn the cor-
+rect parameter values λ = 1.0 and λ = 0.01/π with remarkable accuracy,
+1 2
+despite the fact that the two data snapshots used for training are very far
+apart, and potentially describe different regimes of the underlying dynamics.
+A sensitivity analysis is performed to quantify the accuracy of our predic-
+tions with respect to the gap between the training snapshots ∆t, the noise
+levels in the training data, and the physics informed neural network archi-
+tecture. As shown in table 3, the proposed algorithm is quite robust to both
+∆t and the noise corruption levels, and it consistently returns reasonable
+estimates for the unknown parameters. This robustness is mainly attributed
+to the flexibility of the underlying implicit Runge-Kutta scheme to admit an
+arbitrarily high number of stages, allowing the data snapshots to be very far
+apart in time, while not compromising the accuracy with which the nonlin-
+ear dynamics of equation (18) are resolved. This is the key highlight of our
+discrete time formulation for identification problems, setting it apart from
+competing approaches [7, 13]. Lastly, table 4 presents the percentage error
+in the identified parameters, demonstrating the robustness of our estimates
+with respect to the underlying neural network architecture.
+3.1.1. Example (Kortewegde Vries Equation)
+Our final example aims to highlight the ability of the proposed frame-
+work to handle governing partial differential equations involving higher or-
+der derivatives. Here, we consider a mathematical model of waves on shallow
+13
+
+--- Page 14 ---
+
+1.0
+0.5
+0.0
+0.5
+−
+1.0
+−
+0.0 0.2 0.4 0.6 0.8
+t
+x
+u(t,x)
+0.75
+0.50
+0.25
+0.00
+0.25
+−
+0.50
+−
+0.75
+−
+1.0
+0.5
+0.0
+0.5
+−
+1.0
+−
+1 0 1
+−
+x
+)x,t(u
+t = 0.10
+199 trainng data
+0.5
+0.0
+0.5
+−
+1 0 1
+−
+x
+)x,t(u
+t = 0.90
+201 trainng data
+Exact Data
+Correct PDE u +uu +0.003183u = 0
+t x xx
+Identified PDE (clean data) u +1.000uu +0.003193u = 0
+t x xx
+Identified PDE (1% noise) u +1.000uu +0.003276u = 0
+t x xx
+Figure4: Burgers equation: Top: Solutionu(t,x)alongwiththetemporallocationsofthe
+two training snapshots. Middle: Training data and exact solution corresponding to the
+two temporal snapshots depicted by the dashed vertical lines in the top panel. Bottom:
+Correct partial differential equation along with the identified one obtained by learning
+λ ,λ .
+1 2
+water surfaces; the Korteweg-de Vries (KdV) equation. This equation can
+also beviewed asBurgers’ equationwith an added dispersive term. The KdV
+equationhasseveralconnectionstophysicalproblems. Itdescribestheevolu-
+tion of long one-dimensional waves in many physical settings. Such physical
+14
+
+--- Page 15 ---
+
+% error in λ % error in λ
+1 2
+Neurons
+10 25 50 10 25 50
+Layers
+1 1.868 4.868 1.960 180.373 237.463 123.539
+2 0.443 0.037 0.015 29.474 2.676 1.561
+3 0.123 0.012 0.004 7.991 1.906 0.586
+4 0.012 0.020 0.011 1.125 4.448 2.014
+Table 4: Burgers’ equation: Percentage error in the identified parameters λ and λ for
+1 2
+different number of hidden layers and neurons in each layer.
+settings include shallow-water waves with weakly non-linear restoring forces,
+long internal waves in a density-stratified ocean, ion acoustic waves in a
+plasma, and acoustic waves on a crystal lattice. Moreover, the KdV equa-
+tion is the governing equation of the string in the Fermi-Pasta-Ulam problem
+[17] in the continuum limit. The KdV equation reads as
+u +λ uu +λ u = 0, (20)
+t 1 x 2 xxx
+with (λ ,λ ) being the unknown parameters. For the KdV equation, the
+1 2
+nonlinear operator in equations (13) is given by
+[un+cj] = λ un+cjun+cj λ un+cj
+N 1 x − 2 xxx
+and the shared parameters of the neural networks (14), (15), and (16) along
+with the parameters λ = (λ ,λ ) of the KdV equation can be learned by
+1 2
+minimizing the sum of squared errors (17).
+To obtain a set of training and test data we simulated (20) using con-
+ventional spectral methods. Specifically, starting from an initial condition
+u(0,x) = cos(πx) and assuming periodic boundary conditions, we have inte-
+grated equation (20) up to a final time t = 1.0 using the Chebfun package
+[18] with a spectral Fourier discretization with 512 modes and a fourth-order
+explicit Runge-Kutta temporal integrator with time-step ∆t = 10 6. Using
+−
+this data-set, we then extract two solution snapshots at time tn = 0.2 and
+tn+1 = 0.8, and randomly sub-sample them using N = 199 and N = 201
+n n+1
+to generate a training data-set. We then use these data to train a discrete
+timephysics informed neural networkbyminimizingthesumofsquarederror
+15
+
+--- Page 16 ---
+
+loss of equation (17) using L-BFGS [12]. The network architecture used here
+comprises of 4 hidden layers, 50 neurons per layer, and an output layer pre-
+dicting the solution at the q Runge-Kutta stages, i.e., un+cj(x), j = 1,...,q,
+where q is computed using equation (19) by setting ∆t = 0.6.
+The results of this experiment are summarized in figure 5. In the top
+panel, we present the exact solution u(t,x), along with the locations of the
+two data snapshots used for training. A more detailed overview of the exact
+solution and the training data is given in the middle panel. It is worth notic-
+ing how the complex nonlinear dynamics of equation (20) causes dramatic
+differences in the form of the solution between the two reported snapshots.
+Despite these differences, and the large temporal gap between the two train-
+ing snapshots, our method is able to correctly identify the unknown param-
+eters regardless of whether the training data is corrupted with noise or not.
+Specifically, for the case of noise-free training data, the error in estimating
+λ and λ is 0.023%, and 0.006%, respectively, while the case with 1% noise
+1 2
+in the training data returns errors of 0.057%, and 0.017%, respectively.
+4. Summary and Discussion
+We have introduced physics informed neural networks, a new class of uni-
+versal function approximators that is capable of encoding any underlying
+physical laws that govern a given data-set, and can be described by par-
+tial differential equations. In this work, we design data-driven algorithms
+for discovering dynamic models described by parametrized nonlinear partial
+differential equations. The inferred models allow us to construct computa-
+tionally efficient and fully differentiable surrogates that can be subsequently
+used for different applications including predictive forecasting, control, and
+optimization.
+Although a series of promising results was presented, the reader may per-
+haps agree that this two-part treatise creates more questions than it answers.
+In a broader context, and along the way of seeking further understanding of
+such tools, we believe that this work advocates a fruitful synergy between
+machine learning and classical computational physics that has the potential
+to enrich both fields and lead to high-impact developments.
+16
+
+--- Page 17 ---
+
+1.0
+0.5
+0.0
+0.5
+−
+1.0
+−
+0.0 0.2 0.4 0.6 0.8 1.0
+t
+x
+u(t,x)
+2.0
+1.5
+1.0
+0.5
+0.0
+0.5
+−
+1.0
+−
+1.0
+0.5
+0.0
+0.5
+−
+1.0
+−
+1 0 1
+−
+x
+)x,t(u
+t = 0.20
+199 trainng data
+2
+1
+0
+1 0 1
+−
+x
+)x,t(u
+t = 0.80
+201 trainng data
+Exact Data
+Correct PDE u +uu +0.0025u = 0
+t x xxx
+Identified PDE (clean data) u +1.000uu +0.0025002u = 0
+t x xxx
+Identified PDE (1% noise) u +0.999uu +0.0024996u = 0
+t x xxx
+Figure 5: KdV equation: Top: Solution u(t,x) along with the temporal locations of the
+two training snapshots. Middle: Training data and exact solution corresponding to the
+two temporal snapshots depicted by the dashed vertical lines in the top panel. Bottom:
+Correct partial differential equation along with the identified one obtained by learning
+λ ,λ .
+1 2
+Acknowledgements
+This work received support by the DARPA EQUiPS grant N66001-15-
+2-4055, the MURI/ARO grant W911NF-15-1-0562, and the AFOSR grant
+FA9550-17-1-0013. All data and codes used in this manuscript are publicly
+17
+
+--- Page 18 ---
+
+available on GitHub at https://github.com/maziarraissi/PINNs.
+References
+[1] A. Krizhevsky, I. Sutskever, G. E. Hinton, Imagenet classification with
+deep convolutional neural networks, in: Advances in neural information
+processing systems, pp. 1097–1105.
+[2] Y. LeCun, Y. Bengio, G. Hinton, Deep learning, Nature 521 (2015)
+436–444.
+[3] B. M. Lake, R. Salakhutdinov, J. B. Tenenbaum, Human-level concept
+learning through probabilistic program induction, Science 350 (2015)
+1332–1338.
+[4] B. Alipanahi, A. Delong, M. T. Weirauch, B. J. Frey, Predicting the se-
+quencespecificitiesofDNA-andRNA-bindingproteinsbydeeplearning,
+Nature biotechnology 33 (2015) 831–838.
+[5] M. Raissi, P. Perdikaris, G. E. Karniadakis, Numerical Gaussian pro-
+cesses for time-dependent and non-linear partial differential equations,
+arXiv preprint arXiv:1703.10230 (2017).
+[6] M. Raissi, P. Perdikaris, G. E. Karniadakis, Inferring solutions of dif-
+ferential equations using noisy multi-fidelity data, Journal of Computa-
+tional Physics 335 (2017) 736–746.
+[7] M. Raissi, G. E. Karniadakis, Hidden physics models: Machine
+learning of nonlinear partial differential equations, arXiv preprint
+arXiv:1708.00588 (2017).
+[8] M. Raissi, P. Perdikaris, G. E. Karniadakis, Machine learning of linear
+differential equations using Gaussian processes, Journal of Computa-
+tional Physics 348 (2017) 683 – 693.
+[9] S. H. Rudy, S. L. Brunton, J. L. Proctor, J. N. Kutz, Data-driven
+discovery of partial differential equations, Science Advances 3 (2017).
+[10] C. Basdevant, M. Deville, P. Haldenwang, J. Lacroix, J. Ouazzani,
+R. Peyret, P. Orlandi, A. Patera, Spectral and finite difference solu-
+tions of the Burgers equation, Computers & fluids 14 (1986) 23–41.
+18
+
+--- Page 19 ---
+
+[11] A. G. Baydin, B. A. Pearlmutter, A. A. Radul, J. M. Siskind, Au-
+tomatic differentiation in machine learning: a survey, arXiv preprint
+arXiv:1502.05767 (2015).
+[12] D. C. Liu, J. Nocedal, On the limited memory BFGS method for large
+scale optimization, Mathematical programming 45 (1989) 503–528.
+[13] S. L. Brunton, J. L. Proctor, J. N. Kutz, Discovering governing equa-
+tions from data by sparse identification of nonlinear dynamical systems,
+Proceedings of the National Academy of Sciences 113 (2016) 3932–3937.
+[14] T. Von Ka´rma´n, Aerodynamics, volume 9, McGraw-Hill New York,
+1963.
+[15] G. Karniadakis, S. Sherwin, Spectral/hp element methods for computa-
+tional fluid dynamics, Oxford University Press, 2013.
+[16] A. Iserles, A first course in the numerical analysis of differential equa-
+tions, 44, Cambridge University Press, 2009.
+[17] T. Dauxois, Fermi, Pasta, Ulam and a mysterious lady, arXiv preprint
+arXiv:0801.1590 (2008).
+[18] T. A. Driscoll, N. Hale, L. N. Trefethen, Chebfun guide, 2014.
+19

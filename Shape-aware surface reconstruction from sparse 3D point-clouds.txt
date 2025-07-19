@@ -1,0 +1,2262 @@
+# Shape-aware surface reconstruction from sparse 3D point-clouds.pdf
+# Converted: 2025-07-19 12:45:29
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Shape-aware surface reconstruction from sparse 3D point-clouds.pdf
+# Output: ../layer2_completion/txt/Shape-aware surface reconstruction from sparse 3D point-clouds.txt
+
+
+--- Page 1 ---
+
+Shape-aware Surface Reconstruction from Sparse 3D Point-Clouds
+Florian Bernard1,2,∗, Luis Salamanca2, Johan Thunberg2, Alexander Tack3, Dennis Jentsch3, Hans Lamecker3,4, Stefan
+Zachow3,4, Frank Hertel1, Jorge Goncalves2, Peter Gemmar2,5
+Abstract
+The reconstruction of an object’s shape or surface from a set of 3D points plays an important role in medical image
+analysis, e.g. in anatomy reconstruction from tomographic measurements or in the process of aligning intra-operative
+navigation and preoperative planning data. In such scenarios, one usually has to deal with sparse data, which signiﬁcantly
+aggravates the problem of reconstruction. However, medical applications often provide contextual information about the
+3D point data that allow to incorporate prior knowledge about the shape that is to be reconstructed. To this end, we
+propose the use of a statistical shape model (SSM) as a prior for surface reconstruction. The SSM is represented by a
+point distribution model (PDM), which is associated with a surface mesh. Using the shape distribution that is modelled
+by the PDM, we formulate the problem of surface reconstruction from a probabilistic perspective based on a Gaussian
+Mixture Model (GMM). In order to do so, the given points are interpreted as samples of the GMM. By using mixture
+components with anisotropic covariances that are “oriented” according to the surface normals at the PDM points, a
+surface-based ﬁtting is accomplished. Estimating the parameters of the GMM in a maximum a posteriori manner yields
+the reconstruction of the surface from the given data points. We compare our method to the extensively used Iterative
+Closest Points method on several diﬀerent anatomical datasets/SSMs (brain, femur, tibia, hip, liver) and demonstrate
+superior accuracy and robustness on sparse data.
+Keywords:
+Sparse shape reconstruction, statistical shape model, point distribution model, Gaussian mixture model,
+expected conditional maximisation.
+1. Introduction
+The reconstruction of an object’s shape or surface from
+a set of 3D points is a highly relevant problem in medi-
+cal image analysis. It appears for example in image seg-
+mentation, where images provide implicit information on
+the location of anatomical structures via intensity levels,
+which is frequently converted into geometric information
+via some kind of feature extraction method. Another sce-
+nario is computer-assisted surgery, where a pre-operative
+therapy plan is transferred to the operating room by means
+of a navigation system.
+In contrast to mere 3D point-clouds that may repre-
+sent virtually any object, image data of medical objects
+yield additional contextual information that can be used
+to adopt prior knowledge about the anatomical structures
+to be reconstructed.
+Heckel et al. (2011) make use of
+the variational interpolation method (Turk and O’Brien,
+1999), which essentially uses a general prior on the surface
+smoothness. Going one step further, Pauly et al. (2005)
+∗Corresponding author
+1Centre Hospitalier de Luxembourg, Luxembourg
+2Luxembourg Centre for Systems Biomedicine, University of Lux-
+embourg, Esch-sur-Alzette, Luxembourg
+3Zuse Institute Berlin (ZIB), Germany
+41000shapes GmbH, Berlin, Germany
+5Trier University of Applied Sciences, Trier, Germany
+and Gal et al. (2007) have considered templates for 3D scan
+completion that are matched to measurements. However,
+these methods are limited since the available measure-
+ments are assumed to be suﬃciently dense (Berger et al.,
+2014).
+To tackle this limitation, Bernard et al. (2015)
+suggested the use of a statistical shape model (SSM) for
+surface reconstruction.
+Because the class of anatomical
+structures is known for clinical routine tasks such as seg-
+mentation, registration, or intra-operative navigation, it is
+possible to use their shapes as geometric priors.
+Our main contribution of this work is the introduction
+of a surface-based SSM ﬁtting procedure in order to re-
+construct a surface from a sparse 3D point-cloud.
+Us-
+ing a point distribution model (PDM) (Cootes and Tay-
+lor, 1992), we incorporate a prior into our reconstruction
+framework that captures the likely shape of the object
+to be extracted.
+In doing so, we reformulate the prob-
+lem of surface reconstruction from a probabilistic per-
+spective, embedding the prior distribution of the SSM
+parameters that explain plausible shapes into the objec-
+tive function. Our evaluation considers several diﬀerent
+anatomical structures and SSMs (brain, femur, tibia, hip,
+liver) and sparse data point scenarios, which may occur
+in diﬀerent applications, ranging from interactive segmen-
+tation to intra-operative registration for navigation. We
+are able to show superior accuracy and robustness com-
+pared to the extensively used Iterative Closest Point (ICP)
+1
+
+
+--- Page 2 ---
+
+method (Besl and McKay, 1992). Rather than restrict-
+ing ourselves to particular applications by investigating
+application-speciﬁc aspects, our goal is to demonstrate the
+general applicability of the proposed approach in order to
+emphasize that the method may be useful in a wide range
+of settings. The surface-based ﬁtting procedure is achieved
+by the following methodological contributions:
+• By extending existing point-set registration proce-
+dures based on Gaussian Mixture Models (GMMs)
+(Myronenko et al., 2007; Myronenko and Song,
+2010; Horaud et al., 2011; Zheng, 2013) such that
+anisotropic covariances are used in combination with
+a PDM as transformation model, we obtain a shape-
+aware surface reconstruction method that is superior
+to ICP with respect to robustness and accuracy.
+• Before, only spherical (isotropic) GMMs accounting
+for a point-based matching have been used (Zheng,
+2013; Bernard et al., 2015).
+We now complement
+these works by presenting a formulation that is based
+on anisotropic GMMs that are “oriented” by the sur-
+face normals, accounting for a surface-based ﬁtting.
+• A
+rigorous and self-contained derivation
+of
+the
+surface-based ﬁtting method is presented, leading to
+an Expected Conditional Maximisation (ECM) algo-
+rithm (Meng and Rubin, 1993). ECM shares the same
+convergence properties as the Expectation Maximisa-
+tion (EM) method (Dempster et al., 1977) while being
+more general.
+• We develop a fast approximation of the ECM-based
+ﬁtting method that has the same computational com-
+plexity as the spherical GMM-based method. Numer-
+ical simulations show that it is less prone to unwanted
+local optima compared to the original ECM-based
+method.
+This article is organised as follows: section 2 summarises
+previous research relevant to our methodology.
+In sec-
+tions 3 and 4, we introduce our notation and formally
+state the considered surface reconstruction problem.
+In
+addition, we recapitulate the background of PDMs, prob-
+abilistic point-set registration, and the Expectation Max-
+imisation method. In section 5 we present our novel shape-
+aware surface reconstruction method, including a time
+complexity and convergence analysis. Section 6 comprises
+experiments conducted using the proposed methods. In
+section 7 we conclude this work.
+2. Related Work
+A plethora of methods for general surface reconstruc-
+tion has been presented in the literature so far (see e.g.
+Raya and Udupa (1990); Bolle and Vemuri (1991); Her-
+man et al. (1992); Hoppe et al. (1992); Edelsbrunner and
+M¨ucke (1994); Bajaj et al. (1995); Amenta et al. (1998);
+Bernardini et al. (1999); Treece et al. (2000); Kazhdan
+et al. (2006); Schroers et al. (2014)). Many of them are
+summarised and described in the State-of-the-Art Report
+(STAR) by Berger et al. (2014). In the remainder of the
+present section, we will discuss only those surface recon-
+struction methods that go beyond pure smoothness as-
+sumptions and make use of more explicit shape priors.
+For the completion of 2D shapes, Guo et al. (2012,
+2013) incorporate templates from a shape database as (ge-
+ometric) priors into a Bayesian framework. Similarly, a
+database of 3D shapes is used by Pauly et al. (2005) for
+completing 3D surface scans. For increased ﬂexibility com-
+pared to static priors, Gal et al. (2007) use a context-
+speciﬁc database of local shape priors, where the input
+data is matched by (dynamically) combining multiple local
+shape priors into a global prior. As pointed out by Berger
+et al. (2014), both approaches described by Pauly et al.
+(2005) and Gal et al. (2007) are limited by the assump-
+tion that the point-clouds are assumed to be suﬃciently
+dense.
+A uniﬁed framework for repairing the geometry
+and texture of meshes has been presented by Park et al.
+(2006).
+They employ context-based geometry ﬁlling for
+ﬁlling holes in the surface, where available local patches
+of the mesh are used to ﬁll its missing parts. The task
+of obtaining high-resolution 3D meshes from low-quality
+inputs is tackled by Shen et al. (2012) by dynamically as-
+sembling object templates from a database of object parts.
+The 3D shape completion methods discussed above have a
+common focus on completing (mostly small) missing parts
+of meshes obtained from 3D scans. However, our inter-
+est lies primarily in methods that go beyond patching or
+improving low-resolution input.
+Blanz et al. (2004) have presented a closed-form solution
+for SSM-based 3D surface reconstruction from a sparse set
+of points, which relies, however, on the assumption that
+such a set of points is already in correspondence to the
+model. Albrecht et al. (2013) introduced posterior shape
+models that have the objective to model the distribution of
+a whole shape given only partial information. This method
+assumes that the corresponding model points of the avail-
+able partial data are known.
+In their experiments this
+issue is either solved manually or using the ICP method.
+Similarly, for shape prediction from sparse observations,
+Blanc and Sz´ekely (2012) use a variant of ICP that eval-
+uates multiple initialisations. Anguelov et al. (2005) in-
+troduced the shape completion and animation of people
+(SCAPE) method, where one model for pose deformations
+and one model for shape variations are learned separately.
+The main objective of this method is the completion of
+body shapes based on a small number of known positions
+for some of the model points. Applied to bone models,
+Rajamani et al. (2007) ﬁt an SSM to a small number
+of anatomical landmarks that correspond to some of the
+model points. Baka et al. (2010) ﬁt an SSM to sparse data
+points that are in correspondence with the model, applied
+to 2D heart datasets. By producing conﬁdence intervals as
+output, their method is able to incorporate uncertainties
+2
+
+
+--- Page 3 ---
+
+in the input data. Instead of using a trained SSM, Lu et al.
+(2011) formulate a low-rank matrix recovery problem for
+restoring missing parts of objects in archaeological stud-
+ies. Considering that a set of (incomplete) objects of the
+same class is available, and that correspondences between
+common parts are known, their approach is based on the
+assumption that all shapes are approximately linearly cor-
+related. A shortcoming of the methods discussed so far is
+that they all assume known correspondences. However, if
+the objects do not exhibit a suﬃcient amount of distinct
+features, the identiﬁcation of exact correspondences is very
+diﬃcult or even infeasible in practice.
+In the literature, there are several methods published
+addressing this diﬃculty in (automatically) detecting the
+correspondence between sparse data points and a model.
+Due to its simplicity, the ICP algorithm, where correspon-
+dences and transformations are estimated in an alternating
+manner, is a very popular method for the registration of
+two shapes represented as point sets. Numerous variants
+of the originally-proposed method have since been devel-
+oped, e.g.
+by Rusinkiewicz and Levoy (2001); Granger
+and Pennec (2002); Segal et al. (2009); Maier-Hein et al.
+(2012); Bouaziz et al. (2013); Billings et al. (2015). For ex-
+ample, Granger and Pennec (2002) propose the EM-ICP
+algorithm where hidden variables are used to model un-
+known correspondences in a surface registration problem.
+Based on this work, Hufnagel et al. (2008) have proposed
+a method for learning a PDM from unstructured point-
+sets. For that, the authors establish probabilistic corre-
+spondences ﬁrst, followed by the computation of the mean
+shape and the modes of variability.
+The surface recon-
+struction method by Stoll et al. (2006) is able to deform a
+given template to ﬁt point-cloud data. To do so, the user
+deﬁnes initial correspondences between the template and a
+set of points, which are then reﬁned iteratively in an ICP-
+like manner. Along the lines of Stoll et al. (2006), for knee
+surgery, Fleute and Lavall´ee (1998); Fleute et al. (1999)
+have presented a methodology to ﬁnd pose and shape de-
+formation parameters in order to ﬁt an SSM to very sparse
+data points. Their approach resembles ICP due to the al-
+ternating closest point estimation and pose/deformation
+model parameter updates. Similarly, Chan et al. (2003) re-
+construct 3D models of bones in orthopaedic surgery based
+on a sparse set of points obtained from ultrasound. Here,
+shapes are repeatedly instantiated using a PDM, where
+each shape instance is used as input to ICP in order to
+(rigidly) ﬁt the sparse points. This work has been extended
+by Barratt et al. (2008), who use a PDM deﬁned on a reg-
+ular grid instead of the shape surface. Zheng et al. (2006)
+have proposed a three-stage procedure for sparse shape re-
+construction in computer-assisted orthopaedic surgery. In
+the ﬁrst stage, the pose of the sparse points is adapted us-
+ing ICP so that they best ﬁt the mean shape. In the second
+stage, the shape deformation parameters are estimated for
+the given correspondences, which are eventually reﬁned
+using a further deformation based on thin-plate splines.
+Based on Gaussian Mixture Models with heteroscedas-
+tic covariances, Zheng (2013) has proposed a method for
+deformable shape registration. A promising approach of
+ﬁtting a hand pose model to points that are suﬃciently
+densely sampled from depth images is presented by Tay-
+lor et al. (2014, 2016). The authors formulate a contin-
+uous optimisation problem that solves simultaneously for
+surface-based correspondences and model parameters us-
+ing a nonlinear sum-of-squares objective.
+In the work of Chang and Zwicker (2009), the registra-
+tion of articulated shapes in two range scans is based on a
+reduced deformation model deﬁned on a regular grid. In
+this approach, the deformations are modelled by a convex
+combination of rigid transformations, where the weights
+are spatially varying. The registration is performed by al-
+ternatingly updating the rigid transformations and their
+weights, where closest point correspondences are recom-
+puted after each step.
+Despite the immense amount of literature on applica-
+tions and variations of statistical shape models (for an
+overview the interested reader is referred to the works
+by Cootes and Taylor (1992); van Ginneken et al. (2002);
+Heimann and Meinzer (2009)), there have been a limited
+number of investigations into the use of SSMs for inter-
+active segmentation. In the work of van Ginneken et al.
+(2003), a user directly manipulates points of the PDM,
+which has the disadvantage that the user needs to esti-
+mate the (unknown) corresponding position of the con-
+sidered model point in the image.
+This is particularly
+diﬃcult if the object does not exhibit distinct features.
+In their slice-wise SSM-based segmentation of abdominal
+aortic aneurysms, de Bruijne et al. (2004) initialise the
+current slice’s PDM ﬁtting from the segmentation result
+of the previous slice, with the option of manually correct-
+ing segmentations on a per-slice basis.
+Liu and Udupa
+(2009) present Oriented Active Shape Models where the
+semi-automatic live-wire technique is coupled with an Ac-
+tive Shape Model.
+Other authors present tools for the
+posterior correction of model-based segmentations, such
+as Timinger et al. (2003); Schwarz et al. (2008); Tan and
+Acharya (2014). van den Hengel et al. (2007) present an in-
+teractive procedure based on a set of rules and 2D sketches
+for completing partial 3D models in structure from motion.
+To summarise, existing approaches performing surface
+reconstruction using SSMs either assume known corre-
+spondences or estimate point-based correspondences in an
+alternating manner. One exception is the work by Taylor
+et al. (2016), where, for suﬃciently dense data, a surface-
+based hand pose model ﬁtting is performed.
+3. Background
+In this section we introduce the notation and deﬁne
+PDMs.
+3.1. Notation
+1p and 0p denote the p-dimensional column vectors con-
+taining ones and zeros, respectively. Ip denotes the p × p
+3
+
+
+--- Page 4 ---
+
+identity matrix and diag(x) is the p × p matrix with the
+elements of the vector x ∈Rp on its diagonal. For a ma-
+trix A, Ai,j is the (scalar) element in row i and column j.
+The colon-notation is used to denote all rows or columns,
+e.g. A:,j is the j-th column of A. For a matrix A, the
+concatenation of all columns is given by vec(A).
+By p(x) we denote the probability density function
+(p.d.f.), or probability mass function in the discrete case,
+where x can indicate both a random variable and a reali-
+sation of it, depending on the context. N(x|µ, Σ) denotes
+the Gaussian p.d.f. with mean µ and covariance matrix Σ.
+3.2. Point Distribution Models
+Statistical shape models based on PDMs (Cootes and
+Taylor, 1992) are an established technique to capture non-
+linear shape deformations of shapes in R3 from training
+data by using a linear model in the higher-dimensional
+shape space. Let {Xk : 1 ≤k ≤K} be the set of K train-
+ing shapes, where each shape is represented by N points
+(or vertices) in 3 dimensions given by the rows of the ma-
+trix Xk ∈RN×3.
+For processing multiple shapes in a
+meaningful way, the N vertices of all K shapes have to
+be in correspondence, i.e. the rows for all Xk are corre-
+sponding to each other.
+The PDM is obtained by ﬁnding an (aﬃne) subspace
+close to the subspace spanned by the training shapes,
+commonly performed by Principal Components Analysis
+(PCA). For that, we deﬁne X = [x1, . . . , xK] ∈R3N×K,
+with xk = vec(Xk) ∈R3N. This allows to compute the
+modes of shape variability as the eigenvectors of the sam-
+ple covariance matrix C =
+1
+K−1(X −¯x1T
+K)(X −¯x1T
+K)T ,
+where ¯x = 1
+K
+PK
+k=1 xk is the mean of all shapes in the 3N-
+dimensional shape space. Let Φ ∈R3N×M be the matrix
+of the ﬁrst M eigenvectors of C with largest eigenvalues.
+For α being a variable in RM, the PDM y(α) : RM →R3N
+is a vector-valued function deﬁned as
+y(α) = ¯x + Φα ,
+(1)
+where α ∈RM is the shape deformation parameter. The
+deformation of vertex i through α is denoted by
+yi(α) = ¯xi + Φiα ,
+(2)
+where the three rows of vertex i are selected from ¯x and
+Φ to obtain ¯xi ∈R3 and Φi ∈R3×M.
+A common assumption is that α follows a zero-mean
+Gaussian distribution, i.e. p(α) = N(α|0M, Λ), where Λ =
+diag(λ1, . . . , λM) with λm being the m-th eigenvalue of C.
+Thus, thanks to imposing a distribution upon α, we obtain
+a distribution over shapes (Albrecht et al., 2013).
+Usually, in addition to the PDM accounting for shape
+deformations, a rigid transformation is employed in order
+to account for the absolute pose of the shape y(α) with
+respect to some reference (e.g. the image coordinate sys-
+tem). Here we assume that the predominant part of the
+pose has already been normalised. Minor pose variations
+can be (approximately) captured implicitly in the PDM.
+4. Problem Formulation
+Given is a PDM that serves as prior for plausible shapes.
+Also, we assume that (for ﬁxed α) the PDM points are
+vertices of an oriented triangular surface mesh M. Addi-
+tionally, we are given the set P = {pj : 1 ≤j ≤P} of
+P surface points of the shape that is to be reconstructed,
+where P is sparse in the sense that it only contains few
+points pj lying on the object’s surface. The objective is
+to ﬁnd the deformation parameter α such that y(α) “best
+agrees” with the points in P.
+4.1. A Generative Model
+Our work is motivated by the widely used Coherent
+Point Drift (CPD) approach for general point-set regis-
+tration (Myronenko et al., 2007; Myronenko and Song,
+2010).
+It also resembles the approach by Zheng (2013)
+for deformable shape registration, which however is based
+on heteroscedastic GMMs with isotropic covariances, and
+it is related to the EM-ICP algorithm (Granger and Pen-
+nec, 2002) since we also make use of hidden variables to
+model the unknown correspondences.
+In the following we present the probabilistic model,
+where a distribution is imposed over each vertex i by us-
+ing a GMM. Given the set P and a PDM, we consider the
+following assumptions:
+1. For i = 1, . . . , N, each PDM vertex position yi(α) ∈
+R3 is considered as the mean of a 3D Gaussian distri-
+bution with covariance Σi.
+2. Each point pj ∈P can be uniquely mapped to one
+speciﬁc vertex index i, its generating component, from
+whose distribution it is drawn.
+As such, each point pj follows the distribution
+p(pj|i, α, Σi) = N(pj|yi(α), Σi) ,
+(3)
+where all pj for j = 1, . . . , P are independent. The corre-
+sponding graphical model is depicted in Fig. 1. Note that
+all of the N Gaussian components are parametrised by α
+and the covariances ˆΣ := {Σi}.
+We assume that each
+component is chosen with equal probability, i.e. p(i) = 1
+N .
+pj
+↵
+i
+j=1,. . .,P
+ˆ⌃
+Figure 1: Graphical model of the generating process of P.
+Our objective is to ﬁnd the parameters α and ˆΣ that
+are most likely to have generated the points P. Since the
+4
+
+
+--- Page 5 ---
+
+generating component ij of pj is unknown, the indices of
+the generating components are treated as latent variables.
+To incorporate this uncertainty, we consider a GMM for
+the distribution of pj, leading to
+p(pj|α, ˆΣ) =
+N
+X
+i=1
+p(i) p(pj|i, α, Σi)
+(4)
+= 1
+N
+N
+X
+i=1
+N(pj|yi(α), Σi) .
+(5)
+Using Bayes’ theorem, one can derive the probability
+that the i-th mixture component has generated the point
+pj, given also α and ˆΣ, as
+p(i|pj, α, ˆΣ) =
+p(pj|i, α, ˆΣ)p(i)p(α, ˆΣ)
+P
+i′ p(pj|i′, α, ˆΣ)p(i′)p(α, ˆΣ)
+(6)
+=
+p(pj|i, α, Σi)p(i)
+P
+i′ p(pj|i′, α, Σi′)p(i′)
+(7)
+=
+N(pj|yi(α), Σi)
+P
+i′ N(pj|yi′(α), Σi′) .
+(8)
+4.2. Optimisation using EM
+If the generating component ij of pj is unknown, ac-
+cording to eq. (5) all points pj ∈P are independent and
+identically distributed (i.i.d.). Thus, the log-likelihood as
+a function of the model parameters θ := (α, ˆΣ) reads
+L(θ) = ln p(P|θ) = ln
+P
+Y
+j=1
+N
+X
+i=1
+p(i)p(pj|i, θ)
+(9)
+=
+P
+X
+j=1
+ln
+N
+X
+i=1
+p(i)p(pj|i, θ) .
+The maximisation of L w.r.t. θ cannot be solved readily
+due to the sum appearing inside the logarithm. Therefore,
+a common approach is to employ an iterative method for
+the maximisation. We denote the estimate of θ at iteration
+n as θ(n) and rewrite eq. (9) as
+L(θ, θ(n)) =
+P
+X
+j=1
+ln
+N
+X
+i=1
+p(i|pj, θ(n))p(i)p(pj|i, θ)
+p(i|pj, θ(n))
+.
+(10)
+Applying Jensen’s inequality (Jensen, 1906) leads to
+L(θ, θ(n)) ≥
+(11)
+P
+X
+j=1
+N
+X
+i=1
+p(i|pj, θ(n)) ln p(i)p(pj|i, θ)
+p(i|pj, θ(n))
+=: Q(θ, θ(n)) .
+As such, the right-hand side of eq. (11), which we denote
+by Q(θ, θ(n)), is a lower bound for L(θ, θ(n)). Maximising
+this lower bound is the key idea of the EM algorithm. In
+the E-step, the probabilities p(i|pj, θ(n)) are evaluated for
+ﬁxed θ(n) by using eq. (8).
+Then, in the M-step, Q in
+eq. (11) is maximised w.r.t. θ for the ﬁxed p(i|pj, θ(n))
+computed before.
+5. Methods
+In section 5.1 below, we present the main novelty of
+this paper, the anisotropic GMM-based ﬁtting approach
+that employs covariance matrices that “oriented” accord-
+ing to the surface normals at the PDM points. This al-
+lows to move from a purely point-based matching (My-
+ronenko et al., 2007; Myronenko and Song, 2010; Zheng,
+2013; Bernard et al., 2015) to a more surface-based ﬁtting.
+Subsequently, we describe a fast approximation of the
+anisotropic GMM method. By using an extension to this
+approximation, one can ensure that it is an instance of the
+Generalised Expectation Maximisation (GEM) method
+and thus the convergence is guaranteed.
+5.1. Surface Reconstruction using an Anisotropic GMM
+When using spherical covariances for each of the N
+Gaussian components, a purely point-based ﬁtting is con-
+ducted. However, in a vast amount of medical applications
+of SSMs, the points of the PDM represent the vertices of
+a surface mesh. This surface mesh is in general only an
+approximation of a continuous surface. Whilst the sparse
+points P are assumed to lie on this continuous surface,
+in general they do not coincide with the PDM vertices.
+Hence, matching the surface, depending on the PDM de-
+formation parameter α, is more appropriate. A didactic
+2D example is presented in Fig. 2.
+5.1.1. Surface-aligned Covariance Matrices
+We now formalise our surface-based ﬁtting method us-
+ing a GMM with anisotropic covariance matrices. In the
+GMM, the covariance matrix of each component i, i.e.
+each vertex of the PDM, is deﬁned as
+Σi(σ, α) := σ2Ci(α) .
+(12)
+The scalar parameter σ2 can be seen as a global scaling
+factor, whereas the matrix Ci(α) models the anisotropy of
+the surface structure locally by using a larger variance in
+the directions of vectors lying in the tangent plane of the
+PDM surface, compared to the variance along the PDM
+normal direction (cf. Fig. 2 (c)).
+Assuming that the surface mesh M of the underlying
+shape of the PDM is given in the form of oriented triangles
+(cf. section 4), with i2 and i3 we denote the index of the
+“left” and “right” neighbour vertex of i, respectively. With
+that, the surface normal at vertex i is given by
+ni(α) =
+(yi2(α) −yi(α)) × (yi3(α) −yi(α))
+∥(yi2(α) −yi(α)) × (yi3(α) −yi(α))∥.
+(13)
+The matrix Ci is deﬁned as
+Ci(α) := (1
+η −1)ni(α)nT
+i (α) + I3 ,
+(14)
+where the parameter η ≥1 weights the variances of vec-
+tors along the normal direction compared to the tangen-
+tial direction (note that we use the same value of η for
+5
+
+
+--- Page 6 ---
+
+(a)
+(b)
+(c)
+Figure 2: Anisotropic covariance matrices to achieve a surface-based ﬁtting. The sparse points P are shown in red, the PDM of a rectangle
+is shown in green, where the green points deﬁne the PDM vertices (N = 12, M = 2, P = 12). The orientation of the covariance matrices is
+shown as white ellipses. The objective is to deform the rectangle PDM such that it ﬁts the red points by adjusting α. The initialisation is
+shown in (a). Since the red points are sampled between the PDM points (cf. shape approximation problem (Hill et al., 1995)), using spherical
+covariance matrices results in a ﬁt that is even worse than the initialisation (b), whereas using anisotropic covariances results in a more
+accurate ﬁt than the initialisation (c).
+all points).
+A motivation for eq. (14) can be found in
+the work of Hill et al. (1995). For the covariance matrix
+Σi(σ, α), the variance along the normal ni(α) is given by
+σ2
+η , and the variance in the direction of any vector in the
+tangent plane is σ2. As such, for η = 1 one obtains an
+isotropic GMM ﬁtting, in analogy to the CPD algorithm
+(Myronenko et al., 2007; Myronenko and Song, 2010). We
+refer to the isotropic method with η set to 1 as ISO. The
+two main diﬀerences between CPD and our approach are
+that in our case the transformations are parametrised by a
+PDM, and that we also allow for anisotropic covariances.
+Using transformations that are parametrised by a PDM
+has also been done by Zheng (2013) for deformable shape
+registration.
+Choosing η > 1 achieves the desired be-
+haviour of modelling a larger variance in the tangent plane.
+Note that for η > 0, the matrix Ci(α) is symmetric and
+positive deﬁnite with the spectrum { 1
+η, 1, 1}. The inverse
+of Ci, the precision matrix, is
+Wi(α) := C−1
+i (α) = (η −1)ni(α)nT
+i (α) + I3 .
+(15)
+5.1.2. Maximum A Posteriori (MAP) Solution
+We can cast the log-likelihood from eq. (9) into a
+Bayesian view, leading to
+Lposterior(θ) = ln[p(P|θ)p(θ)] ,
+(16)
+where additional knowledge in the form of the prior dis-
+tribution p(θ) is incorporated.
+By assuming p(α) =
+N(α|0M, Λ) as described in section 3.2, and choosing a
+uniform prior for p(σ), the prior distribution results in
+p(θ) ∝p(α). The Q-function for the MAP solution reads
+Q(α, σ, α(n), σ(n)) =
+(17)
+const −1
+2αT Λ−1α −3P
+2 ln σ2
+−
+1
+2σ2
+X
+i,j
+p(i|pj, α(n), σ(n))·
+(pj −yi(α))T Wi(α)(pj −yi(α)) .
+As already described, the E-step is solved by evaluating
+eq. (8).
+Then, the M-step comprises maximising Q in
+eq. (17) w.r.t. α and σ. Due to the dependence of Wi
+on α (for η ̸= 1), ﬁnding α that maximises Q does not
+admit a simple closed-form solution. This is in contrast
+to the isotropic case (η = 1), where α that maximises Q
+can be found by solving a linear system of equations. In-
+stead, α is now obtained using the BFGS quasi-Newton
+method (Nocedal and Wright, 2006). The idea is to start
+with the old value α(n), and then iteratively move along
+directions that increase Q. Whilst the ordinary Newton
+method requires the gradient of Q as well as its Hessian,
+the BFGS quasi-Newton method uses an approximation of
+the Hessian that is cheap to compute. A derivation of the
+gradient ∇αQ of Q w.r.t. α can be found in Appendix A.
+In order to obtain α, one option is to run the BFGS
+quasi-Newton procedure until convergence, where one ob-
+tains an α that (locally) maximises Q.
+With that, the
+updates of σ on α depend on each other and the pro-
+cedure reverts to the ECM algorithm (Meng and Rubin,
+1993). An alternative is to run only a single quasi-Newton
+step in each M-step. With that, the obtained α is not a
+local maximiser of Q; however, one still has the guarantee
+that Q is non-decreasing. As such, this procedure reverts
+to the GEM algorithm (Dempster et al., 1977).
+Finally, the σ-update for ﬁxed α is given by
+σ2 = 1
+3P
+X
+i,j
+p(i|pj, α(n), σ(n))·
+(18)
+(pj −yi(α))T Wi(α)(pj −yi(α)) .
+The pseudocode of the anisotropic GMM ﬁtting procedure
+is presented in Algorithm 1.
+5.1.3. Fast Approximate Anisotropic GMM
+Now we introduce an approximation of the α-update
+that is a much faster alternative to the quasi-Newton
+method.
+The main idea is to use the previous value
+α(n) instead of α for computing the anisotropic covari-
+ance matrices Ci(α(n)) during the α-update in the M-
+6
+
+
+--- Page 7 ---
+
+Input: ¯x, Φ, P, η, M
+Output: α, σ2
+Initialise: α = 0, σ2 =
+1
+3NP
+P
+i,j ∥pj −¯xi∥2, P ∈RP ×N,
+y = ¯x + Φα
+1 foreach i = 1, . . . , N do
+// compute Wi
+2
+ni =
+(yi2 −yi)×(yi3 −yi)
+∥(yi2 −yi)×(yi3 −yi)∥
+3
+Wi = (η −1)ninT
+i + I3
+4 repeat
+// E-step
+5
+foreach j = 1, . . . , P do
+6
+t = 0
+7
+foreach i = 1, . . . , N do
+8
+Pji = exp(−
+1
+2σ2 (pj −yi)T Wi(pj −yi))
+9
+t = t + Pji
+10
+Pj,: = 1
+t Pj,:
+// M-step
+11
+α = quasi-Newton(Q, ∇Q, α)
+12
+y = ¯x + Φα
+13
+foreach i = 1, . . . , N do
+// compute Wi
+14
+ni =
+(yi2 −yi)×(yi3 −yi)
+∥(yi2 −yi)×(yi3 −yi)∥
+15
+Wi = (η −1)ninT
+i + I3
+16
+σ2 =
+1
+3P
+P
+i,j Pji(pj −yi)T Wi(pj −yi)
+17 until convergence
+Algorithm 1: Pseudocode of the anisotropic GMM ﬁt-
+ting method.
+The notation “quasi-Newton(Q, ∇Q, α)”
+denotes running the quasi-Newton method for maximis-
+ing Q w.r.t. α, where ∇Q is its gradient and the third
+argument is the initial value of α. If the GEM approach
+is used, the quasi-Newton method is run only for a single
+iteration. Note that the surface mesh M is used for the
+normal computations.
+step.
+Our key assumption is that the PDM is well-
+behaved in the sense that neighbouring vertices vary
+smoothly during deformation; thus, locally the defor-
+mation of an individual triangle is nearly a translation.
+Since surface normals are invariant to translations it fol-
+lows that ∥ni(α) −ni(α(n))∥is small, which implies that
+∥Wi(α) −Wi(α(n))∥is also small.
+The resulting Q-function using the proposed approxi-
+mation is now given by
+˜Q(α, σ, α(n), σ(n)) =
+(19)
+const −1
+2αT Λ−1α −3P
+2 ln σ2
+−
+1
+2σ2
+X
+i,j
+p(i|pj, α(n), σ(n))·
+(pj −yi(α))T Wi(α(n))(pj −yi(α)) ,
+where the diﬀerence to Q in eq. (17) is that the constant
+Wi(α(n)) is now used in place of the function Wi(α). As
+such, the α-update in the M-step is a quadratic concave
+problem that can be maximised eﬃciently. The solution
+for α is found by solving the linear system Aα = b, where
+A ∈RM×M is given by
+A = σ2Λ−1 +
+X
+i,j
+p(i|pj, α(n), σ(n))ΦT
+i Wi(α(n))Φi ,
+(20)
+and b ∈RM by
+b =
+X
+i,j
+p(i|pj, α(n), σ(n))ΦT
+i Wi(α(n))(pj −¯xi) .
+(21)
+The pseudocode for this approximate method is similar to
+Algorithm 1, except for line 11, where α is computed by
+solving a linear system.
+In order to guarantee that the approximate method con-
+verges, it is necessary that in the M-step the value of
+the exact Q in eq. (17) is non-decreasing, i.e.
+the new
+α = A−1b obtained using ˜Q must fulﬁl
+Q(A−1b, σ(n), α(n), σ(n)) ≥Q(α(n), σ(n), α(n), σ(n)) .
+(22)
+For η = 1 the methods reverts to the isotropic case and
+condition (22) vacuously holds. However, for η > 1 this
+is not true in general. One way to ensure that Q is non-
+decreasing is to evaluate the condition in eq. (22) in each
+iteration, and, in the case of a violation, revert to one of
+the quasi-Newton methods for the α-update. Speciﬁcally,
+we consider a single quasi-Newton step for updating α. We
+denote the approximate method without this convergence
+check as ANISO, and the method with the convergence
+check and the quasi-Newton step as fall-back as ANISOc.
+In Fig. 3 we illustrate the behaviour of Q and compare
+it with ˜Q for various choices of η. Note that for visualisa-
+tion purposes we have chosen M = 2, whereas in higher-
+dimensional cases the eﬀect of an increasing η on the non-
+concavity can be expected to be more severe.
+5.2. Performance Analysis
+Table 1 summarises the computational complexity of the
+presented methods. In Fig. 4 we plot the mean of the nor-
+malised value of Q as a function of the processing time for
+all four anisotropic ﬁtting methods. For each random run
+we sample a shape instance by drawing α (cf. section 3.2),
+select P points randomly from the mesh surface (cf. sec-
+tion 6), and run the four methods. The obtained Q for
+the four methods are then normalised such that in each
+run the smallest Q corresponds to 0 and the largest Q
+corresponds to 1 (normalisation w.r.t to all four methods
+simultaneously). We have found that the single-step quasi-
+Newton method (GEM) is faster compared to the full
+quasi-Newton procedure (ECM). Moreover, compared to
+both quasi-Newton methods, the approximate methods are
+much faster. Since the ANISOc method makes use of ele-
+ments both of the GEM and the ANISO method, the total
+time complexity of the ANISOc method is the combined
+time complexity for GEM and ANISO (cf. Table 1). Nev-
+ertheless, in our simulations the ANISOc method comes
+close to the ANISO method in terms of convergence speed.
+This is because in the early stages of the iterative proce-
+dure the ANISOc method satisﬁes condition (22) in most
+cases. A violation of (22) happens more frequently in the
+later stages. Since these results suggest that the ANISO
+7
+
+
+--- Page 8 ---
+
+α1
+α2
+Q
+η = 1
+α1
+α2
+Q
+η = 4
+α1
+α2
+Q
+η = 16
+α1
+α2
+Q
+η = 64
+Figure 3: Illustration of the behaviour of Q for various η. The height and the colour of the surface both show the value of Q, eq. (17),
+depending on α1 and α2. The red grid shows its concave approximation ˜Q as presented in eq. (19). The red dot denotes the value of Q at
+α(n); at this position Q = ˜Q. The yellow dot indicates the maximum of Q. For the trivial case of η = 1 it can be seen that Q = ˜Q everywhere,
+whereas an increasing η leads to a larger discrepancy between Q and ˜Q as well as to an “increased non-concavity” of Q.
+method is faster and as good as the other methods, for our
+experiments we use the ANISO method as representative
+for the anisotropic ﬁtting methods.
+6. Experiments
+In this section we evaluate the proposed ﬁtting proce-
+dures on ﬁve datasets with the parameters being shown in
+Table 2. For the generation of the set of sparse points P,
+we sample sparse points randomly on the shape surfaces.
+To do so, we ﬁrst select a triangle from the surface mesh
+with a probability proportional to its area. Then, we uni-
+formly sample a point lying within the triangle according
+to the procedure presented by Osada et al. (2002). More-
+over, in order to evaluate how well our method is able to
+cope with uncertainties in the given points, we considered
+noisy versions of these points by adding spherical Gaus-
+sian noise with covariance ˜σ2I3 to each point individually.
+For each experiment we have taken the scale of the ob-
+ject in the shape model into account for choosing ˜σ. The
+considered values of ˜σ are presented in Table 2.
+Table 2: Summary of parameters for the datasets. N is the number
+of points in the PDM (“ds” denotes the downsampled PDM), K
+the number of training shapes, M the number of modes of variation
+for leave-all-in (LAI) and leave-one-out (LOO) experiments, η the
+anisotropy parameter, and ˜σ the standard deviation of the noise
+added to the points.
+N
+N (ds)
+K
+M (LAI)
+M (LOO)
+η
+˜σ
+brain
+1792
+371
+17
+16
+96 (kPCA)
+8
+2 mm
+femur
+3800
+759
+60
+59
+58
+4
+5 mm
+tibia
+4701
+814
+60
+59
+58
+4
+5 mm
+hip
+5603
+1120
+48
+47
+46
+4
+5 mm
+liver
+4542
+908
+112
+111
+110
+2
+1 cm
+In addition to the proposed probabilistic ﬁtting meth-
+ods presented in this paper, we also evaluate two non-
+probabilistic ICP approaches. The ﬁrst approach is the
+regularised isotropic ICP method as outlined in Algo-
+rithm 2, which we denote ICP in the experiments. The
+second approach is an anisotropic version thereof, which
+we denote AICP in the experiments. Similarly to Maier-
+Hein et al. (2010), for the anisotropic ICP we compute
+the nearest neighbours in the third line of Algorithm 2 by
+Table 1: Computational complexity table. The complexity of the α-update for one iteration of the BFGS quasi-Newton methods is O(M2)
+plus the complexity of the evaluation of Q and ∇Q (Nocedal and Wright, 2006) (we use n to denote the number of iterations of the quasi-
+Newton method). The complexity of the α-update of the remaining methods comprises the computation of A and b, as well as solving a
+linear system of equations of size M × M, for which we present the complexity O(M3) due to the matrix inversion involved. Note that in ⋆
+we present the complexity for general Λ, for diagonal Λ the quadratic time complexity in M reduces to linear complexity.
+anisotropic
+isotropic
+ECM
+GEM
+ANISOc
+ANISO
+ISO
+update y
+O(MN)
+compute {Wi}
+O(N)
+-
+E-step
+O(NP )
+α-update
+evaluate Q, eq. (17)
+O(MN + M 2 + NP )⋆
+-
+evaluate ∇Q, eq. (A.4)
+O(M 2 + MNP )⋆
+-
+construct A
+-
+O(M 2N + NP )
+construct b
+-
+O(MN + NP )
+total α-update
+O(n(M 2 + MNP ))
+O(M 2 + MNP )
+O(M 3 + MNP + M 2N)
+O(M 3 + M 2N + NP )
+σ-update
+O(NP )
+total
+(per outer iteration)
+O(n(M 2 + MNP ))
+O(M 2 + MNP )
+O(M 3 + MNP + M 2N)
+O(M 3 + M 2N + NP )
+8
+
+
+--- Page 9 ---
+
+ANISO
+ANISOc
+GEM
+ECM
+0
+50
+100
+150
+200
+0
+0.2
+0.4
+0.6
+0.8
+1
+processing time [s]
+proportion of best Q
+⌘= 8
+0 0.5 1 1.5 2
+0.96
+0.98
+1
+0
+500
+1,000
+1,500
+0
+0.2
+0.4
+0.6
+0.8
+1
+processing time [s]
+proportion of best Q
+⌘= 8
+0
+5
+10
+0.96
+0.98
+1
+0
+1,000
+2,000
+3,000
+0
+0.2
+0.4
+0.6
+0.8
+1
+processing time [s]
+proportion of best Q
+⌘= 8
+0
+5
+10
+0.96
+0.98
+1
+0
+500
+1,000
+1,500
+2,000
+0
+0.2
+0.4
+0.6
+0.8
+1
+processing time [s]
+proportion of best Q
+⌘= 8
+0
+10
+20
+0.8
+0.85
+0.9
+0.95
+1
+0
+100
+200
+300
+0
+0.2
+0.4
+0.6
+0.8
+1
+processing time [s]
+proportion of best Q
+⌘= 64
+0
+1,000
+2,000
+3,000
+0
+0.2
+0.4
+0.6
+0.8
+1
+processing time [s]
+proportion of best Q
+⌘= 64
+0
+10
+20
+0.9
+0.92
+0.94
+0.96
+0.98
+1
+0
+2,000
+4,000
+0
+0.2
+0.4
+0.6
+0.8
+1
+processing time [s]
+proportion of best Q
+⌘= 64
+0
+10
+20
+0.9
+0.92
+0.94
+0.96
+0.98
+1
+0
+2,000
+4,000
+6,000
+0
+0.2
+0.4
+0.6
+0.8
+1
+processing time [s]
+proportion of best Q
+⌘= 64
+0
+50
+100
+0.6
+0.7
+0.8
+0.9
+1
+Figure 4: Proportion of best value of Q versus processing time averaged over 100 random runs for the four anisotropic methods for two choices
+of η (in the rows). In each column a diﬀerent dataset has been used to produced the results, from left to right we show results produced by
+the brain shapes dataset (N = 1792, M = 16, P = 30, cf. section 6.4), the femur dataset (N = 3800, M = 59, P = 30, cf. section 6.1), the
+tibia dataset (N = 4071, M = 59, P = 30, cf. section 6.1), and the hip dataset (N = 5603, M = 47, P = 30, cf. section 6.3).
+Input: ¯x, Φ, P, Λ
+Output: α
+Initialise: α = 0, p = vec([p1, . . . , pP ]) ∈R3P
+1 repeat
+2
+y = ¯x + Φα
+// Find nearest neighbours
+3
+N = ﬁndNearestNeighbourIndices(y, P)
+// Solve linear system for α
+4
+A = ΦN ,:
+5
+b = p −¯xN
+6
+α = (AT A + Λ−1)−1AT b
+// Tikhonov regularisation
+7 until convergence
+Algorithm 2: Pseudocode of the ICP baseline method.
+The notation ΦN,: and ¯xN means selecting the appropri-
+ate rows from Φ and ¯x according to the indices of the
+nearest neighbours N.
+taking the anisotropic covariance matrices (eq. (14)) into
+account.
+For both, ICP and AICP, the regulariser Λ cor-
+responds to the covariance matrix of the PDM parameter
+α (cf. section 3.2). Moreover, in our evaluation we com-
+pare the ground truth data to the mean shape, i.e. in this
+setting we do not run any ﬁtting procedure at all, which
+amounts to setting α = 0.
+The anisotropic method requires to set the parameter η
+accounting for the amount of anisotropy. We have manu-
+ally chosen the values of η for each dataset, as shown in
+Table 2. We have empirically found that for an increasing
+amount of uncertainty ˜σ in the sparse points, it is advan-
+tageous to use a lower value of η.
+We consider leave-all-in (LAI) and leave-one-out (LOO)
+experiments. The LAI experiments measure the perfor-
+mance of our method given a perfect model, whereas the
+LOO experiments evaluate the generalisation ability to un-
+seen data.
+We use the Dice Similarity Coeﬃcient (DSC) as volu-
+metric overlap measure, which is deﬁned as
+DSC(Vx, Vy) = 2|Vx ∩Vy|
+|Vx| + |Vy|
+(23)
+for the volumetric segmentations Vx and Vy. Additional
+results considering surface-based measures for all datasets
+are presented in the supplementary material.
+6.1. Knee Bones: Femur and Tibia
+For the femur and tibia datasets we assumed that the
+pose has already been normalised and we worked directly
+in the space of the SSM. In practice, this can for example
+be tackled in a similar manner as by Seim et al. (2010),
+who proposed an automated SSM-based knee bone seg-
+mentation, where initially the model is positioned inside
+the three dimensional CT or MR image via Generalised
+Hough Transform (Ballard, 1981).
+We present experiments for a PDM of the femur with
+N = 3800 points (cf. Fig. 5 (a)) and a PDM of the tibia
+with N = 4701 points (cf. Fig. 5 (c)).
+Additionally,
+we evaluated the ANISO method using the downsampled
+PDMs, denoted ANISO-ds, where only a subset of the orig-
+inal PDM vertices are used (cf. Fig. 5 (b) and Fig. 5 (d)).
+Random sparse points are generated according to the pro-
+cedure described in section 6, where for each training shape
+10 instances of sparse points P are sampled. In Fig. 5 such
+random instances of P are shown for the mean shapes of
+both bones. Summaries of the results are shown in Fig. 6
+for the femur and in Fig. 7 for the tibia.
+It can be seen that for both bone PDMs if only P = 9
+points are available, the ICP methods perform slightly
+better than the ANISO method.
+Once more points be-
+come available, the ANISO method outperforms the ICP
+method. Surprisingly, the ANISO-ds method, which uses
+a downsampled PDM, outperforms the ANISO method for
+P = 9. We assume that this is because the original PDMs,
+comprising N = 3800 vertices for the femur and N = 4701
+vertices for the tibia, contain ﬁne local details that lead to
+an overﬁtting when reconstructing the surface from only
+P = 9 points. In contrast, the downsampled PDM con-
+tains less details that may impede the surface reconstruc-
+9
+
+
+--- Page 10 ---
+
+(a)
+(b)
+(c)
+(d)
+Figure 5: Femur and tibia datasets.
+(a) Femur mean shape with
+N = 3800 vertices. (b) Downsampled mean shape with 759 vertices.
+(c) Tibia mean shape with N = 4701 vertices. (d) Downsampled
+mean shape with 814 vertices. For both bone models P = 36 sparse
+points have been randomly drawn from the original surface according
+to the procedure described in section 6.
+tion. Moreover, the ANISO-ds method outperforms the
+ISO-ds method, which conﬁrms our elaborations in Fig. 2
+on real data. Moreover, for both bone PDMs, the AICP
+method performs very similar to ICP.
+6.2. Liver
+We carried out LAI and LOO experiments using a liver
+PDM with N = 4542 points (cf. Fig. 8 (a)). Figure 8 (b)
+shows the downsampled PDM. For each training shape 10
+instances of sparse points P are sampled. Summaries of
+the results are shown in Fig. 9.
+For both settings, LAI and LOO, without any noise, i.e.
+˜σ = 0 cm, the anisotropic method outperforms both ICP
+methods with respect to the mean DSC regardless of how
+many random points have been sampled. Especially for
+36 and 90 points the accuracy of the anisotropic method
+becomes increasingly superior compared to ICP. Consid-
+ICP (˜σ=0)
+AICP (˜σ=0)
+ANISO (˜σ=0)
+ANISO-ds (˜σ=0)
+ICP (˜σ=5)
+mean shape
+ANISO (˜σ=5)
+ISO-ds (˜σ=0)
+LAI
+9
+18
+36
+90
+0.94
+0.96
+0.98
+P
+DSC (mean)
+9
+18
+36
+90
+0.005
+0.01
+0.015
+P
+DSC (std)
+9
+18
+36
+90
+0
+10
+20
+P
+runtime [s] (mean)
+LOO
+9
+18
+36
+90
+0.94
+0.95
+0.96
+0.97
+P
+DSC (mean)
+9
+18
+36
+90
+0.008
+0.01
+0.012
+0.014
+0.016
+P
+DSC (std)
+9
+18
+36
+90
+0
+5
+10
+15
+P
+runtime [s] (mean)
+Figure 6: DSC and runtime for femur LAI and LOO results.
+ICP (˜σ=0)
+AICP (˜σ=0)
+ANISO (˜σ=0)
+ANISO-ds (˜σ=0)
+ICP (˜σ=5)
+mean shape
+ANISO (˜σ=5)
+ISO-ds (˜σ=0)
+LAI
+9
+18
+36
+90
+0.94
+0.96
+0.98
+P
+DSC (mean)
+9
+18
+36
+90
+0.005
+0.01
+0.015
+0.02
+P
+DSC (std)
+9
+18
+36
+90
+0
+5
+10
+15
+20
+P
+runtime [s] (mean)
+LOO
+9
+18
+36
+90
+0.94
+0.96
+P
+DSC (mean)
+9
+18
+36
+90
+0.01
+0.015
+0.02
+P
+DSC (std)
+9
+18
+36
+90
+0
+10
+20
+P
+runtime [s] (mean)
+Figure 7: DSC and runtime for tibia LAI and LOO results.
+10
+
+
+--- Page 11 ---
+
+(a)
+(b)
+Figure 8: Liver dataset. (a) Mean shape with N = 4542 vertices. (b)
+Downsampled mean shape with 908 vertices. P = 36 sparse points
+have been randomly drawn from the original surface according to the
+procedure described in section 6.
+ICP (˜σ=0)
+AICP (˜σ=0)
+ANISO (˜σ=0)
+ANISO-ds (˜σ=0)
+ICP (˜σ=1)
+mean shape
+ANISO (˜σ=1)
+ISO-ds (˜σ=0)
+LAI
+9
+18
+36
+90
+0.8
+0.85
+0.9
+0.95
+P
+DSC (mean)
+9
+18
+36
+90
+0.02
+0.04
+P
+DSC (std)
+9
+18
+36
+90
+0
+10
+20
+P
+runtime [s] (mean)
+LOO
+9
+18
+36
+90
+0.8
+0.85
+0.9
+P
+DSC (mean)
+9
+18
+36
+90
+0.02
+0.03
+0.04
+0.05
+P
+DSC (std)
+9
+18
+36
+90
+0
+10
+20
+30
+P
+runtime [s] (mean)
+Figure 9: DSC and runtime for liver LAI and LOO results.
+ering the random points disturbed by Gaussian noise with
+˜σ = 1 cm, the ICP method yields better results for 9 and
+18 points. With noisy points, for the LAI and the LOO
+experiments at least 36 points seem to be necessary for the
+anisotropic method to achieve results similar to the ICP
+methods with respect to the DSC. Similarly to the femur
+and tibia cases, the AICP method is on par with the ICP
+method.
+6.3. Hip
+We carried out LAI and LOO experiments using a hip
+PDM with N = 5603 points (cf. Fig. 10 (a)). Figure 10 (b)
+shows the downsampled PDM. For each training shape 10
+instances of sparse points P are sampled. Summaries of
+the results are shown in Fig. 11. For both settings, LAI
+and LOO, without any Gaussian disturbance, i.e. ˜σ = 0
+mm, the anisotropic method outperforms the ICP method
+with respect to the mean Dice Similarity Coeﬃcient for
+more than 9 points. Again, for the ANISO method the
+accuracy is increasing with more sampled points.
+Con-
+sidering the random points disturbed by Gaussian noise
+with ˜σ = 5mm, the ICP method yields better results for 9
+points, whereas for 18 points or more the ANISO method
+(a)
+(b)
+Figure 10: Hip dataset. (a) Mean shape with N = 5603 vertices. (b)
+Downsampled mean shape with 1120 vertices. P = 36 sparse points
+have been randomly drawn from the original surface according to the
+procedure described in section 6.
+11
+
+
+--- Page 12 ---
+
+performs better. Comparing the ICP and the AICP ap-
+proach, both methods are similar with respect to the DSC.
+ICP (˜σ=0)
+AICP (˜σ=0)
+ANISO (˜σ=0)
+ANISO-ds (˜σ=0)
+ICP (˜σ=5)
+mean shape
+ANISO (˜σ=5)
+ISO-ds (˜σ=0)
+LAI
+9
+18
+36
+90
+0.7
+0.8
+0.9
+P
+DSC (mean)
+9
+18
+36
+90
+0.02
+0.04
+0.06
+P
+DSC (std)
+9
+18
+36
+90
+0
+10
+20
+30
+P
+runtime [s] (mean)
+LOO
+9
+18
+36
+90
+0.75
+0.8
+0.85
+0.9
+P
+DSC (mean)
+9
+18
+36
+90
+0.02
+0.04
+0.06
+P
+DSC (std)
+9
+18
+36
+90
+0
+20
+40
+60
+P
+runtime [s] (mean)
+Figure 11: DSC and runtime for hip LAI and LOO results.
+6.4. Brain Structures
+In this experiment we consider a multi-object PDM
+that captures the inter-relation between multiple brain
+structures, namely Substantia Nigra & Subthalamic Nu-
+cleus (SN+STN, as compound object), Nucleus Ruber
+(NR), Thalamus (Th) and Putamen & Globus Pallidus
+(Put+GP, as compound object), where all structures are
+considered bilaterally. The mean of the PDM is shown in
+Fig. 12 (a).
+The PDM is learned from multi-label segmentations
+that are all represented in a common coordinate system,
+the MNI ICBM 152 (Fonov et al., 2009) template space
+in our case (more details on the manual annotation and
+the establishment of correspondences can be found in our
+previous work (Bernard et al., 2014, 2016b)). The align-
+ment of the patient images into the MNI template space
+is conducted using the rigid image registration method
+FLIRT (Jenkinson and Smith, 2001).
+Hence, thanks to
+this alignment, the orientation and position are already
+approximately normalised. Consequently, for a new pa-
+tient image that is to be segmented, a registration to the
+MNI template space is suﬃcient.
+6.4.1. Interactive Segmentation
+One interesting perspective of our presented shape-
+aware surface reconstruction method might be its integra-
+tion into an interactive segmentation setting. This could
+be implemented by alternating between the user annotat-
+ing object boundaries, and running our ﬁtting method in
+order to reconstruct a surface from the user-input. As a
+ﬁrst step into this direction, in addition to random sparse
+points, for the brain structure dataset we also evaluate a
+ﬁtting to partial contours. We decided to focus on partial
+contours instead of full contours since for some of the struc-
+tures some regions may be diﬃcult to delineate. In order
+to perform this evaluation we synthetically generated con-
+tours according to the procedure described in the supple-
+mentary material. In Fig. 12 (c) we show the sparse points
+that constitute these partial contours. The main idea of
+the contour generation is as follows. First, we randomly
+select a 2D slice of the binary 3D segmentation image for
+a particular object. Next, from the 2D slice of the ground
+truth segmentation a subcontour of the entire boundary is
+randomly selected. Combining the chosen slice index with
+the subcontour leads to a planar 3D contour.
+Eventu-
+ally, this contour is subsampled and the points are added
+to P. Whilst our synthetic contour generation does not
+substitute a proper study involving user-drawn contours,
+we found that the resulting contours look plausible to be
+drawn by a human operator. For the generation of the par-
+tial contours we considered two settings, c1 and c2. For c1,
+we have two contours in four of the eight brain structures,
+as shown in Fig. 12 (c), where the number of points ranges
+from 58 to 106, with a median of 80. For c2, we have a sin-
+gle contour for each of the eight brain structures, where the
+number of points ranges from 58 to 81, with a median of
+68. Note that when considering partial contours, for each
+pj ∈P we assume that it is known to which of the eight
+brain structures it belongs, which is used to constrain the
+E-step in our ﬁtting methods (and the nearest-neighbour
+routine for the ICP methods).
+In order to evaluate the robustness of our presented
+method with respect to noisy inputs, we also created noisy
+contours. For that, each partial contour is translated in
+the image plane by a random vector that has a zero-mean
+Gaussian distribution with covariance ˜σ2I2. Our motiva-
+tion for using in-plane translations is that when the user
+draws a contour in the image, the particular image plane
+is ﬁxed and thus the only uncertainty occurs in-plane.
+6.4.2. Results
+For each of the K = 17 training shapes we sample 20
+instances of sparse points P.
+Following concepts intro-
+duced by Cootes and Taylor (1995); Wang and Staib (1998,
+2000), in the LOO experiments we increase the ﬂexibility
+of the resulting shape model by extracting M = 96 eigen-
+vectors of a modiﬁed covariance matrix. In our case, we
+used the sum of the (scaled) covariance matrix C and a
+Gaussian kernel with standard deviation of approximately
+5mm. We refer the interested reader to our previous work
+12
+
+
+--- Page 13 ---
+
+(a)
+(b)
+(c)
+Figure 12: Brain shapes dataset. (a) Mean shape with N = 1792 vertices. (b) Downsampled mean shape with 371 vertices. In (a,b) P = 36
+sparse points have been randomly drawn from the original surface according to the procedure described in section 6. (c) A shape instance
+from the training set with partial contours.
+for details (Bernard et al., 2016a), where the method is re-
+ferred to as kPCA. We also demonstrated that this method
+is able to improve the generalisation ability of the PDM
+in this small training dataset comprising K = 17 shapes.
+Summaries of the results are shown in Fig. 13.
+ICP (˜σ=0)
+AICP (˜σ=0)
+ANISO (˜σ=0)
+ANISO-ds (˜σ=0)
+ICP (˜σ=2)
+mean shape
+ANISO (˜σ=2)
+ISO-ds (˜σ=0)
+LAI
+9
+18 36 90 c1
+c2
+0.4
+0.6
+0.8
+1
+P
+DSC (mean)
+9
+18 36 90 c1
+c2
+0
+0.1
+0.2
+P
+DSC (std)
+9 18 36 90 c1 c2
+0
+2
+4
+6
+P
+runtime [s] (mean)
+LOO
+9
+18 36 90 c1
+c2
+0.4
+0.5
+0.6
+0.7
+0.8
+P
+DSC (mean)
+9
+18 36 90 c1
+c2
+0.05
+0.1
+0.15
+0.2
+P
+DSC (std)
+9 18 36 90 c1 c2
+0
+5
+10
+P
+runtime [s] (mean)
+Figure 13: DSC and runtime for brain shape LAI and LOO results.
+As anticipated, the plots conﬁrm that with respect to
+ﬁtting accuracy an increasing number of measurements P
+improves the results. Moreover, it can be seen that the
+ANISO method outperforms the ICP methods in all cases,
+where the standard deviation of ICP is much larger. In all
+cases, running any ﬁtting method is superior compared
+to simply using the mean shape. Due to the simplicity
+of the ICP method, its runtime is much lower compared
+to the proposed ﬁtting methods. However, by using the
+ANISO method with a downsampled PDM, the runtime
+can be reduced compared to the ANISO method, whilst
+still having superior ﬁtting accuracy compared to ICP.
+When using the method for interactive segmentation,
+the individual annotation of a moderate amount of random
+points, e.g. P = 90, is rather tedious and time-demanding.
+Thus, in the settings c1 and c2 we have evaluated the al-
+ternative of using points that can be derived from a very
+few number of partial contours. With that, one can ob-
+tain a reasonable number of points, cf. section 6.4.1, with
+much less eﬀort. Our results suggest that this is in general
+preferable over using a small amount of random points, say
+P ≤18. Nevertheless, the case of having P = 90 random
+points outperformed the considered partial contours. We
+believe the reason is that the random points contain more
+diverse and scattered information compared to contours
+containing many correlated points.
+7. Conclusion and Outlook
+In this paper we have presented a methodology for a
+shape-aware surface reconstruction from sparse surface
+points. The proposed methodology is superior compared
+to the standard approach of ICP with respect to accu-
+racy and robustness on a wide range of datasets. In this
+method, the likely shape of the object that is to be recon-
+structed is captured by a PDM associated with a surface
+mesh. By interpreting the available sparse surface points
+as samples drawn from a GMM, the surface reconstruction
+task is cast as the maximisation of the posterior likelihood,
+which we tackle by variants of the EM algorithm. In or-
+der to achieve a surface-based ﬁtting, we use a GMM with
+anisotropic covariance matrices, which are “oriented” by
+the surface normals at the PDM points. However, this re-
+13
+
+
+--- Page 14 ---
+
+sults in a non-concave optimisation problem that needs to
+be solved in each M-step. We deal with this by maximis-
+ing a concave approximation that considers the surface
+normals of the PDM computed from the previous value
+of the shape deformation parameter.
+As stated before,
+this approximation makes sense with the assumption that
+neighbour PDM vertices vary smoothly and the fact that
+surface normals are invariant to translations. We empiri-
+cally demonstrated that ﬁnding a global maximum of this
+approximation leads to better results compared to ﬁnding
+a local optimum during the exact (non-concave) M-step.
+Moreover, our proposed concave approximation results in
+an algorithm that has the same time complexity as the
+isotropic ﬁtting procedure.
+The proposed surface reconstruction method deals ex-
+clusively with shape deformations. Thus, the normalisa-
+tion of the pose must be solved a-priori in an application-
+dependent manner.
+In the example of the multi-object
+brain shape reconstruction we dealt with this issue by ﬁrst
+performing rigid image registration in order to align the
+data into a common coordinate system. Dealing with the
+limitation of not explicitly considering a rigid transforma-
+tion in order to model the pose of the object is the next
+step for achieving an even broader applicability. Whilst
+in principal one can formulate an analogous problem that
+considers the pose, the resulting problem is much more
+diﬃcult to solve. This is because a simultaneous maximi-
+sation must be performed with respect to the rigid trans-
+formation and the shape deformation parameter. This is
+usually done iteratively, as in Active Shape Model search
+(Cootes and Taylor, 1992).
+With that, particular chal-
+lenges to be dealt with are that the resulting surface re-
+construction procedure would be much more sensitive to
+unwanted local optima as well as much slower.
+We have conducted an evaluation of the proposed al-
+gorithmic tools on a wide range of datasets in order to
+demonstrate their general applicability in the ﬁeld of med-
+ical image analysis. For the evaluation we have considered
+a general noise model, i.e. Gaussian noise that is indepen-
+dent for each point. In addition, for the contour case we
+also considered in-plane (Gaussian) noise. Since we focus
+on demonstrating the general applicability, a detailed eval-
+uation of certain application-speciﬁc aspects (e.g. speciﬁc
+noise models) has not been studied in this paper.
+One
+interesting direction for future work is to consider out-
+liers in the sparse points, which is relevant if the sparse
+points are automatically generated (e.g. using feature ex-
+traction methods). This could for example be tackled by
+integrating an additional uniform component into the mix-
+ture model (Myronenko and Song, 2010).
+Another ap-
+proach is to use a RANSAC-like procedure (Fischler and
+Bolles, 1981). In order to encourage the integration of our
+method into application-speciﬁc medical imaging work-
+ﬂows, we make our method publicly available6. We expect
+6https://github.com/fbernardpi/sparsePdmFitting
+that the public availability of the method will stimulate
+the commencement of interesting new research questions.
+One such question may be which points are most useful
+for the reconstruction of surfaces.
+Acknowledgement
+The authors gratefully acknowledge the ﬁnancial sup-
+port by the Fonds National de la Recherche, Luxem-
+bourg (6538106, 8864515, 9169303), by the German fed-
+eral ministry of education and research (BMBF), grant no.
+01EC1408B, and by the Einstein Center for Mathematics
+(ECMath), Berlin.
+Appendix A. Gradient of Q in (17)
+In the following, we derive the gradient of Q w.r.t. α,
+i.e.
+∇αQ =
+h
+∂Q
+∂αm
+i
+m .
+(A.1)
+For brevity, we write ∂· to denote the partial derivative
+∂·
+∂αm w.r.t. αm, where the dependence on m is implicit.
+First, we note that the cross-product u × v of two vec-
+tors u, v ∈R3 can be written as the matrix multiplication
+[u]×v, where the operator [·]× : R3 →R3×3 creates a skew-
+symmetric matrix from its input vector by
+[
+
+
+u1
+u2
+u3
+
+]× :=
+
+
+0
+−u3
+u2
+u3
+0
+−u1
+−u2
+u1
+0
+
+.
+(A.2)
+Introducing
+bi(α) := (yi2(α) −yi(α)) × (yi3(α) −yi(α)) ,
+(A.3)
+we can write ni(α) =
+bi(α)
+∥bi(α)∥. Now, by representing the
+cross product in (A.3) as a matrix product with the nota-
+tion from (A.2), and by using the product rule, the partial
+derivative of bi(α) is given by
+∂bi(α) = {∂[yi2(α) −yi(α)]×}(yi3(α) −yi(α))
+(A.4)
++ [yi2(α) −yi(α)]×{∂(yi3(α) −yi(α))}
+= [Φi2,m −Φi,m]×(yi3(α) −yi(α))
+(A.5)
++ [yi2(α) −yi(α)]×(Φi3,m −Φi,m) .
+Moreover,
+∂∥bi(α)∥= bT
+i (α){∂bi(α)}
+∥bi(α)∥
+.
+(A.6)
+By using the quotient rule, the partial derivative of ni(α)
+is given by
+∂ni(α) = ∥bi(α)∥{∂bi(α)} −bi(α){∂∥bi(α)∥}
+∥bi(α)∥2
+.
+(A.7)
+14
+
+
+--- Page 15 ---
+
+Using ∂ni(α), we can write
+∂Wi(α) = (η−1)({∂ni(α)}nT
+i (α) + ni(α){∂nT
+i (α)}) .
+(A.8)
+Now, given the expression for ∂Wi(α), we can ﬁnally com-
+pute the partial derivative of Q w.r.t. αm, which is
+∂Q(α, σ, α(n), σ(n)) =
+(A.9)
+−(Λ−1)m,:α −
+1
+2σ2
+X
+i,j
+p(i|pj, α(n), σ(n))·
+[(pj −yi(α))T {∂Wi(α)}(pj −yi(α))−
+2ΦT
+i,mWi(α)(pj −yi(α))] .
+References
+Albrecht, T., L¨uthi, M., Gerig, T., Vetter, T., 2013. Posterior shape
+models. Medical Image Analysis 17, 959–973.
+Amenta, N., Bern, M., Kamvysselis, M., 1998. A new Voronoi-based
+surface reconstruction algorithm, in: SIGGRAPH.
+Anguelov, D., Srinivasan, P., Koller, D., Thrun, S., Rodgers, J.,
+Davis, J., 2005. SCAPE: shape completion and animation of peo-
+ple, in: SIGGRAPH, ACM. pp. 408–416.
+Bajaj, C.L., Bernardini, F., Xu, G., 1995. Automatic reconstruction
+of surfaces and scalar ﬁelds from 3D scans, in: SIGGRAPH.
+Baka, N., de Bruijne, M., Reiber, J., 2010. Conﬁdence of model based
+shape reconstruction from sparse data, in: Biomedical Imaging:
+From Nano to Macro.
+Ballard, D.H., 1981.
+Generalizing the Hough transform to detect
+arbitrary shapes. Pattern Recognition 13, 111–122.
+Barratt, D.C., Chan, C.S., Edwards, P.J., Penney, G.P., Slom-
+czykowski, M., Carter, T.J., Hawkes, D.J., 2008.
+Instantiation
+and registration of statistical shape models of the femur and pelvis
+using 3D ultrasound imaging. Medical Image Analysis 12, 358–
+374.
+Berger, M., Tagliasacchi, A., Seversky, L., Alliez, P., 2014.
+State
+of the art in surface reconstruction from point clouds.
+EURO-
+GRAPHICS STAR .
+Bernard, F., Gemmar, P., Hertel, F., Goncalves, J., Thunberg, J.,
+2016a. Linear Shape Deformation Models with Local Support Us-
+ing Graph-based Structured Matrix Factorisation, in: Computer
+Vision and Pattern Recognition (CVPR), Las Vegas, NV.
+Bernard, F., Gemmar, P., Husch, A., Saleh, C., Neb, H., Dooms,
+G., Hertel, F., 2014. Improving the Consistency of Manual Deep
+Brain Structure Segmentations by Combining Variational Interpo-
+lation, Simultaneous Multi-Modality Visualisation and Histogram
+Equilisation. Biomedical Engineering / Biomedizinische Technik
+59, 131–134.
+Bernard, F., Salamanca, L., Thunberg, J., Hertel, F., Goncalves, J.,
+Gemmar, P., 2015. Shape-aware 3D Interpolation using Statistical
+Shape Models, in: Proceedings of Shape Symposium, Delemont.
+Bernard, F., Vlassis, N., Gemmar, P., Husch, A., Thunberg, J.,
+Goncalves, J., Hertel, F., 2016b.
+Fast correspondences for sta-
+tistical shape models of brain structures, in: Proc. SPIE Medical
+Imaging, San Diego.
+Bernardini, F., Mittleman, J., Rushmeier, H., Silva, C., Taubin,
+G., 1999. The ball-pivoting algorithm for surface reconstruction.
+IEEE Transactions on Visualization and Computer Graphics 5,
+349–359.
+Besl, P.J., McKay, N.D., 1992.
+A method for registration of 3-D
+shapes. IEEE Transactions on Pattern Analysis and Machine In-
+telligence 14, 239–256.
+Billings, S.D., Boctor, E.M., Taylor, R.H., 2015.
+Iterative most-
+likely point registration (IMLP): a robust algorithm for computing
+optimal shape alignment. PloS one 10.
+Blanc, R., Sz´ekely, G., 2012. Conﬁdence regions for statistical model
+based shape prediction from sparse observations. IEEE Transac-
+tions on Medical Imaging 31, 1300–1310.
+Blanz, V., Mehl, A., Vetter, T., Seidel, H.P., 2004.
+A statistical
+method for robust 3D surface reconstruction from sparse data, in:
+3D Data Processing, Visualization and Transmission, pp. 293–300.
+Bolle, R.M., Vemuri, B.C., 1991. On three-dimensional surface re-
+construction methods.
+IEEE Transactions on Pattern Analysis
+and Machine Intelligence 13, 1–13.
+Bouaziz, S., Tagliasacchi, A., Pauly, M., 2013. Sparse iterative closest
+point. Computer Graphics Forum 32, 1–11.
+de Bruijne, M., van Ginneken, B., Viergever, M.A., Niessen, W.J.,
+2004. Interactive segmentation of abdominal aortic aneurysms in
+CTA images. Medical Image Analysis 8, 127–138.
+Chan, C.S., Edwards, P.J., Hawkes, D.J., 2003.
+Integration of
+ultrasound-based registration with statistical shape models for
+computer-assisted orthopaedic surgery, in: SPIE Medical Imag-
+ing, pp. 414–424.
+Chang, W., Zwicker, M., 2009. Range Scan Registration Using Re-
+duced Deformable Models. Computer Graphics Forum 28, 447–
+456.
+Cootes, T.F., Taylor, C.J., 1992.
+Active Shape Models - Smart
+Snakes, in: British Machine Vision Conference, pp. 266–275.
+Cootes, T.F., Taylor, C.J., 1995. Combining point distribution mod-
+els with shape models based on ﬁnite element analysis. Image and
+Vision Computing 13, 403–409.
+Dempster, A.P., Laird, N.M., Rubin, D.B., 1977. Maximum Like-
+lihood from Incomplete Data via the EM Algorithm. Journal of
+the Royal Statistical Society. Series B (Methodological) 39, 1–38.
+Edelsbrunner, H., M¨ucke, E.P., 1994.
+Three-dimensional alpha
+shapes. ACM Transactions on Graphics 13, 43–72.
+Fischler, M.A., Bolles, R.C., 1981.
+Random sample consensus: a
+paradigm for model ﬁtting with applications to image analysis
+and automated cartography. Communications of the ACM 24.
+Fleute, M., Lavall´ee, S., 1998. Building a complete surface model
+from sparse data using statistical shape models: Application to
+computer assisted knee surgery, in: International Conference on
+Medical Image Computing and Computer-Assisted Intervention.
+Fleute, M., Lavall´ee, S., Julliard, R., 1999.
+Incorporating a sta-
+tistically based shape model into a system for computer-assisted
+anterior cruciate ligament surgery. Medical Image Analysis 3, 209–
+222.
+Fonov, V.S., Evans, A.C., McKinstry, R.C., Almli, C.R., Collins,
+D.L., 2009.
+Unbiased nonlinear average age-appropriate brain
+templates from birth to adulthood. Neuroimage 47, S102.
+Gal, R., Shamir, A., Hassner, T., Pauly, M., Cohen Or, D., 2007.
+Surface reconstruction using local shape priors., in: Symposium
+on Geometry Processing, pp. 253–262.
+van Ginneken, B., de Bruijne, M., Loog, M., Viergever, M.A., 2003.
+Interactive shape models, in: SPIE Medical Imaging, pp. 1206–
+1216.
+van Ginneken, B., Frangi, A.F., Frangi, R.F., Staal, J.J., Ter
+Haar Romeny, B.M., Viergever, M.A., 2002. Active Shape Model
+Segmentation with Optimal Features. IEEE Transactions on Med-
+ical Imaging 21, 924–933.
+Granger, S., Pennec, X., 2002.
+Multi-scale EM-ICP: A fast and
+robust approach for surface registration. European Conference on
+Computer Vision .
+Guo, G., Jiang, T., Wang, Y., Gao, W., 2012. Recovering Missing
+Contours for Occluded Object Detection. IEEE Signal Processing
+Letters 19, 463–466.
+Guo, G., Jiang, T., Wang, Y., Gao, W., 2013. 2-D shape completion
+with shape priors. Chinese Science Bulletin 58, 3430–3436.
+Heckel, F., Konrad, O., Karl Hahn, H., Peitgen, H.O., 2011.
+In-
+teractive 3D medical image segmentation with energy-minimizing
+implicit functions. Computers & Graphics 35, 275–287.
+Heimann, T., Meinzer, H.P., 2009. Statistical shape models for 3D
+medical image segmentation: A review. Medical Image Analysis
+13, 543–563.
+van den Hengel, A., Dick, A.R., Thorm¨ahlen, T., Ward, B., Torr,
+P.H.S., 2007. Interactive 3D Model Completion, in: Digital Image
+15
+
+
+--- Page 16 ---
+
+Computing Techniques and Applications, pp. 175–181.
+Herman, G.T., Zheng, J., Bucholtz, C.A., 1992. Shape-based inter-
+polation. IEEE Computer Graphics and Applications 12, 69–79.
+Hill, A., Cootes, T.F., Taylor, C.J., 1995. Active Shape Models and
+the Shape Approximation Problem. Image and Vision Computing
+14, 601–607.
+Hoppe, H., DeRose, T., Duchamp, T., McDonald, J.A., Stuetzle,
+W., 1992. Surface reconstruction from unorganized points. SIG-
+GRAPH , 71–78.
+Horaud, R., Forbes, F., Yguel, M., Dewaele, G., Zhang, J., 2011.
+Rigid and articulated point registration with expectation condi-
+tional maximization. IEEE Transactions on Pattern Analysis and
+Machine Intelligence 33, 587–602.
+Hufnagel, H., Pennec, X., Ehrhardt, J., Ayache, N., Handels, H.,
+2008. Generation of a statistical shape model with probabilistic
+point correspondences and the expectation maximization-iterative
+closest point algorithm. International Journal of Computer As-
+sisted Radiology and Surgery 2, 265–273.
+Jenkinson, M., Smith, S., 2001. A global optimisation method for
+robust aﬃne registration of brain images. Medical Image Analysis
+5, 143–156.
+Jensen, J.L.W.V., 1906. Sur les fonctions convexes et les in´egalit´es
+entre les valeurs moyennes. Acta mathematica 30, 175–193.
+Kazhdan, M., Bolitho, M., Hoppe, H., 2006. Poisson surface recon-
+struction, in: Eurographics Symposium on Geometry Processing.
+Liu, J., Udupa, J.K., 2009.
+Oriented active shape models.
+IEEE
+Transactions on Medical Imaging 28, 571–584.
+Lu, M., Zheng, B., Takamatsu, J., Nishino, K., 2011.
+3D shape
+restoration via matrix recovery, in:
+Computer Vision–ACCV
+Workshops, pp. 306–315.
+Maier-Hein, L., Franz, A.M., dos Santos, T.R., Schmidt, M.,
+Fangerau, M., Meinzer, H.P., Fitzpatrick, J.M., 2012.
+Conver-
+gent iterative closest-point algorithm to accomodate anisotropic
+and inhomogenous localization error. IEEE Transactions on Pat-
+tern Analysis and Machine Intelligence 34, 1520–1532.
+Maier-Hein, L., Schmidt, M., Franz, A.M., dos Santos, T.R., Seitel,
+A., J¨ahne, B., Fitzpatrick, J.M., Meinzer, H.P., 2010. Accounting
+for anisotropic noise in ﬁne registration of time-of-ﬂight range data
+with high-resolution surface data, in: International Conference on
+Medical Image Computing and Computer-Assisted Intervention,
+Springer. pp. 251–258.
+Meng, X.L., Rubin, D.B., 1993. Maximum likelihood estimation via
+the ECM algorithm: A general framework. Biometrika 80, 267–
+278.
+Myronenko, A., Song, X., 2010. Point Set Registration: Coherent
+Point Drift. IEEE Transactions on Pattern Analysis and Machine
+Intelligence 32, 2262–2275.
+Myronenko, A., Song, X., Carreira-Perpin´an, M.A., 2007. Non-rigid
+point set registration: Coherent Point Drift, in: Neural Informa-
+tion Processing Systems, pp. 1009–1016.
+Nocedal, J., Wright, S.J., 2006. Numerical Optimization. Springer.
+Osada, R., Funkhouser, T., Chazelle, B., Dobkin, D., 2002. Shape
+distributions. ACM Transactions on Graphics (TOG) 21, 807–832.
+Park, S., Guo, X., Shin, H., Qin, H., 2006. Surface completion for
+shape and appearance. The Visual Computer 22, 168–180.
+Pauly, M., Mitra, N.J., Giesen, J., Gross, M.H., Guibas, L.J., 2005.
+Example-Based 3D Scan Completion., in: Symposium on Geom-
+etry Processing, pp. 23–32.
+Rajamani, K.T., Styner, M.A., Talib, H., Zheng, G., Nolte, L.P.,
+Ballester, M.A.G., 2007. Statistical deformable bone models for
+robust 3D surface extrapolation from sparse data. Medical Image
+Analysis 11, 99–109.
+Raya, S.P., Udupa, J.K., 1990. Shape-based interpolation of multi-
+dimensional objects. IEEE Transactions on Medical Imaging 9,
+32–42.
+Rusinkiewicz, S., Levoy, M., 2001.
+Eﬃcient variants of the ICP
+algorithm, in: 3-D Digital Imaging and Modeling.
+Schroers, C., Setzer, S., Weickert, J., 2014. A Variational Taxonomy
+for Surface Reconstruction from Oriented Points, in: Computer
+Graphics Forum, pp. 195–204.
+Schwarz, T., Heimann, T., Tetzlaﬀ, R., Rau, A.M., Wolf, I., Meinzer,
+H.P., 2008. Interactive surface correction for 3D shape based seg-
+mentation, in: SPIE Medical Imaging, pp. 69143O–69143O.
+Segal, A., Haehnel, D., Thrun, S., 2009.
+Generalized-icp, in:
+Robotics: Science and Systems.
+Seim, H., Kainm¨uller, D., Lamecker, H., Bindernagel, M., Mali-
+nowski, J., Zachow, S., 2010. Model-based Auto-Segmentation of
+Knee Bones and Cartilage in MRI Data. Proc. of Medical Image
+Analysis for the Clinic: A Grand Challenge , 215–223.
+Shen, C.H., Fu, H., Chen, K., Hu, S.M., 2012. Structure recovery by
+part assembly, in: SIGGRAPH.
+Stoll, C., Karni, Z., R¨ossl, C., Yamauchi, H., Seidel, H.P., 2006.
+Template deformation for point cloud ﬁtting. SPBG , 27–35.
+Tan, J.H., Acharya, U.R., 2014. Active spline model: A shape based
+model—interactive segmentation.
+Digital Signal Processing 35,
+64–74.
+Taylor, J., Bordeaux, L., Cashman, T., Corish, B., Keskin, C., Sharp,
+T., Soto, E., Sweeney, D., Valentin, J., Luﬀ, B., 2016. Eﬃcient
+and precise interactive hand tracking through joint, continuous
+optimization of pose and correspondences. ACM Transactions on
+Graphics (TOG) 35, 143.
+Taylor, J., Stebbing, R., Ramakrishna, V., Keskin, C., Shotton, J.,
+Izadi, S., Hertzmann, A., Fitzgibbon, A., 2014.
+User-Speciﬁc
+Hand Modeling from Monocular Depth Sequences, in: 2014 IEEE
+Conference on Computer Vision and Pattern Recognition, IEEE.
+pp. 644–651.
+Timinger, H., Pekar, V., von Berg, J., Dietmayer, K., Kaus, M., 2003.
+Integration of interactive corrections to model-based segmentation
+algorithms, in: Bildverarbeitung f¨ur die Medizin 2003. Springer,
+pp. 171–175.
+Treece, G.M., Prager, R.W., Gee, A.H., 2000.
+Surface interpola-
+tion from sparse cross sections using region correspondence. IEEE
+Transactions on Medical Imaging 11, 1106–1114.
+Turk, G., O’Brien, J.F., 1999.
+Shape transformation using varia-
+tional implicit functions, in: SIGGRAPH, pp. 335–342.
+Wang, Y., Staib, L.H., 1998. Boundary ﬁnding with correspondence
+using statistical shape models, in: Computer Vision and Pattern
+Recognition (CVPR), pp. 338–345.
+Wang, Y., Staib, L.H., 2000. Boundary ﬁnding with prior shape and
+smoothness models. IEEE Transactions on Pattern Analysis and
+Machine Intelligence 22, 738–743.
+Zheng, G., 2013. Expectation conditional maximization-based de-
+formable shape registration, in: International Conference on Com-
+puter Analysis of Images and Patterns, Springer. pp. 548–555.
+Zheng, G., Rajamani, K.T., Nolte, L.P., 2006. Use of a Dense Sur-
+face Point Distribution Model in a Three-Stage Anatomical Shape
+Reconstruction from Sparse Information for Computer Assisted
+Orthopaedic Surgery: A Preliminary Study. Computer Vision–
+ACCV .
+16

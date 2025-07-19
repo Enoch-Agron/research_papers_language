@@ -1,0 +1,1523 @@
+# Improving_NURBS_Surface_Sharp_Feature_Representati.pdf
+# Converted: 2025-07-19 12:45:29
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Improving_NURBS_Surface_Sharp_Feature_Representati.pdf
+# Output: ../layer2_completion/txt/Improving_NURBS_Surface_Sharp_Feature_Representati.txt
+
+
+--- Page 1 ---
+
+See discussions, stats, and author profiles for this publication at: https://www.researchgate.net/publication/228339084
+Improving NURBS Surface Sharp Feature Representation
+Article  in  International Journal of Computational Intelligence Research (IJCIR) · January 2007
+DOI: 10.5019/j.ijcir.2007.97
+CITATIONS
+10
+READS
+305
+3 authors, including:
+Nallig Leal
+Universidad Autónoma del Caribe
+27 PUBLICATIONS   360 CITATIONS   
+SEE PROFILE
+Oscar Ortega
+University of Antioquia
+16 PUBLICATIONS   64 CITATIONS   
+SEE PROFILE
+All content following this page was uploaded by Nallig Leal on 03 June 2014.
+The user has requested enhancement of the downloaded file.
+
+
+--- Page 2 ---
+
+International Journal of Computational Intelligence Research. 
+ISSN 0973-1873 Vol.3, No.2 (2007), pp. 131-138 
+© Research India Publications http://www.ijcir.info 
+ 
+ 
+ 
+Improving NURBS Surface Sharp Feature 
+Representation 
+  
+Nallig Eduardo Leal1, Oscar Ortega Lobo1 and John William Branch2 
+ 
+1Systems Engineering Department, University of Antioquia, 
+Medellín, Ant. Cl 67 #53-108, Colombia 
+E-mail: nallig_eduardo@yahoo.com.mx, oortega@udea.edu.co 
+ 
+2Systems School, National University, 
+Medellín, Ant. Cl 59A #63-20, Colombia 
+E-mail: jwbranch@unalmed.edu.co 
+ 
+ 
+Abstract—Surface fitting is one of the most important stage of 
+the 3D reconstruction process, since in this stage the 
+computational model of the real object is obtained. NURBS is a 
+surface fitting method widely used that has become a standard 
+in CAD/CAM system due to its stability, flexibility and local 
+modification properties. Despite of the advantages of fitting with 
+NURBS, it is still necessary improve the representation of sharp 
+features like high curvatures, edges and corners with this fitting 
+method. Find a correct parameterization of the NURBS can 
+contribute to improve the representation of sharp features, even 
+though the manipulation of the NURBS parameters imply deal 
+with non linear problems when fitting. In this paper, a new 
+method 
+for 
+improving 
+NURBS 
+surface 
+sharp 
+feature 
+representation is presented. The method first subdivides the 
+fitting data in clusters, by using SOM. Then, in each cluster uses 
+an evolutionary strategy to obtain the weights of the NURBS so 
+that the error fitting is minimized and the representation of 
+sharp features is improved. 
+ 
+Keywords—Evolutionary Strategies, NURBS, SOM, Surface 
+optimization.  
+I. Introduction 
+The 3D reconstruction is a process by which objects are 
+reproduced in the computer memory, keeping its physical 
+characteristics (dimensions, volume and shape). The 3D 
+reconstruction is a difficult task that covers, in general terms, 
+five stages: data acquisition, registration, integration, 
+segmentation and surface fitting [1]. The approach presented 
+in this paper deals with the surface fitting stage, in which the 
+computational model of the object is obtained. 
+NURBS is one of the most employed surface fitting 
+models, provided that is a standard representation of curves 
+and surfaces [2] and is widely supported by modern standards 
+like OpenGL and IGES, which are used for graphics and 
+geometric data exchange [3]. In addition, the NURBS surface 
+model has stability, flexibility, local modification properties 
+and is robust to the noise. Yet, the NURBS surface model has 
+some disadvantages: the input data points should be mapped 
+on a regular grid structure and the representation of sharp 
+features of the 3D object surfaces, due to the smooth 
+properties of the model, is poor. This paper focuses on the 
+second one. 
+When fitting parametric surfaces, like NURBS, the choice 
+of the parameters values make a great difference in the shape 
+of the resultant surface [4]. The NURBS surface fitting 
+depends on the values of knots, weights and control points. 
+Control points describe the geometry that the NURBS surface 
+must follow, but the weights determine the local degree of 
+influence that a control point has, i.e. the weights determine 
+the local shape whereas control points determine the global 
+shape. 
+NURBS surfaces can be constructed using deterministic 
+algorithms, Piegl and Tiller [2] presented a method for 
+constructing NURBS surfaces in this way, even though some 
+method for constructing NURBS deterministically assign 
+homogeneous weighting factors, therefore the resultant 
+surface locally do not follow close enough the geometry 
+described by the control points. 
+A way for optimizing the NURBS surface fitting is 
+manipulating the values of the parameter surface, but this 
+implies to deal with non linear problems during the fitting 
+process. The manipulation of NURBS parameters can be 
+done by means of deterministic method, e.g. assigning the 
+weighting factors proportional to the length of the control 
+points polygon spans [5], but such way of NURBS 
+construction can affect the local shape of the surface. 
+When optimizing NURBS surfaces described by large 
+amount of control points, the optimization space can be too 
+irregular, therefore deterministic methods can easily fall in 
+both local minimal or do not reach the convergence point. 
+Furthermore, the deterministic methods require accomplish 
+differentiability conditions. In 2004 Cuartas [6] presented a 
+deterministic method for optimizing NURBS surfaces by 
+
+
+--- Page 3 ---
+
+132 
+ 
+Nallig Eduardo Leal et al
+ 
+ 
+ 
+manipulating 
+the 
+knot 
+vectors 
+using 
+the 
+Levenberg-Marquardt algorithm. The method has both 
+convergence problems and initial value problems. 
+In cases where deterministic method can not be applied 
+successfully, heuristic methods like evolutionary algorithms 
+are alternatives that can be considered, due to they do not 
+have the restrictions of the deterministic and have advantages 
+like multiples starting and searching points in a given space, 
+just require to know the objective function and do not require 
+to know its derivatives nor additional information, 
+Evolutionary algorithms use probabilistic transition rules 
+instead of deterministic rules and work with coded parameters 
+instead of real parameters. In 2000 Weinert and Mehnen [7] 
+used an evolutionary algorithm to optimize NURBS surfaces, 
+obtaining 
+good 
+results; 
+though 
+the 
+method 
+was 
+computationally expensive. 
+Several approaches have used evolutionary algorithms for 
+improving the surface fitting techniques; such approaches 
+have produced promising results [7], [8], [9], even though in 
+real value optimization, the approaches that use evolutionary 
+strategies have a better computational performance. 
+In this paper a new method for improving sharp feature 
+representation of NURBS surfaces is presented. The method 
+first subdivides the fitting data in clusters where perform a 
+local optimization, by using SOM. Then, for each cluster, 
+uses an evolutionary strategy to obtain the weights of the 
+control points, without change the location of the points, for 
+reducing the fitting error and improving sharp feature 
+representation, keeping the global and local surface geometry 
+of the real object. 
+The remainder of this paper is organized as follows. In 
+section 2, we present related work dealing with surface 
+optimization, emphasizing in NURBS. In section 3, the 
+fundamentals of NURBS surfaces are presented. In section 4, 
+we present a short review of SOM. In section 5, we present the 
+fundamentals of evolutionary strategies. In section 6, the 
+stages of our method are explained. In section 7, the results of 
+our method are provided. In section 8, conclusions and future 
+work are discussed. 
+II. Related work 
+Provided that NURBS is a standard representation of curves 
+and surfaces [2] and is one of the most used surface fitting 
+methods, it is important try to solve the drawbacks the model 
+has. It is also important to know what techniques have been 
+employed for both solving the drawbacks other surface fitting 
+techniques have, and how those techniques have been 
+employed for optimize them, in order to realize a direct 
+adaptation for NURBS surface optimization. 
+Fujiwara and Sawai [9] employ genetic algorithms to 
+improve the approximation of human faces using triangular 
+meshes. The idea is to approximate an original surface, the 
+closest as possible, finding the best location of the points that 
+define the 3D triangular mesh. Two algorithms were utilized 
+to generate the meshes. The first one, perform a selection and 
+mating of the points population in a only iteration. The second 
+one, is a genetic algorithm which coded triangular meshes like 
+individuals. The method is not able to approximate surfaces 
+like toroids. 
+Cuartas [6] presents a method for manipulating the knot 
+vectors of a NURBS surface in order to optimize the surface 
+fitting. The manipulation of the knot vectors is made using the 
+Levenberg-Marquardt algorithm. The method is expensive 
+computationally, only can be applied on organized range data, 
+has stability problems and is dependents of parameters. 
+Weinert and Mehnen [7] use an evolutionary strategy to 
+optimize the approximation of NURBS surfaces to set of 
+organized 3D data. The method manipulates the inner control 
+points, the knot vectors and the weights of the NURBS 
+surface in order to obtain the parameters values that reduce 
+fitting error. The simultaneous manipulation of the control 
+points, knots and weights turn the optimization problem more 
+complicate and can difficult the convergence of the solution. 
+Furthermore, the manipulation of the control points can 
+distort the geometry of the original surface and the reduction 
+of the surface fitting error by manipulating the knots, is not as 
+significant as the reduction by manipulating the weights.  
+III. NURBS 
+NURBS stand for Non Uniform Rational B-Spline, are 
+parametric tensor product defined according to the following 
+expression 
+ 
+∑∑
+∑∑
+=
+=
+=
+=
+=
+n
+i
+m
+j
+j
+i
+q
+j
+p
+i
+n
+i
+m
+j
+j
+i
+j
+i
+q
+j
+p
+i
+w
+v
+N
+u
+N
+P
+w
+v
+N
+u
+N
+v
+u
+S
+0
+0
+,
+,
+,
+0
+0
+,
+,
+,
+,
+)
+(
+)
+(
+)
+(
+)
+(
+)
+,
+(
+ 
+ 
+(1) 
+ 
+where 
+j
+i
+w , are the weights, 
+j
+iP, are the control points and 
+)
+(
+),
+(
+,
+,
+v
+N
+u
+N
+q
+j
+p
+i
+are the B-Spline basis functions or order p  
+and q  respectively, defined over the non periodic node 
+support 
+{
+}
+r
+u
+u
+u
+S
+,...,
+0
+=
+ and 
+{
+}
+r
+v
+v
+v
+S
+,...,
+0
+=
+ [10], which 
+can be calculated in a recursive way by the Cox and De Boor 
+formula [11], [12] according to (2)  
+ 
+
+
+
+≤
+≤
+=
++
+caso
+ 
+otro
+en 
+     
+0
+ 
+if
+      
+1
+)
+(
+1
+0,
+i
+i
+i
+u
+u
+u
+u
+N
+                   
+1
+1
+1
+,1
+1
+1
+,
+,
+)
+(
+)
+(
+)
+(
+)
+(
+)
+(
++
++
++
+−
++
+−
++
++
++
+−
+−
++
+−
+−
+=
+i
+p
+i
+p
+i
+p
+i
+i
+p
+i
+p
+i
+i
+p
+i
+u
+u
+u
+N
+u
+u
+u
+u
+u
+N
+u
+u
+u
+N
+ 
+(2) 
+ 
+A NURBS surface is completely determined by its control 
+points 
+j
+iP, , i.e. the surface change in a predictable way 
+according to control points movement. This is known as the 
+local support property and allows the surface be affected, only 
+
+
+--- Page 4 ---
+
+Improving NURBS Surface Sharp Feature Representation 
+133 
+locally, by the movement of a control point. The main 
+difficulty when fitting NURBS surfaces is obtain a suitable 
+parameterization and choice automatically the number of 
+control points and their positions to define the surface 
+topology. 
+The weighting 
+j
+i
+w ,  factors of NURBS surfaces play an 
+important role in the fitting process, since these factors 
+determine how much a control point influence locally the 
+shape of the surface. When the weighting factors of NURBS 
+surfaces are assigned in a homogeneous way and their values 
+are ones, the NURBS model is reduced to a particular case 
+known as B-Spline surfaces, which are limited in the 
+representation of free form and conic surfaces. If we want 
+approximate close enough set of data, which represent free 
+form surfaces using NURBS, it is necessary to manipulate the 
+NURBS parameters, but how it was previously mentioned, 
+such manipulation implies deal with no linear problems 
+during the fitting process. Furthermore, negatives values or 
+zeros in the weighting factors can degenerate the construction 
+of the surface. Fig. 1 illustrates the importance of the 
+weighting factors in the NURBS model. The circles represent 
+the control points and the line represents a NURBS curve. It is 
+notable how the weighting factors affect the local geometry of 
+the surface. 
+ 
+ 
+ 
+ 
+(a) 
+(b) 
+ 
+ 
+(c) 
+(d) 
+Figure 1.  Weighting factors effect. (a) Point 3 with weighting 
+factor equal to 0 (b) Point 3 with weighting factor equal to 0.5 
+(c) Point 3 with weighting factor equal to 1 (d) Point 3 with 
+weighting factor equal to 2. 
+ 
+ 
+When fitting data points using NURBS, it is attempt to 
+minimize: 
+ 
+( )
+( )
+( )
+( )
+∑
+∑∑
+∑∑
+=
+=
+=
+=
+=
+
+
+
+
+
+
+
+
+−
+=
+np
+l
+n
+i
+m
+j
+j
+i
+q
+j
+p
+i
+n
+i
+m
+j
+j
+i
+j
+i
+q
+j
+p
+i
+l
+w
+v
+N
+u
+N
+P
+w
+v
+N
+u
+N
+z
+1
+2
+0
+0
+,
+,
+,
+0
+0
+,
+,
+,
+,
+δ
+ 
+ 
+(3) 
+where np  is the number of control points. If the number of 
+knots an their positions are fixed, the set of weighting factors 
+is known and only the control points {
+}
+{
+}
+R
+P
+m
+j
+n
+i
+j
+i
+∈
+=
+=
+1
+1
+,
+are 
+considered during the optimization of (3), we have a linear 
+problem of least squares. But if the knots or the weights are 
+unknown, it will be necessary to solve a non linear problem. 
+In many applications the knots location is not necessary, 
+therefore knots values are obtained using some heuristic 
+techniques. 
+IV. SOM 
+Artificial neural networks generally consist of simple 
+computational elements called neurons which are highly 
+interconnected to each other. The neurons are arranged in 
+layers that interconnect to other layers. A neuron can receive 
+connections from neurons of other layers and even from 
+neurons of the same layer that it belong. 
+SOM (Self Organizing Map, also known as Kohonen 
+network) is a one single layer neural network, denoted  by 
+{
+}
+m
+n
+n
+n
+,...,
+,
+2
+1
+ where, in its basic configuration, neurons are 
+arranged two-dimensionally, and have some neighboring 
+neurons, like shows Fig. 2. 
+ 
+ 
+ 
+ 
+Figure 2.  Two-dimensional SOM 
+ 
+The input patterns to the network is a set of n-dimensional 
+vectors denoted by {
+}
+nx
+x
+x
+,...,
+,
+2
+1
+. Each neuron of the 
+network has a weight vector 
+i
+w  which has the same 
+dimensionality the input patterns have. Basically, SOM is an 
+unsupervised neural network, even though there are several 
+supervised variants known as Learning Vector Quantization 
+(LVQ) [13]. The unsupervised SOM is employ for clustering 
+and has the following learning procedure [14]: 
+ 
+1. 
+Initialize randomly the weights 
+)
+,...,
+2,1
+(
+m
+i
+ 
+wi
+=
+ 
+of the neurons. Let the training time 
+1
+=
+t
+. 
+2. 
+Present new input values {
+}
+nx
+x
+x
+,...,
+,
+2
+1
+ 
+3. 
+Compute the Euclidean distance of all outputs nodes 
+to the input point: 
+(
+)
+∑
+=
+=
+−
+=
+n
+j
+j
+i
+j
+i
+m
+i
+       
+w
+x
+d
+1
+2
+,
+,...,
+1
+,
+ 
+(4) 
+
+
+--- Page 5 ---
+
+134 
+ 
+Nallig Eduardo Leal et al
+ 
+ 
+ 
+4. 
+Find the winner neuron 
+in  as the neuron with 
+minimum Euclidean distance to the current input 
+parameter 
+5. 
+Compute the size of the neighborhood 
+( )t
+N
+ of the 
+winner neuron 
+6. 
+Update the weights of the neurons in the 
+neighborhood according to (5) 
+ 
+(
+)
+( )
+( ) ( )
+( )
+(
+)
+t
+w
+t
+x
+t
+t
+w
+t
+w
+i
+i
+i
+−
++
+=
++
+η
+1
+ 
+(5) 
+where ( )t
+η
+ is a gain term decreasing in time. 
+7. 
+Let 
+1
++
+= t
+t
+. Repeat 2-7 until the network is trained. 
+V. Evolutionary Strategies 
+Evolutionary Strategies (ES) was developed in 1964 by 
+Rechenberg and Schwefel in the University of Berlin, as a 
+experimental optimization technique [15]. ES tray to pretend, 
+in contrast with Genetic Algorithms, the effects of the genetic 
+procedures in the phenotype. ES belong to a kind of 
+probabilistic numerical optimization algorithms, which 
+include Evolutionary Programming (EP), Genetic Algorithms 
+(GA) and Genetic Programming (GP), which are known as 
+Evolutionary Algorithms. 
+The first variant of a ES, called (
+)
+ES
+−
++1
+1
+, works based 
+on two only individuals, a parent and a descendent per 
+generation. The descendent is created by applying variations, 
+called mutations, binomially distributed (with mean equal to 
+zero and variance 
+2
+σ
+) to the parent. The descendent can be 
+the parent in the next generation, if is better than the parent, in 
+the contrary case, the parent will be the survivor for the next 
+generation. 
+(
+)
+ES
+−
++1
+1
+ was replaced for the (
+)
+ES
+−
++ λ
+µ
+and 
+(
+)
+ES
+−
+λ
+µ,
+variants, with 
+1
+>
+µ
+ parents and 
+1
+>
+λ
+ 
+descendent per generation. In these new variants, was 
+introduced the recombination concept, in order to create 
+individuals as the cross of the parent attributes. After mutation 
+and the individuals evaluation, the descendents replace the 
+parents if are better than they. Depending on the selection 
+type, µ  new individuals are selected only from the 
+descendent population (
+)
+ES
+−
+λ
+µ,
+, or µ  new individuals 
+are selected from the parents and the descendent 
+(
+)
+ES
+−
++ λ
+µ
+. Beside the mutation and the recombination, 
+(
+)
+ES
+−
++ λ
+µ
+and (
+)
+ES
+−
+λ
+µ,
+control the size of the 
+mutation step by an auto-adaptation process that learn, the 
+mutation step size and optionally the covariance, during the 
+evolutionary searching process [15]. ES use three main 
+operators for changing the population whereas a stop criterion 
+is not reached. 
+Recombination: produce new individuals crossing the 
+information contained in the parents. Depending on the 
+individual variable representation some algorithms can be 
+applied for recombination purpose: discrete recombination, 
+local intermediate recombination, global intermediate 
+recombination, point crossover and n-point crossover. The 
+recombination operator allows the exploration of the 
+searching space. 
+Mutation: After recombination, the descendent are 
+changed with a probability ,p  by introducing small variation 
+known as mutations. Mutation allows introducing new 
+possible solutions and the exploitation near to a given solution 
+(individual). Mutation follows the scheme given in (6) and (7) 
+Selection: chose the best individuals of the population 
+according to a fitting criterion. 
+ 
+(
+))1,0
+(
+)
+1,0
+(
+0
+'
+i
+i N
+N
+i
+i
+e
+⋅
++
+⋅
+=
+τ
+τ
+σ
+σ
+ 
+(6) 
+ 
+)1,0
+(
+'
+'
+i
+i
+i
+i
+N
+x
+x
+⋅
++
+=
+σ
+ 
+(7) 
+ 
+where 
+)1,0
+(
+N
+ is a random variable normally distributed with 
+mean 0 and variance 1, 
+i
+τ
+τ
+,
+0
+are constant that control the 
+mutation step. 
+VI. Proposed method 
+Let  
+{
+}
+n
+p
+p
+p
+P
+,...,
+,
+2
+1
+=
+ be a set of 3D points sampled from a 
+real 
+object, 
+which 
+has 
+rectangular 
+topology, 
+and 
+{
+}
+m
+s
+s
+s
+S
+,...,
+,
+2
+1
+=
+ be 
+a 
+NURBS 
+surface 
+that 
+approximates P , our problem consist of minimizing de 
+approximation error given by (8). 
+ 
+δ
+<
+=
+S
+P
+d
+S
+E
+,
+)
+(
+ 
+(8) 
+ 
+where 
+S
+P
+d
+,  is the total distance between P  and the NURBS 
+approximation surface S . The parameter δ  is a given user 
+error tolerance. It is attempted obtain the configuration of S  
+so that (8) is true. 
+Since the influence of the NURBS surface control points is 
+only local, the sampled points P  will be divided in clusters 
+where will carry on a local optimization process, which 
+reduces the computational cost of the proposed method. 
+The optimization process starts with a clustering of the set 
+of points 
+,
+P  such clustering will be achieved by a SOM. The 
+objective of the SOM is to find homogeneous regions where 
+run the optimization process without distort the local shape of 
+the surface. The points of P  will be presented to the SOM as 
+the training patterns. It is hoped at last of the training the SOM 
+have found the homogeneous regions where run the 
+optimization process, like shows Fig. 3. 
+ 
+ 
+
+
+--- Page 6 ---
+
+Improving NURBS Surface Sharp Feature Representation 
+135 
+ 
+ 
+Figure 3.  Clusters found by SOM. Synthetic dataset sampled 
+from the function 
+2
+2
+y
+x
+z
++
+=
+ 
+ 
+Once 
+clustered 
+,
+P
+ an 
+evolutionary 
+strategy 
+(
+)
+ES
+−
++ λ
+µ
+ will optimize the local fitting of the NURBS 
+in each cluster. The evolutionary strategy configuration is as 
+follow: 
+Individuals: the individuals of the strategy are conformed 
+by the weights of the cluster points and the mutation steps σ , 
+like shows Fig. 4. 
+ 
+ 
+1
+w  
+2
+w  
+… 
+n
+w  
+1
+σ  
+2
+σ  
+… 
+n
+σ  
+ 
+Figure 4.  Individual of the strategy 
+ 
+where 
+iw  are the control point weights and 
+i
+σ  are the 
+mutation step sizes. 
+Mutation operator: uncorrelated mutation with n  
+mutation step sizes 
+'
+σ
+s is applied to the individuals, 
+according to (6) and (7).  
+Recombination operator: the recombination operator is 
+different for object variable 
+iw  than parameters
+i
+σ . A global 
+intermediary recombination is applied to object variables, 
+according to (9), whereas a local intermediary recombination 
+is applied to mutation step sizes
+i
+σ , according to (10). 
+∑
+=
+=
+ρ
+ρ
+1
+,
+1
+'
+k
+i
+k
+i
+b
+b
+ 
+(9) 
+ 
+(
+)
+i
+k
+i
+i
+k
+i
+i
+b
+u
+b
+u
+b
+,
+,
+2
+1
+1
+'
+−
++
+=
+ 
+(10) 
+where i  is the allele of the individual, 
+ib  is the value of the 
+allele, ρ  is the size of the recombination pool and µ  is a 
+random number uniformly distributed in [0, 1]. 
+Selection operator: the best individuals according to the 
+aptitude function given in (8). In order to perform a fast 
+compute of the distance between the points P  and the 
+NURBS surface S , the points of S are store in a kd-tree 
+structure, so that the searching process for finding the nearest 
+points between P and S  is 
+( )
+n
+log
+order. 
+The following algorithm summarizes the optimization 
+process: 
+Perform a clustering of P  by using SOM 
+For each cluster do 
+ 
+Set individual size = cluster size 
+ 
+Set population size = µ  
+ 
+Initialize randomly the population 
+ 
+Evaluate the population in the aptitude function (8) 
+ 
+While the stop criterion δ do not reached do 
+ 
+ 
+For i = 1 to 
+9.0
+⋅
+λ
+ do 
+ 
+ 
+ 
+(
+)
+(
+)
+µ
+,
+1
+rand
+i
+Population
+mut
+Ind
+=
+ 
+ 
+ 
+End for 
+ 
+ 
+For i = 1 to 
+1.0
+⋅
+λ
+ do 
+ 
+ 
+ 
+(
+)
+(
+)
+µ
+,
+1
+rand
+i
+Population
+rec
+Ind
+=
+ 
+ 
+ 
+End for 
+ 
+ 
+select
+Population =
+(
+)
+λ
+µ +
+from
+ 
+ 
+End while 
+End for 
+VII. Experimental results 
+The proposed method was evaluated in scanned data and 
+synthetic data. Three different models are used to illustrate 
+global and local aspects of the NURBS optimization process. 
+The Angel model obtained from Ohio State University and 
+two synthetic models. The method was implemented in a 
+1.4GHZ Pentium M with 512MB of RAM. 
+The surface optimization process takes 3 minutes for 
+processing 15K points. After 10 generations average, the 
+evolutionary strategy reached the minimum, i.e. the distance 
+between P  and the optimized NURBS surface S  reached 
+an average of 14% less that the distance between P  and the 
+non optimized NURBS surface. Fig. 5 shows the process 
+results after applying the method to a set of synthetic data. 
+Fig. 6 shows the process results after applying the method to a 
+set of scanned data. The profiles presented in Figs. 6a – 6c 
+show the complexity of the surface. Fig. 7 shows the 
+improvement of the sharp features obtained with our method. 
+In Fig. 7b the NURBS surface points follow the control points 
+(red circles) closer than in Fig. 7a, which improve sharp 
+feature representation. Fig. 7d and Fig. 7f show sharp features 
+which in Figs 7c and 7e, respectively, look smoothed. Table I 
+presents some statistics of our method results.  
+The obtained results show the effectiveness of the proposed 
+method. During the tests were used (
+)
+ES
+−
++ λ
+µ
+and 
+(
+)
+ES
+−
+λ
+µ,
+ evolutionary strategies, but the perform of the 
+(
+)
+ES
+−
++ λ
+µ
+ was superior in terms of error reduction. This 
+behavior is because (
+)
+ES
+−
++ λ
+µ
+ incorporate information 
+from parents and children to next generation, which maintain  
+
+
+--- Page 7 ---
+
+136 
+ 
+Nallig Eduardo Leal et al
+ 
+ 
+ 
+ 
+ (a)                   (b) 
+ 
+                                                           (c)                                                                             (d) 
+Figure 5.  Method stage after applying in synthetic data. (a) Original dataset (b) Dataset after clustering process (c) Non 
+optimized NURBS surface (d) Optimized NURBS surface. 
+ 
+ 
+(a)                (b)                 (c)  
+ 
+                            
+ 
+    (d)                         (e) 
+Figure 6.  Method stage after applying in scanned data. (a) Left profile of the original dataset (b) Frontal profile of the original 
+dataset (c) Right profile of the original dataset (d) Non optimized NURBS surface (d) Optimized NURBS surface 
+
+
+--- Page 8 ---
+
+Improving NURBS Surface Sharp Feature Representation 
+137 
+       
+ 
+(a)                                                                                (b) 
+ 
+             
+ 
+(c) 
+                                                                                                    (d) 
+ 
+             
+ 
+(e)                                                                                     (f) 
+ 
+Figure 7.  Sharp features preservation. (a) (c) (d) Non optimized NURBS surface segment (b) (d) (f) Optimized NURBS 
+surface segment, sharp features improvements 
+ 
+the best individuals during the evolutionary process, even 
+though in this way the process can be fall in local minimal. In 
+contrast with (
+)
+ES
+−
+λ
+µ,
+ which can forget and so exclude 
+the information of the best individuals. In terms of execution 
+time, (
+)
+ES
+−
+λ
+µ,
+ had a negligible advantage over 
+(
+)
+ES
+−
++ λ
+µ
+. Only results of the (
+)
+ES
+−
++ λ
+µ
+ are 
+provided. During the evolutionary process, the weighting 
+factors are restricted to the [0,1] interval. If as a results of a 
+mutation, a recombination or a simple initialization, the 
+weighting factors are outer to this interval, its value is set to 
+zero, or set to one, according to the case.  
+ 
+ 
+To verify that the shape of the original point cloud were not 
+distorted, two metrics were defined. i) The relative error 
+bdl
+E
+ 
+between the diagonal length of the bounding box of P and 
+the diagonal length of the bounding box of S . ii) The 
+normalized modeling error 
+avg
+E
+, according to (11), given in 
+[16]. In our tests, the relative error was 0.031% and the 
+modeling error was 0.01 
+                  
+N
+d
+D
+N
+i
+i
+avg
+∑
+−
+=
+=
+1
+0
+ 
+                  
+L
+D
+E
+avg
+avg =
+ 
+(11) 
+
+
+--- Page 9 ---
+
+138 
+ 
+Nallig Eduardo Leal et al
+ 
+ 
+ 
+where 
+id  and N  denote the signed distance from the data 
+ix  and the number of the total data, respectively. L  is the 
+bounding box length. 
+VIII. Conclusions 
+A new simple method for improving NURBS surface sharp 
+feature representation was presented. It was shown both our 
+method applicability in regular and irregular surfaces and the 
+effectiveness of the method maintaining sharp features. The 
+clustering stage reduces the computational cost in both 
+memory and processing, due to the local influence of the 
+control points of the NURBS surface. 
+Our method could be used for optimizing approaches that 
+use NURBS patches. In that approaches, it would not be 
+necessary the clustering process, since the optimization 
+process would be carry on for each NURBS patch. 
+A way for improving our method is establish automatically 
+the number of cluster where run the optimization process.  
+ 
+Table I. Statistics of our method results 
+Processed images 
+30 
+Average points per image 
+15K 
+Average points per cluster  
+854 
+Tests per image 
+12 
+Time for clustering 
+5 seconds 
+Time for optimizing 
+3 minutes 
+Average generations per test  
+10 
+µ  
+5 
+λ  
+35 
+Distance reduction 
+14% 
+Relative error 
+0.031% 
+Modeling error 
+0.01 
+ 
+References 
+[1] A. Myers, “Introductory literature review surface 
+reconstruction from three dimensional range data,” The 
+University of Adelaidey, Ciudad, Estado, Tech. Rep. 
+1999.  
+[2] L. 
+Piegl 
+and 
+W. 
+Tiller, 
+The 
+NURBS 
+Book. 
+Springer-Verlag, 1995. 
+[3] M. Ristic, “Efficient fitting of Non-Uniform Rational 
+B-Spline surfaces using non-organized 3D data,”  
+SPIE’S. vol. 11, pp. 2-6 No. 1, December 2000. 
+[4] H. Jung and K. Kim, “A New Parameterization Method 
+for NURBS Surface Interpolation,” In The International 
+Journal of Advanced Manufacturing Technology, 2000. 
+[5] D. F. Rogers, An Introduction to NURBS. 2000. 
+[6] E. Cuartas, “Optimización de la representación con 
+superficies NURBS de imágenes de rango mediante el 
+algoritmo de Levemberg-Marquardt”. EITI Universidad 
+Nacional de Colombia sede Medellín. 2004. 
+[7] K. Weinert and J. Mehnen, “Discrete NURBS-Surface 
+Approximation using an Evolutionary Strategy,” Tech. 
+Rep. Department of Machining Technology, University 
+of Dortmund, Germany. 2000. 
+[8] K. Weinert, T. Surmann and J. Mehnen, "Evolutionary 
+Surface Reconstruction Using CSG-NURBS Hybrids," 
+Tech. Rep. Department of Machining Technology, 
+University of Dortmund, Germany. 2000. 
+[9] Y. Fujiwara and H. Sawai, "Evolutionary Computation 
+Applied to Mesh Optimization of a 3-D Facial Image," In 
+IEEE Transactions on Evolutionary Computation, Vol. 3, 
+No. 2, July 1999. 
+[10] J. Cordero and J. Parejo, “Curvas y Superficies para 
+Modelado Geométrico”, 1st  ed, Alfa Omega, España, 
+2002. 
+[11] M.Cox, “The Numerical Evaluation of B-Splines,” In J. 
+Ins. Mathematics and Applications, Vol. 10, pp. 
+134-139, 1972. 
+[12] C. De Boor, “On Calculating With B-Splines,” In J. 
+Approximation Theory, Vol. 6, No. 1, July, pp. 50-62. 
+1972 
+[13] R. M. Hristev, The ANN Book. GNU public license,1998 
+[14] M. Hoffmann, “Local update of B-spline surfaces by 
+Kohonen neural network” 
+[15] T. Bäck, and H. Schwefel, Genetic Algorithms in 
+Engineering and Computer Science. John Wiley & Sons 
+Ltd. 1995. 
+[16] I. Park, I. Yun and S. Lee, “Constructing NURBS 
+Surface Model from Scattered and Unorganized Range 
+Data,” Second International Conference on 3-D Digital 
+Imaging and Modeling. 
+ 
+View publication stats

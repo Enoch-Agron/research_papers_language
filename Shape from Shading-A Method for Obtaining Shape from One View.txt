@@ -1,0 +1,28 @@
+# Shape from Shading-A Method for Obtaining Shape from One View.pdf
+# Converted: 2025-07-18 12:59:06
+# Method: pdfplumber
+# Domain: pixel2physics
+# Source: /home/user/vekt/papers/pixel2physics/pdfs/layer2/Shape from Shading-A Method for Obtaining Shape from One View.pdf
+# Output: /home/user/vekt/papers/pixel2physics/dot_txt/layer2/Shape from Shading-A Method for Obtaining Shape from One View.txt
+
+
+--- Page 1 ---
+
+See discussions, stats, and author profiles for this publication at: https://www.researchgate.net/publication/37602086
+Shape from Shading: A Method for Obtaining the Shape of a Smooth Opaque
+Object from One View
+Article · October 2004
+Source: OAI
+CITATIONS READS
+582 1,860
+1 author:
+Berthold K. P. Horn
+Massachusetts Institute of Technology
+241 PUBLICATIONS 36,884 CITATIONS
+SEE PROFILE
+All content following this page was uploaded by Berthold K. P. Horn on 05 April 2014.
+The user has requested enhancement of the downloaded file.
+
+--- Page 201 ---
+
+View publication stats

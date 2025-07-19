@@ -1,0 +1,503 @@
+# Framework to Vectorize Digital Artworks for Physical Fabrication based on Geometric Stylization Techniques.pdf
+# Converted: 2025-07-19 12:45:28
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Framework to Vectorize Digital Artworks for Physical Fabrication based on Geometric Stylization Techniques.pdf
+# Output: ../layer2_completion/txt/Framework to Vectorize Digital Artworks for Physical Fabrication based on Geometric Stylization Techniques.txt
+
+
+--- Page 1 ---
+
+See discussions, stats, and author profiles for this publication at: https://www.researchgate.net/publication/374448489
+Framework to Vectorize Digital Artworks for Physical Fabrication based on
+Geometric Stylization Techniques
+Conference Paper · September 2023
+CITATIONS
+0
+READS
+556
+1 author:
+Lisa Ihde
+Hasso Plattner Institute
+10 PUBLICATIONS   11 CITATIONS   
+SEE PROFILE
+All content following this page was uploaded by Lisa Ihde on 05 October 2023.
+The user has requested enhancement of the downloaded file.
+
+
+--- Page 2 ---
+
+cba
+Gesellschaft für Informatik. (Hrsg.): SKILL Konferenz,
+Lecture Notes in Informatics (LNI), Gesellschaft für Informatik, Bonn 2023 1
+Framework to Vectorize Digital Artworks for Physical
+Fabrication based on Geometric Stylization Techniques
+Lisa Ihde1
+Abstract: Imitation and reproduction of artistic styles using Image-based Artistic Rendering (IB-AR)
+techniques such as oil painting or pencil hatching, became quite popular in recent years. The
+development of graphics hardware and software laid the foundation for the development of techniques,
+algorithms, and applications to eﬃciently apply such eﬀects to user-generated data visual media, such
+as photos or videos. However, the high-quality physical reproduction of the resulting images, for
+example, using canvas printing based on real pencils or brushes, introduces major challenges with
+respect to precision and visual ﬁdelity. Speciﬁcally, reproduction devices such as pen plotters require
+geometry represented as vector graphics, i.e., geometric primitives (points, lines, or polygons) as
+input data format, which cannot be synthesized using IB-AR techniques in a straightforward approach.
+The paper describes the analysis, design, and implementation of a framework for Geometry-based
+Stylization Techniques (GSTs). GSTs denote image stylization techniques that generate geometric
+primitives as resulting representations comprising an artistic style.
+Keywords: Image Stylization; Vectorization; Image Processing; GST; Fabrication; Plotting; Line Art
+1
+Introduction
+Imagine the remarkable potential of eﬀortlessly recreating the style of artistic masterpieces
+akin to those painted by renowned artists (e. g., Wassily Kandinsky or Picasso). In recent years,
+research has focused on imitating artistic techniques to generate such digital artworks using
+Image-based Artistic Rendering (IB-AR) [Ky13, De13, SID17]. The resulting digital images
+enjoy great popularity and are increasingly used in various domains and applications [Se16].
+For example, the mobile application BeCasso2 enables the generation of user-created images
+that evoke the essence of oil paintings, pencil hatching, or watercolor.
+While the visual quality of these results closely resembles the original techniques, they lack
+certain qualities during reproduction using non-digital media (e. g., using canvas printing).
+For example, when printing with ink, the same properties are not obtained as when using a
+brush with watercolors, or pencils. These visual diﬀerences in texture mean that plasticity,
+for example, a three-dimensional eﬀect of the material, can hardly be achieved.
+Therefore, devices such as pen plotters allow the use of a variety of pens, for example, pencils,
+ball pens, or crayons. The problem is that IB-AR is deﬁned for artistic rendering primitives
+1 Hasso Plattner Institute, Digital Engineering Faculty, University of Potsdam, Prof.-Dr.-Helmert-Str. 2-3, 14482
+Potsdam, Germany, lisa.ihde@student.hpi.uni-potsdam.de
+2 https://digitalmasterpieces.com/becasso/
+
+
+--- Page 3 ---
+
+2 Lisa Ihde
+Fig. 1: Vectorized halftoning result of an input image showing gummy bears represented by 6,784
+diﬀerent elements (’L’,’I’,’S’,’A’) generated from the presented framework. The vector graphic is
+engraved and cut in poplar wood with a laser cutter. Therefore, the result is divided into background
+(engraved) and foreground (cut). The wood artwork is complemented with a rainbow backlight.
+(regions, strokes, stipples, or tiles) and not for geometric primitives [Ky13]. Vector graphics
+are a description of a scene using geometric primitives such as points, lines, or polygons.
+These vector graphics can be read by machines such as laser cutters [MB15], pen plotters,
+programmable embroidery machines, or computerized numerical control (CNC) machines.
+This paper describes the development of a software framework that enables the creation of
+stylized images using geometric primitives. These results can then be produced in a new
+way by devices such as pen plotters, or laser cutters (Fig. 1).
+2
+Related Work
+Geometry-based Stylization Techniques (GSTs) [Ih22] denote image stylization techniques
+that output a number of geometric primitives and their appearance attributes (e. g., color,
+outline, or texture). GSTs oﬀer the possibility to represent geometric abstraction artists.
+In addition, the combination of GSTs and traditional IB-AR techniques, can enable new
+so-called Fused Stylization Techniques (FSTs).
+Tracing is the process of generating a vector representation from a raster image input. The
+existing approaches for the generation of vector graphics vary between pixel-based [AT04] to
+line-based tracing [DK09, OG11, No13].There is only a little research about more complex
+
+
+--- Page 4 ---
+
+Framework to Vectorize Digital Artworks for Physical Fabrication based on GSTs 3
+AutoTrace
+Potrace
+ImageTracer
+VTracer
+Example
+Multi-color
+yes
+no
+yes
+yes
+Performance
+4870ms
+(125 colors)
+170ms
+(2 colors)
+1410ms
+(125 colors)
+3860ms
+(125 colors)
+Language
+C
+C
+Java
+Rust
+License
+GNU General
+Public License
+GNU General
+Public License
+Unlicense
+MIT License
+Released
+1998
+2001
+2015
+2020
+Creator
+Martin Weber
+Peter Selinger
+András Jankovics
+Tsang Hao Fung
+Cross-platform
+yes
+yes
+yes
+yes
+Tab. 1: Comparison of open-source libraries for image tracing.
+vectorization of IB-AR techniques. Glöckner et al. introduced an optimized vectorization of
+GPU-based stylized images using intermediate data representations [Gl20]. The approach
+enables interactive manipulation of parameters and supports various stylization pipelines.
+There are machine learning-based vectorization methods[Si16, Ki18, Fa17, Re21], but these
+are not suitable for tracing complex image stylization eﬀects. For example, Reddy et al.
+focus on fonts and clipart rather than general user-generated images.
+There are several tools and libraries for tracing images, but only a few are free and open-
+source. The software Inkscape3 and web application SVGcode4 enable the generation
+of vector graphics from a raster graphic. Both are based on the tracer library Potrace5.
+Besides Potrace, Inkscape oﬀers other tracing methods by using the libraries AutoTrace6 and
+libdepixelize [KL11]. The latter is designed to work with pixel-art images. The performance
+of the approach depends on the size of the input image, which is why this library cannot be
+applied to high-resolution user-generated images.
+For comparison, two other libraries are explored in addition to Potrace and AutoTrace:
+ImageTracer7 and VTracer8. The hardware used in the evaluation (Tab. 1) consists of an
+3 https://inkscape.org/
+4 https://svgco.de/
+5 https://potrace.sourceforge.net/
+6 https://autotrace.sourceforge.net/
+7 https://github.com/jankovicsandras/imagetracerjava
+8 https://www.visioncortex.org/vtracer/
+
+
+--- Page 5 ---
+
+4 Lisa Ihde
+Intel(R) Core(TM) i7-8550U CPU, 16 GB RAM, and Intel(R) UHD Graphics 620. The
+Windows 11 Home operating system was used to run and compile the libraries, and the
+input image was taken from the benchmark dataset [MR17] with a resolution of 1024×685
+pixels.
+With regard to the approach of the paper and the support of colored input images, the Potrace
+algorithm does not provide an option to generate a colored vector output. When comparing
+the results of the other three libraries, it is noticeable that the AutoTrace library generates
+gaps between the color areas. In addition, the runtime of this algorithm is the slowest.
+ImageTracer has the best runtime and provides the best visual result because details such
+as the clouds were recognized in contrast to VTracer. VTracer is the best of the presented
+algorithms at detecting 125 colors and is the most recently released library from 2020. In
+addition, cross-platform use is supported by all libraries.
+3
+Implementation
+Generating a vector-based representation from a stylized image is a complex challenge. The
+straight-forward approach to obtain a vector image from a raster image in general would be
+to vectorize the image by using one of the introduced tracing algorithms. Unfortunately,
+the tracer does not have any further information about the input image, nor does it have
+a speciﬁc approach suitable for the use case. In addition, the input image is also stylized,
+which then makes it even more diﬃcult for the tracer to detect the actual layers and
+primitives. Therefore, the framework uses the rendering pass of an eﬀect to generate the
+mentioned intermediate representations [Gl20] that facilitate and improve the quality of
+vectorization. The framework fundamentally handles three data representations: (1) raster-
+data representations, (2) vector-data representations, and (3) intermediate representations.
+Additionally, a library is used introduced by Griese and designed for the execution of
+IB-AR techniques based on Visual Computing Assets (VCAs)[Gr23]. In order to generate
+vector-based representations for the VCAs, the library has to be extended to use a sampler
+as input and generate an Scalable Vector Graphics (SVG) as output. The architecture of the
+framework is composed of four components: Model, View, Controller, and Processing.
+Model Component: The model includes selectable algorithms for shape abstraction,
+segmentation, and shape colorization. It holds an instance of a VCA document [Gr23],
+and other data structures (e. g., list of geometric primitives).
+View Component: The view performs the visual representation of the components from
+the model, for example, retrieving the associated parameter of the VCA document, or
+displaying the selected color palette. Therefore, it provides the interaction interface
+for the user to change settings (e. g., values of parameters) and pass inputs to the
+model. The model responds to execution requests and updates the view accordingly.
+
+
+--- Page 6 ---
+
+Framework to Vectorize Digital Artworks for Physical Fabrication based on GSTs 5
+Fig. 2: Overview of the graphical user interface with the diﬀerent interaction options. (A) Menu bar
+with diﬀerent options to import and export raster- or vector-based graphic ﬁles. (B) Provides input data
+as color, depth, normal, mask, and segments. (C) Select diﬀerent image segmentation techniques and
+execute them. (D) Showing the diﬀerent groups consisting of shapes describing the scene structure
+with the geometric primitives. (E) Tabs for diﬀerent scenes, for example, generating new input images,
+or not combining with shapes in the current scene. (F) Tabs to switch between scenes. (G) Area
+to display scene with geometric primitives. (H) Toolbox to select diﬀerent algorithms (e. g., Image
+Texture Brush) to change the ﬁlling or outline of the selected geometric primitives. (I) Select canvas
+texture applied to the background of the scene. (J) Select a color palette. (K) Select GST and execute
+it. (L) Optional showing parameter for selected GST. (M) Select a VCA as FST and execute it. (N)
+Showing associated parameter of the selected VCA.
+Controller Component: The controller coordinates, for example, the active VCA document
+to process VCA-based GSTs. The component also receives the user input (e. g.,
+parameter changes) and forwards the information to the right place so that the
+corresponding view can be updated.
+Processing Component: The processing component provides access to the library interface.
+It includes an adapter to encapsulate and wrap the access points.
+The framework provides the essential Vectorizer class based on a ported version of the
+ImageTracer library. The class includes some modiﬁcations to support diﬀerent color palettes
+and to add a custom header at the beginning of the generated SVG ﬁle. Additionally, the
+library is extended by ﬁve pass processor classes to process an instance of the corresponding
+following pass classes.
+
+
+--- Page 7 ---
+
+6 Lisa Ihde
+VectorizationPass: The class deﬁnes a pass to vectorize a sampler input.
+SkeletonizePass: The class deﬁnes a pass to skeletonize lines in a sampler input.
+VectorizeEdgePass: The class deﬁnes a pass to vectorize lines in a sampler input that
+might have applied the SkeletonizePass ﬁrst.
+VectorizationMergePass: The class deﬁnes a pass to add the SVG header, or merge SVGs
+(e. g., merge the outputs of VectorizeEdgePass and VectorizationPass).
+VectorElementPlacerPass: The class deﬁnes a pass to place vector graphic elements
+deﬁned in a sampler input (e. g., used for half-toning [DI13]).
+The graphical user interface (Fig. 2) is implemented using the Qt9 framework. The central
+widget is a QTabWidget (E) for each scene. The QTabWidget consists of two tabs (F) to
+display the GST and FST results. On the left and right are dock widgets to provide access to
+the loaded input data (B), segmentation algorithm (C), scene structure (D), GST algorithm
+(K), and FST algorithm (M). On the top is the menu bar as QMenuBar (A), for example, to
+load new input data. On the bottom is a toolbar as QToolBox with diﬀerent views (H,I,J), for
+example, to change the color of geometric primitives (QGraphicsItems).
+4
+Evaluation
+For feasibility, the developed framework provides the implementation of several applications,
+including hope style [CM09], halftoning [DI13], cartoon [WOG06]), pencil hatching [Pr01],
+shape packing [CS03], but also the combination of GSTs and existing IB-AR techniques.
+To implement each application for diﬀerent GSTs, concepts were developed on how the
+quality of vectorization can be enhanced compared to automatic tracing, for example by
+using cloning/instancing, grouping, detection of lines and line thickness, color gradients on
+lines, blend-mode, and other approaches.
+The generated vector graphics are physically reproduced. Therefore, diﬀerent ways of repro-
+duction are identiﬁed and evaluated, for example, drawing, engraving, gluing, embossing,
+cutting, or scratching. The devices used are a Trotec laser cutter Speedy 360 and a Silhouette
+Curio plotter.
+Vectorized Halftoning
+For the physical production of vectorized halftoning, various properties of the vector graphic
+can be set. For example, the selected shape of the halftone element, the size, the line
+thickness, the ﬁll, and other settings should be taken into account. In Fig. 3 the result of
+the vectorized halftone image consists of solid-ﬁlled circles. The device used will be the
+9 https://www.qt.io/
+
+
+--- Page 8 ---
+
+Framework to Vectorize Digital Artworks for Physical Fabrication based on GSTs 7
+(a) Yellow grid fabricated with orange Stabilo pen.
+(b) Magenta grid fabricated with red Stabilo pen.
+(c) Cyan grid fabricated with blue Stabilo pen.
+(d) Key Grid fabricated with black Stabilo pen.
+Fig. 3: Vectorized halftoning result with 31.720 halftone elements. It was fabricated with the Silhouette
+Curio plotter using four Stabilo pens having the colors orange, red, blue, and black.
+Silhouette plotter and thus the drawing area is approximately A5. Since a Stabilo pen has
+a tip of 0.4mm, the smallest element will be at least that size. The plotter cannot be used
+to draw all colors at once since there is no support for drawing with four pens at once.
+Therefore, during the implementation, one color layer is drawn after another, layer by layer.
+Drawing the 31.720 elements takes a total of almost 4 hours.
+Fig. 1 shows how four diﬀerent shapes for the halftone element are displayed at once, which
+have the four letters ’L’, ’I’, ’S’, and ’A’ deﬁned as a path. In addition, only one grid of the
+four Cyan-Magenta-Yellow-Key (CMYK) layers is used to be fabricated. Additionally, the
+segmented image distinguishes between the engraved (i. e., background) and cut area (i. e.,
+gummy bears). The minimum size of a letter to choose for this device is about 5mm. This
+gives a total area for the 6,784 elements on the wood panel of 32cm × 52cm. Then, for
+example, an LED strip can be attached as a backlight and the artwork can be used as a wall
+decoration.
+
+
+--- Page 9 ---
+
+8 Lisa Ihde
+(a) Vectorized toon applied with glue roller pen of 0.7mm
+tip width and glitter on paper.
+(b) Vectorized toon result engraved in metal sheet with
+Silhouette plotter and stippling tool of 0.1mm tip width.
+Fig. 4: Physical reproduction of toon vectorization edges by applying glue roller pen with glitter, or
+stippling tool.
+Vectorized Toon
+Two diﬀerent tools were used to create the vectorized toon eﬀect with the Silhouette plotter.
+Fig. 4b shows the result with the stippling tool on a metal sheet. Therefore, the contact
+pressure of the stippling tools needs to be chosen high and the minimum size of a polygon
+should be at least the tip width (0.1mm). Fig. 4a draws the vectorized edges layer with a
+glue roller pen by Sakura Quickie and then sprinkles glitter over it, which sticks to the glued
+lines. The tip of the glue roller pen has a line width of 0.7mm and is thus almost twice as
+wide as a Stabilo pen. Thus, the smallest detail and thus the minimum width of an edge has
+to be set to 0.7mm.
+Vectorized Hope Style
+The vectorized hope style consists of diﬀerent color layers with diﬀerent ﬁllings (e. g., solid,
+and texture). For physical reproduction, the vector graphic result is cut with the blade tool
+along the edges of each polygon. Therefore, the result of the vectorized hope style was
+printed on diﬀerent paper sheets. In this way, the exact color palette can be used instead of
+letting the plotter draw everything with not matching colors. Then, each color layer was
+cut out with the plotter and the blade tool along the edges. The cut pieces should have a
+minimum size to recognize it as a polygon, and to use it in the next step. The minimum
+size of a polygon was set to 3mm. After having all polygons cut out for each color layer,
+they will be stacked on top of each other with adhesive pads. Fig. 5 shows the result, which
+creates a 3D card eﬀect.
+
+
+--- Page 10 ---
+
+Framework to Vectorize Digital Artworks for Physical Fabrication based on GSTs 9
+(a) Physical reproduction of hope style with adhesive
+pads (3mm) to stack the layers.
+(b) View on the physical reproduction of hope style
+as stacked artwork from the front.
+Fig. 5: Vectorized Hope Style result of a sunﬂower image with cut layers and stacked as 3D eﬀect
+with adhesive pads.
+Vectorized Pencil Hatching
+For implementation, the vector graphic result of the vectorized pencil hatching should be
+used to draw with a pencil on paper to achieve an artwork that seems to be drawn by hand.
+The challenge of drawing with a pencil is that the tip will be shortened by using it on paper.
+That behavior would inﬂuence the pressure strength and visibility of the drawn lines.
+One solution could be to pause the plotter after a certain time, sharpen the pencil, and
+reassemble it in the pen holder in a lower position. This procedure would be time-consuming
+and uncertain to execute. Therefore, a pencil with a stronger tip is needed to avoid the
+complicated process. There are pencils with a metal tip that are made for long-term usage
+with not such high frequency to sharpen it based on an anodized aluminum barrel. This is
+because the tip rubs against the paper, causing the alloyed metal molecules to break down
+and remain on the paper surface. Fig. 6a shows the result of the implementation with such
+an inkless metal pencil. The lines are more lighten than the usual pencil result, but the metal
+pencil achieved the same coverage all over the paper sheet.
+Alternatively, a Stabilo pen can be used, which traces the edge paths of the vector graphic
+and will have the same distance to the paper sheet. The physical circumstances could still
+inﬂuence the result. Fig. 6b shows at the bottom right corner that the color of the pen has
+faded and therefore it was not drawn completely.
+
+
+--- Page 11 ---
+
+10 Lisa Ihde
+(a) Plotted pencil hatching result using an inkless metal
+pencil.
+(b) Plotted pencil hatching result using a Stabilo pen.
+Fig. 6: Comparison of vectorized pencil hatching as a plotted result implemented using inkless metal
+pencil and Stabilo pen with a Silhouette plotter.
+Segment-based Shape Packing
+Fig. 7: Scan of shape packing result as scratch
+artwork implemented with a Silhouette plotter.
+Image segmentation is used to apply, for exam-
+ple, diﬀerent shape types, or shape sizes on each
+segment. In Fig. 7, the vector graphic result was
+produced with the Silhouette plotter on scratch
+paper. Therefore, the ﬁlling is set to transparent,
+and the outlines are set to 0.5mm. The stipple
+tool for scratching on scratch paper was used
+again for the implementation making the rain-
+bow layer visible. The minimum thickness of
+the lines is determined by the stipple tool with
+at least 0.1mm.
+5
+Conclusions
+The applications implemented showcase the potential of the framework and its possible
+physical reproduction, which helps to understand the framework’s versatility and applicability.
+The framework provides interaction techniques for editing and modifying resulting vector-
+based and raster-based representations.
+The plotter tools used have a ﬁxed physical width that limits the production with the plotter.
+Thus, increasing the canvas size, shape size, or outline width is necessary. Moreover, the
+properties in the SVG representing the paths do not cover every desirable aspect. Therefore,
+
+
+--- Page 12 ---
+
+Framework to Vectorize Digital Artworks for Physical Fabrication based on GSTs 11
+workarounds speciﬁc to each GST are required. For instance, for pencil hatching, the line
+segments can be grouped by color to be individually selectable. This way, each color could
+be drawn one after the other with the corresponding colored pencil. However, this approach
+increases the reproduction time. More plotters from diﬀerent manufacturers should be
+tested to deﬁne settings for the minimum size of geometric primitives, or the minimum
+line thickness. Thus, physical production can then provide the best result. Furthermore,
+materials such as brushes with acrylic or oil paints could be explored, as also strategies on
+how to develop a suitable vector representation for them.
+6
+Acknowledgements
+This paper is based on a master’s thesis written at the Computer Graphics Systems group
+of Prof. Dr. Jürgen Döllner located at the Digital Engineering Faculty of the University
+Potsdam and Hasso Plattner Institute. This work was supported by the Federal Ministry of
+Education and Research (BMBF), Germany (mdViPro,01IS18092). Special thanks go to Dr.
+Matthias Trapp, who acted as supervisor of the master’s thesis.
+Bibliography
+[AT04]
+Antoniou, Vyron; Tsoulos, Lysandros: Converting raster images to XML and SVG. In:
+SVG Open. 01 2004.
+[CM09]
+Cartwright, Lisa; Mandiberg, Stephen: Obama and Shepard Fairey: The Copy and Political
+Iconography in the Age of the Demake. Journal of Visual Culture, 8:172–176, 11 2009.
+[CS03]
+Collins, Charles R.; Stephenson, Kenneth: A circle packing algorithm. Computational
+Geometry, 25(3):233–256, 2003.
+[De13]
+Dev, Kapil: Mobile Expressive Renderings: The State of the Art. IEEE Computer Graphics
+and Applications, 33(3):22–31, 2013.
+[DI13]
+Deussen, Oliver; Isenberg, Tobias: Halftoning and Stippling. In (Rosin, Paul; Collomosse,
+John, eds): Image and Video-Based Artistic Stylisation, pp. 45–61. Springer London,
+London, 2013.
+[DK09]
+Dhawan, Sanjeev; Kumar, Rakesh: Benchmarking: An Interactive Tool for Vectorization of
+Raster Images. In: Proceedings of the 2Nd WSEAS. SENSIG’09/VIS’09/MATERIALS’09,
+World Scientiﬁc and Engineering Academy and Society (WSEAS), Stevens Point, Wiscon-
+sin, USA, pp. 112–126, 2009.
+[Fa17]
+Faraj, Noura; Xia, Gui-Song; Delon, Julie; Gousseau, Yann: A Generic Framework for the
+Structured Abstraction of Images. In: Proceedings of the Symposium on Non-Photorealistic
+Animation and Rendering. NPAR ’17, Association for Computing Machinery, New York,
+NY, USA, 2017.
+[Gl20]
+Glöckner, D.-Amadeus J.; Ihde, Lisa; Döllner, Jürgen; Trapp, Matthias: Intermediate
+Representations for Vectorization of Stylized Images. J.WSCG, 28(1-2):187–196, 2020.
+
+
+--- Page 13 ---
+
+12 Lisa Ihde
+[Gr23]
+Griese, Erik: , Analysis, Design and Implementation of an Interoperable Software Library
+for Image and Video Processing, 3 2023.
+[Ih22]
+Ihde, Lisa; Semmo, Amir; Döllner, Jürgen; Trapp, Matthias: Design Space of Geometry-
+based Image Abstraction Techniques with Vectorization Applications. volume 30, pp.
+99–108, 2022.
+[Ki18]
+Kim, Byungsoo; Wang, Oliver; Öztireli, Cengiz; Gross, Markus: Semantic Segmentation for
+Line Drawing Vectorization Using Neural Networks. 37(2):329 – 338, 5 2018. 39th Annual
+Conference of the European-Association-for-Computer-Graphics (EUROGRAPHICS);
+Conference Location: Delft, NETHERLANDS; Conference Date: APR 16-20, 2018.
+[KL11]
+Kopf, Johannes; Lischinski, Dani: Depixelizing Pixel Art. In: ACM SIGGRAPH 2011
+Papers. SIGGRAPH ’11, Association for Computing Machinery, New York, NY, USA,
+2011.
+[Ky13]
+Kyprianidis, Jan Eric; Collomosse, John; Wang, Tinghuai; Isenberg, Tobias: State of
+the Ärt": A Taxonomy of Artistic Stylization Techniques for Images and Video. IEEE
+Transactions on Visualization and Computer Graphics, 19(5):866–885, 2013.
+[MB15]
+Mueller, Stefanie; Baudisch, Patrick: Laser cutters. interactions, 22:72–74, 08 2015.
+[MR17]
+Mould, David; Rosin, Paul: Developing and applying a benchmark for evaluating image
+stylization. Computers & Graphics, 67, 06 2017.
+[No13]
+Noris, Gioacchino; Hornung, Alexander; Sumner, Robert W.; Simmons, Maryann; Gross,
+Markus: Topology-driven Vectorization of Clean Line Drawings. ACM Trans. Graph.,
+32(1):4:1–4:11, February 2013.
+[OG11]
+Olsen, Sven; Gooch, Bruce: Image Simpliﬁcation and Vectorization. In: Proceedings of
+the ACM SIGGRAPH/Eurographics Symposium on Non-Photorealistic Animation and
+Rendering. NPAR ’11, ACM, New York, NY, USA, pp. 65–74, 2011.
+[Pr01]
+Praun, Emil; Hoppe, Hugues; Webb, Matthew; Finkelstein, Adam: Real-Time Hatching.
+In: Proceedings of the 28th Annual Conference on Computer Graphics and Interactive
+Techniques. SIGGRAPH ’01, Association for Computing Machinery, New York, NY,
+USA, p. 581, 2001.
+[Re21]
+Reddy, Pradyumna; Gharbi, Michael; Lukac, Michal; Mitra, Niloy J.: , Im2Vec: Synthesiz-
+ing Vector Graphics without Vector Supervision, 2021.
+[Se16]
+Semmo, Amir; Dürschmid, Tobias; Trapp, Matthias; Klingbeil, Mandy; Döllner, Jürgen;
+Pasewaldt, Sebastian: Interactive Image Filtering with Multiple Levels-of-control on
+Mobile Devices. In: Proceedings of ACM SIGGRAPH ASIA 2016 Mobile Graphics and
+Interactive Applications (MGIA). ACM, New York, pp. 2:1–2:8, 2016.
+[Si16]
+Simo-Serra, Edgar; Iizuka, Satoshi; Sasaki, Kazuma; Ishikawa, Hiroshi: Learning to
+Simplify: Fully Convolutional Networks for Rough Sketch Cleanup. ACM Trans. Graph.,
+35(4), July 2016.
+[SID17]
+Semmo, Amir; Isenberg, Tobias; Döllner, Jürgen: Neural Style Transfer: A Paradigm Shift
+for Image-based Artistic Rendering? In: Proceedings of Non-Photorealistic Animation
+and Rendering (NPAR). ACM, New York, pp. 5:1–5:13, 2017.
+[WOG06] Winnemöller, Holger; Olsen, Sven C.; Gooch, Bruce: Real-time Video Abstraction. ACM
+Trans. Graph., 25(3):1221–1226, July 2006.
+View publication stats

@@ -1,0 +1,584 @@
+# Ben-Shabat_Nesti-Net_Normal_Estimation_for_Unstructured_3D_Point_Clouds_Using_Convolutional_CVPR_2019_paper.pdf
+# Converted: 2025-07-18 12:58:48
+# Method: pdfplumber
+# Domain: pixel2physics
+# Source: /home/user/vekt/papers/pixel2physics/pdfs/layer1/Ben-Shabat_Nesti-Net_Normal_Estimation_for_Unstructured_3D_Point_Clouds_Using_Convolutional_CVPR_2019_paper.pdf
+# Output: /home/user/vekt/papers/pixel2physics/dot_txt/layer1/Ben-Shabat_Nesti-Net_Normal_Estimation_for_Unstructured_3D_Point_Clouds_Using_Convolutional_CVPR_2019_paper.txt
+
+
+--- Page 1 ---
+
+Nesti-Net: Normal Estimation for Unstructured 3D Point Clouds
+using Convolutional Neural Networks
+Yizhak Ben-Shabat Michael Lindenbaum Anath Fischer
+Mechanical Engineering Computer Science Mechanical Engineering
+Techion IIT Techion IIT Techion IIT
+Haifa, Israel Haifa, Israel Haifa, Israel
+sitzikbs@gmail.com mic@cs.technion.ac.il meranath@technion.ac.il
+Abstract tion [21] and surface reconstruction [11].
+Estimating the normals from a raw, point-only,
+In this paper, we propose a normal estimation cloud, is a challenging task due to difficulties asso-
+methodforunstructured3Dpointclouds. Thismethod, ciated with sampling density, noise, outliers, and de-
+called Nesti-Net, builds on a new local point cloud rep- tail level. The common approach is to specify a local
+resentation which consists of multi-scale point statis- neighborhood around a point and to fit a local basic
+tics(MuPS),estimatedonalocalcoarseGaussiangrid. geometric surface (e.g. a plane) to the points in this
+This representation is a suitable input to a CNN archi- neighborhood. Then the normal is estimated from the
+tecture. The normals are estimated using a mixture- fitted geometric entity. The chosen size (or scale) of
+of-experts (MoE) architecture, which relies on a data- the neighborhood introduces an unavoidable tradeoff
+driven approach for selecting the optimal scale around between robustness to noise and accuracy of fine de-
+each point and encourages sub-network specialization. tails. A large-scale neighborhood over-smoothes sharp
+Interesting insights into the network’s resource dis- corners and small details but is otherwise robust to
+tribution are provided. The scale prediction signif- noise. A small neighborhood, on the other hand, may
+icantly improves robustness to different noise levels, reproduce the normals more accurately around small
+point density variations and different levels of detail. details but is more sensitive to noise. Thus it seems
+Weachievestate-of-the-artresultsonabenchmarksyn- that an adaptive, data-driven scale may improve esti-
+thetic dataset and present qualitative results on real mation performance.
+scanned scenes.
+We propose a normal estimation method for un-
+structured 3D point clouds. It features a mixture-
+of-experts network for scale prediction, which signif-
+1. Introduction
+icantly increases its robustness to different noise lev-
+els, outliers, and varying levels of detail. In addition,
+Commodity 3D sensors are rapidly becoming an in-
+this method overcomes the challenge of feeding point
+tegralpartofautonomoussystems. Thesesensors,e.g.
+clouds into CNNs by extending the recently proposed
+RGB-D cameras or LiDAR, provide a 3D point cloud
+3D modified Fischer Vector (3DmFV) representation
+representing the geometry of the scanned objects and
+[4] to encode local geometry on a coarse multi-scale
+surroundings. This raw representation is challenging
+grid. It outperforms state-of-the-art methods for nor-
+to process since it lacks connectivity information or
+mal vector estimation.
+structure, and is often incomplete, noisy and contains
+The main contributions of this paper are:
+pointdensityvariations. Inparticular,processingitby
+means of the highly effective convolutional neural net-
+Anewnormalestimationmethodforunstructured
+works (CNNs) is problematic because CNNs require
+•
+3D point clouds based on mixture of experts and
+structured, grid-like data as input.
+scale prediction.
+When available, additional local geometric informa-
+tion,suchasthesurfacenormalsateachpoint,induces
+a partial local structure and improves performance of A local point representation which can be used as
+•
+differenttaskssuchasover-segmentation[3],classifica- input to a CNN.
+110112
+
+--- Page 2 ---
+
+Figure 1. Nesti-Net pipeline for normal estimation. For each point in a given point cloud, we compute a multi-scale point
+statistics representation (MuPS). Then, a scale manager network is used to determine the optimal scale and uses the
+corresponding expert sub-network to estimate the normal.
+2. Related-work to fail in estimating normals near edges. Computing
+the optimal neighborhood size can decrease the esti-
+2.1.Deeplearningforunstructured3Dpointclouds
+mation error [18] but requires the (usually unknown)
+The point cloud representation is challenging for noise standard deviation value and a costly iterative
+deep learning methods because it is both unstructured process to estimate the local curvature and additional
+and point-wise unordered. In addition, the number of density parameters.
+points in the point cloud is usually not constant. Sev- OtherapproachesrelyonusingVoronoicellsofpoint
+eral methods were proposed to overcome these chal- clouds [2, 17, 9]. These methods are characterized by
+lenges. Voxel-based methods embed the point cloud robustness to sharp features but are sensitive to noise.
+into a voxel grid but suffer from several accuracy- To overcome this challenge, Alliez et al. [1] proposed
+complexity tradeoffs [16]. The PointNet approach PCA-Voronoi approach to create cell sets which group
+[20, 21] applies a symmetric, order-insensitive, func- adjacentcellstoprovidesomecontroloversmoothness.
+tiononahigh-dimensionalrepresentationofindividual While many of these methods hold theoretical guaran-
+points. The Kd-Network [14] imposes a kd-tree struc- teesonapproximationandrobustness,inpracticethey
+ture on the points and uses it to learn shared weights rely on a preprocessing stage in the presence of strong
+fornodesinthetree. Therecentlyproposed3DmFV[4] or unstructured noise in addition to a fine-tuned set of
+represents the points by their deviation from a Gaus- parameters.
+sian Mixture Model (GMM) whose Gaussians are uni-
+Afewdeeplearningapproacheshavebeenproposed
+formly positioned on a coarse grid.
+to estimate normal vectors from unstructured point
+In this paper, we propose a point-wise and multi-
+clouds. Boulchetal. proposedtotransformlocalpoint
+scale variation of 3DmFV. Instead of generating a
+cloud patches into a 2D Hough space accumulator by
+structuredrepresentationfortheentirepointcloud,we
+randomly selecting point triplets and voting for that
+represent each point and its neighbors within several
+plane’s normal. Then, the normal is estimated from
+scales.
+theaccumulatorbydesigningexplicitcriteria[5]forbin
+selectionor,morerecently,bytraininga2DCNN[6]to
+2.2.Normalestimation
+estimate it continuously as a regression problem. This
+A classic method for normal estimation uses Princi- method does not fully utilize the 3D information since
+pal Component Analysis (PCA) [12]. It first specifies it loses information during the transformation stage.
+the neighbors within some scale, and then uses PCA We reffer to this method as HoughCNN in the evalu-
+regression to estimate a tangent plane. Variants fit- ation section. A more recent method, PCPNnet [11],
+ting local spherical surfaces [10] or jets [7] (truncated uses a PointNet [20] architecture on local point neigh-
+Taylorexpansion)werealsoproposed. Toberobustto borhoods of multiple scales. It achieves good normal
+noise,thesemethodsusuallychoosealarge-scaleneigh- estimationperformanceandhasbeenextendedtoesti-
+borhood, leading them to smooth sharp features and mating other surface properties. However, it processes
+10113
+
+--- Page 3 ---
+
+the multi-scale point clouds jointly and does not select with the GMM density is:
+an optimal scale. This type of architecture tends to
+K
+encourage averaging during training rather than spe-
+u (p)= w u (p). (2)
+cialization [13]. λ k k
+kX=1
+In this paper we propose a method that approxi-
+matesthelocalnormalvectorusingapoint-wise,multi- The 3DmFV uses a uniform GMM on a coarse
+scale 3DmFV representation which serves as an input m m m3Dgrid,wheremisanadjustableparame-
+to a deep 3D CNN architecture. In addition, we learn ter × usua × lly chosen to be from m=3 to 8. The weights
+the neighborhood size that minimizes the normal es- are set to be w = 1, the standard deviation is set to
+k K
+timation error using a mixture of experts (MoE) [13], beσ = 1,andthecovariancematrixtobeΣ =σ I.
+k m k k
+which encourages specialization. Although the parameters in GMMs are usually set us-
+ing maximum likelihood estimation, here uniformity is
+2.3.Representingpointcloudsusing3DmFV crucial for shared weight filtering (convolutions).
+The FV is expressed as the sum of normalized gra-
+The 3DmFV representation for point clouds [4] dients for each point p . The 3DmFV is specified sim-
+t
+achieved good results for point cloud classification us- ilarly using additional symmetric functions, i.e. min
+ing a 3D CNN. See Section 3.1 for details. In this pa- and max. They are symmetric in the sense proposed
+perweproposetheMulti-scalePointStatistics(MuPS) in [20] and are therefore adequate for representing the
+representation, which extends the 3DmFV and com- structureless and orderless set of points. Adding these
+putes a point-wise multi-scale 3DmFV. functions makes the representation more informative
+and the associated classification more accurate [4]:
+3. Approach
+T
+GX = L logu (p ), (3)
+The proposed method is outlined in Figure 1. It FVλ λ ∇ λ λ t
+Xt=1
+receives a 3D point cloud as input and consists of two
+mainstages. Inthefirststage,wecomputeamultiscale T L logu (p )
+p st o a i g n e t w re e p f r e e e s d en it ta i t n i t o o n, a d m e i n x o tu te r d e-o M f-e u x P p S e . rt I s n (M th o e E) se C co N n N d G 3 X DmFVλ = P ma t x = t 1 (L λ λ ∇ ∇ λ λ logu λ λ (p t t ) (cid:12) (cid:12) (cid:12)|λ λ = = α α , , µ µ , , σ σ  (4)
+ min (L logu (p )) 
+architecture and estimate the normal at each point as  t λ ∇ λ λ t |λ=µ,σ 
+output. The stages are detailed below. whereL isthesquarerootoftheinverseFisherInfor-
+λ
+mation Matrix, and the normalized gradients are:
+3.1.MuPS-Multi-scalepointstatistics
+T
+1
+GX = (γ (k) w ), (5)
+MuPS is a local multi-scale representation which αk √w t − k
+computes point statistics on a coarse Gaussian grid.
+k Xt=1
+It builds on the well-known Fisher Vector (FV) [22], 1 T p µ
+and the recently proposed 3DmFV representation [4]. GX = γ (k) t − k , (6)
+µk √w t (cid:18) σ (cid:19)
+Therefore, we first outline the FV and the 3DmFV, k Xt=1 k
+and then continue to the MuPS representation and its
+1 T (p µ )2
+attractive properties. GX = γ (k) t − k 1 . (7)
+FV and 3DmFV for 3D point clouds: Given σk √2w k Xt=1 t (cid:20) σ k 2 − (cid:21)
+a set of T 3D points X = p R3,t = 1,...T
+t Here,wefollow[15]andensurethatu (x)isavaliddis-
+{ ∈ } λ
+and a set of parameters for a K component GMM,
+tributionbychangingthevariablew toα tosimplify
+k k
+λ = (w ,µ ,Σ ),k = 1,...K , where w ,µ ,Σ are
+k k k k k k the gradient calculation using :
+{ }
+the mixture weight, center, and covariance matrix of
+the k-th Gaussian. The likelihood of a single 3D point w = exp(α k ) . (8)
+p associated with the k-th Gaussian density is k K exp(α )
+j=1 j
+P
+u (p)=
+1
+exp
+1
+(p µ )
+′
+Σ
+−1(p
+µ ) .
+Inaddition,γ
+t
+(k)expressesthesoftassignmentofpoint
+k (2π)D/2 | Σ k | 1/2 (cid:26)−2 − k k − k (cid:27) p t to Gaussian k, as obtained from the derivatives:
+(1)
+w u (p )
+γ (k)= k k t . (9)
+Therefore, the likelihood of a single point associated t K w u (p )
+j=1 j j t
+P
+10114
+
+--- Page 4 ---
+
+Scale manager Expert
+The FV and 3DmFV are normalized by the number of Input: MuPS
+points in order to be sample-size independent [22]: 3 3 D D I I n n c c e e p p t t i i o o n n : : [ [3 3 , , 5 5 , , 1 2 2 5 8 6 ] ] Input: G 3 X˜ D i m (r F i) V
+3D Inception: [3, 5, 256] 3D Inception : [3, 5, 128]
+1 1 maxpool [2, 2, 2] 3D Inception: [3, 5, 256]
+GX GX ,GX GX . (10) 3D Inception: [2, 4, 512] maxpool [2, 2, 2]
+FVλ ← T FVλ 3DmFVλ ← T 3DmFVλ 3D Inception: [2, 4, 512] 3D Inception: [2, 4, 256]
+maxpool [2, 2, 2]
+maxpool [2, 2, 2]
+3D Inception: [1, 2, 512]
+3D Inception: [2, 4, 512]
+maxpool [2, 2, 2]
+maxpool [2, 2, 2]
+Note that these are global representations which are FC [1024]
+FC [256] FC [512]
+applied to the entire set, i.e., the entire point cloud. FC [128] FC [128]
+MuPS definition : For each point p in point set X FC [n] FC [64]
+softmax FC [3]
+we first extract n point subsets X˜ i (r i ) | i=1,...n ⊂ X Output: q i Output: N i
+whichcontainT i (p,r i )pointsandliewithinadistance 3D Inception: [c, c, M]
+1 2
+of radius r from p. We refer to each of these subsets Input: [m x m x m x L]
+i
+as a scale. Note that each scale may contain a
+Avg. pool: CNN
+different number of points. For scales with many Filter: [cx cx c] Filter: [1x1x1]
+1 1 1
+Channels: 1 Channels : M
+points, we set a maximal point threshold, and sample
+a random subset of T points for that scale. Here, CNN CNN CNN
+max Filter: [1x1x1] Filter: [cx cx c] Filter: [cx cx c]
+r i and T max are design parameters. Next, the scales Channels : M Channe 1 l s : M 1 /2 1 Channe 2 l s : M 2 /2 2
+(subsets) are independently translated and uniformly
+Concatenate
+scaled so that they fit into a zero-centered unit sphere Output: [m x m x m x 3N]
+with p mapped to the origin. Then, the 3DmFV Figure 2. The mixture of experts and 3D Inception mod-
+representation is computed for each scale relative to a ule architecture details. The scale manager and experts
+Gaussian grid positioned around the origin; see above. use several convolutional and maxpooling layers followed
+Concatenating the 3DmFVs of all scales yields the by fully connected layers.
+MuPS representation:
+Gp = GX˜ 1(r1) ,...,GX˜ n(rn) . (11)
+MuPS 3DmFV 3DmFV
+(cid:16) (cid:17)
+MuPSproperties: TheMuPSrepresentationovercomes estimate the normal correctly.
+the main challenges associated with feeding point Experts: Thenormalisestimatedusingnseparate”ex-
+clouds into CNNs. The symmetric functions make it pert” networks. Each is a multi-layered 3D Inception
+independent of the number and order of points within inspired CNN followed by four fully connected layers.
+eachscale. Inaddition,theGMMgivesititsgridstruc- TheMuPSrepresentationisdistributedtotheexperts.
+ture, necessary for the use of CNNs. Furthermore, the This distribution is a design choice. We obtained the
+multi-scale representation incorporates description of bestresultswhenfeedingeachscaletotwodifferentex-
+fine detail as well as robustness to noise. perts in addition to one expert which receives the en-
+tire MuPS representation as input. Specifically, Nesti-
+3.2.TheNesti-Netarchitecture
+Net uses 7 experts: experts 1-2 receive the smallest
+The deep network architecture is outlined in Fig- scale (1%), 3-4 the medium scale (3%), 5-6 the large
+ure 1 (the green part). It is a mixture-of-experts ar- scale (5%), and expert 7 receives all the scales. The
+chitecture [13] which consists of two modules: a scale last layer of each expert outputs a three-element vec-
+managernetworkmodule,andanexpertsmodule. The tor N = (N ,N ,N ) . The final predicted normal
+i x y z i
+MoE architecture was chosen in order to overcome the (forpointp)isN ,i.e.,thenormalassociated
+argmax(qi)
+averaging effect of typical networks when solving a re- with the expert expected to give the best results. The
+gression problem. architecture is specified in the top right of Figure 2.
+Scale manager network: This module receives the Loss function: We train the network to minimize the
+MuPS representation as input and processes it using differencebetweenapredictednormalN andaground
+i
+several 3D Inception inspired convolutions, and max- truthnormalN . Thisdifferenceisquantifiedbythe
+GT
+pool layers, followed by four fully connected layers, af- metric D = sinθ, where the angle θ is the difference
+N
+ter which a softmax operator is applied. The architec- between the vectors, and D is calculated as the mag-
+N
+ture is specified in the top left part of Figure 2. The nitude of the cross product between these two vectors;
+output is a vector of n scalars q , which can be in- see Eq. 12. In addition, to encourage specialization of
+i
+tuitively interpreted as the probability of expert i to each expert network, we follow [13] and minimize the
+10115
+
+--- Page 5 ---
+
+loss: Gaussian noise - perturbing the points with three
+•
+levelsofnoisespecifiedbyσ,givenasapercentage
+n n
+N N
+L= q D = q k i × GT k . (12) of the bounding box.
+i · N i N N
+Xi=1 Xi=1 k i k·k GT k
+Densityvariation-selectingasubsetofthepoints
+•
+Usingthisloss,eachexpertisrewardedforspecializing basedontwosamplingregimes: gradient,simulat-
+in a specific input type. Note that during training, all ingeffectsofdistancefromthesensor,andstripes,
+n normal vectors are predicted and used to compute simulating occlusions.
+the loss and derivatives. However, at test time, we
+For the geometric methods, we show results for three
+compute only one normal, which is associated with
+different scales: small, medium and large, which corre-
+the maximal q .
+i
+spond to 18, 112, 450 nearest neighbors. For the deep
+learning based methods we show the results for the
+single-scale (ss) and multi-scale (ms) versions. Addi-
+4. Evaluation
+tional evaluation results using other metrics are avail-
+4.1.Datasets able in the supplemental material.
+Table 1 shows the unoriented normal estimation re-
+For training and testing we used the PCPNet shape
+sults for the methods detailed above. It can be seen
+dataset [11]. The trainset consists of 8 shapes: four
+that our method outperforms all other methods across
+CAD objects (fandisk, boxunion, flower, cup) and
+all noise levels and most density variations. It also
+four high quality scans of figurines (bunny, armadillo,
+shows that both PCA and Jet perform well for spe-
+dragon and turtle). All shapes are given as triangle
+cific noise-scale pairs. In addition, for PCPNet and
+meshes and densely sampled with 100k points. The
+HoughCNN, using a multi-scale approach only mildly
+data is augmented by introducing Gaussian noise for
+improves performance.
+each point’s spacial location with astandard deviation
+Figure3illustratesNesti-Net’sresultsonthreepoint
+of 0.012, 0.006, 0.00125 w.r.t the bounding box. This
+clouds. Forvisualization, thenormalvectorismapped
+yields a set with 3.2M points and 3.2M corresponding
+to the RGB cube. It shows that for complex shapes
+training examples. The test set consists of 22 shapes,
+(pillar, liberty) with high noise levels, the general di-
+including figurines, CAD objects, and analytic shapes.
+rectionofthenormalvectorispredictedcorrectly,but,
+For evaluation we use the same 5000 point subset per
+the fine details and exact normal vector are not ob-
+shape as in [11].
+tained. For a basic shape (Boxysmooth) the added
+Forqualitativetestingonscanneddata,weusedthe
+noise does not affect the results substantially. Most
+NYU Depth V2 dataset [19] and the recent ScanNet
+notably, Nesti-Net shows robustness to point density
+dataset [8], which include RGB-D images of indoor
+corruptions. The angular error in each point is visual-
+scenes.
+ized in Figure 4 for the different methods using a heat
+4.2.Trainingdetails map. For PCA and Jet we display the best result out
+ofthethreescales(small, medium, andlarge, specified
+All variations of our method were trained using above), and for PCPNet the best out of its single-scale
+32,768 (1024 samples 32 shapes) random subsets of andmulti-scaleoptions. Forallmethods,itcanbeseen
+×
+the 3.2M training samples at each epoch. For each that more errors occur near edges, corners and small
+point, we extract 512 neighboring points enclosed regions with a lot of detail and high curvature. Nesti-
+within a sphere of radius r. For neighborhoods with Net suffers the least from this effect due to its scale
+more than 512 points, we perform random sampling, manager,whichallowsittoadapttothedifferentlocal
+and for those with fewer points we use the maximum geometry types. Figure 5 shows the performance of
+number of points available. For the MuPS represen- thescalemanagernetwork. Acolorisassignedtoeach
+taiton we chose to use an m = 8 Gaussian grid. We expertandthechosenexpertcolorisvisualizedoverthe
+used Tensorflow on a single NVIDIA Titan Xp GPU. pointcloud. Thisprovidessomeinsightregardingeach
+expert’s specialization. For example, the figure shows
+4.3.Normalestimationperformance
+that experts 1, 2 (small scale) specialize in points in
+We use the RMS normal estimation error metric for regions with high curvatures (near corners). Experts 3
+comparing the proposed NestiNet to other deep learn- and 4 (medium scale) specialize in the complex cases
+ing based [11, 6] and geometric methods [12, 7]. We where multiple surfaces are close to each other, or in
+also analyze robustness for two types of data corrup- the presence of noise. As for the large-scale experts,
+tions (augmentations): expert5specializesinplanarsurfaceswithnormalvec-
+10116
+
+--- Page 6 ---
+
+Our
+Aug. PCA [12] Jet [7] PCPNet [11] HoughCNN [6]
+Nesti-Net
+scale ms small med large small med large ss ms ss ms
+None 6.99 8.31 12.29 16.77 7.60 12.35 17.35 9.68 9.62 10.23 10.02
+Noise
+σ =0.00125 10.11 12.00 12.87 16.87 12.36 12.84 17.42 11.46 11.37 11.62 11.51
+σ =0.006 17.63 40.36 18.38 18.94 41.39 18.33 18.85 18.26 18.87 22.66 23.36
+σ =0.012 22.28 52.63 27.5 23.5 53.21 27.68 23.41 22.8 23.28 33.39 36.7
+Density
+Gradient 9.00 9.14 12.81 17.26 8.49 13.13 17.8 13.42 11.7 11.02 10.67
+Stripes 8.47 9.42 13.66 19.87 8.61 13.39 19.29 11.74 11.16 12.47 11.95
+average 12.41 21.97 16.25 18.87 21.95 16.29 19.02 14.56 14.34 16.9 17.37
+Table 1. Comparison of the RMS angle error for unoriented normal vector estimation of our Nesti-Net method to classic
+geometric methods (PCA [12] , Jet [7]) with three scales, and deep learning methods (PCPNet [11], HoughCNN [6])
+Figure 3. Nesti-Net normal prediction results for different
+noiselevels(columns1-4),anddensitydistortions(columns
+5-6). Thecolorsofthepointsarenormalvectorsmappedto
+RGB.Thisfigureisbestvieweddigitallyonalargescreen.
+Figure 4. Normal estimation error results for Nesti-Net
+compared to other methods for three types of point clouds
+withlownoiselevel(σ=1%). Thecolorsofthepointscor-
+tors, which have a large component in the x direction,
+respond to angular difference, mapped to a heatmap rang-
+whereas expert 6 specializes in planar surfaces, which
+ing from 0-60 degrees; see bottom color bar. The number
+have a large component in the y direction. Expert 5
+under each point cloud is its RMS error.
+also specializes in very noisy planar surfaces with a
+large component in the z direction. Expert 7 (com-
+4.4.Scaleselectionperformance
+bined scales) plays multiple roles; it handles points on
+planar surfaces which have a large component in the z
+We analyze the influence of scale selection on the
+direction,complexgeometry,andlowtomediumnoise.
+normal estimation performance. We create several ab-
+Figure 6 shows the number of points assigned to each
+lations of our method.
+expertforallpointsinthetestset, andtheaverageer-
+rorperexpert. Itshowsaninverserelationbetweenthe ss - A single scale version which directly feeds a
+•
+numberofpointsassignedtoanexpertanditsaverage 3DmFV representation into a CNN architecture
+error: themorepointsassignedtotheexpert,thelower (a single-scale MuPS).
+the error. This is consistent with the definition of the
+ms - A multi-scale version which feeds the MuPS
+cost function. Timing performance and visualization •
+representation into a CNN architecture.
+of additional results are provided in the supplemental
+material. ms-sw - A multi scale version which first tries to
+•
+10117
+
+--- Page 7 ---
+
+Aug. ss ms ms-sw NestiNet
+0.01
+0.01 0.01 0.01
+scale 0.01 0.05 0.03
+0.05 0.05 0.05
+0.05
+None 9.32 12.73 10.83 7.88 7.76 6.99
+Noise
+σ =0.00125 11.31 13.36 12.98 10.46 10.29 10.11
+σ =0.006 36.5 18.37 21.06 18.43 18.45 17.63
+σ =0.012 55.24 23.14 26.03 22.59 22.25 22.28
+Density
+Gradient 16.61 14.65 12.81 11.89 9.44 9.00
+Stripes 14.5 14.57 12.97 10.06 9.65 8.47
+average 23.91 16.14 16.11 13.55 12.97 12.41
+Table2.ComparisonoftheRMSangleerrorforunoriented
+normal vector estimation of our method using single-scale
+(SS), multi-scale (MS), multi-scale with switching (MS-Sw
+Figure 5. Nesti-Net predicted experts (scales). Each color and multi-scale with mixture of experts (Nesti-Net)
+representsthepredictedexpert foroptimalnormalestima-
+tion. Color coding is given at the bottom.
+unsupervised, i.e., does not need the additional noise
+parameters as input during training.
+4.5.Resultsonscanneddata
+Weshowqualitativeresultsonscannedpointclouds
+fromtheScanNet[8]andNYUDepthV2[19]datasets
+in Figure 7. For visualization we project the normal
+vectors’ color back to the depth image plane. column
+(c)showstheresultsforNesti-Net,trainedonsynthetic
+Figure 6. Nesti-Net expert (scale) prediction statistics. data with Gaussian noise. The estimated normals re-
+Number of points assigned to each expert (left), and av- veal the nonsmoothness of the scanned data associ-
+erage expert error (right). ated with the correlated, non-Gaussian, noise signa-
+ture associated with the scanning process. Essentially
+itshowsnormalestimationoftherawdata,ratherthan
+estimatethenoiselevelandthenfeedsthe3DmFV
+the desired normal of the underlying surface. The raw
+representation of the corresponding input scale
+point clouds suffer from ”bumps” which get bigger as
+into different sub-networks for a discrete number
+the distance from the sensor increases. Further im-
+of noise levels (switching). Note that for this ver-
+provement may be obtained by training Nesti-Net on
+sion, the noise level is provided during training.
+data corrupted with scanner noise and with ground
+NestiNet - The method described in Section 3 truth normals, but such data is is currently not avail-
+• which uses an MoE network to learn the scale. ableandisdifficulttomanuallylabel. Instead,wetrain
+Nesti-Net with normal vectors obtained from applying
+Details of the architectures for the above methods are a Total Variation (TV) algorithm on the depth map,
+provided in the supplemental material. provided by Ladicky et al. [23] for the NYU depth V2
+Table 2 summarizes the results of the scale selec- dataset. Note that TV substantially smooths fine de-
+tion performance analysis. It shows that Nesti-Net’s tailandusesthedepthimageratherthanunstructured
+scale selection performs better than all other varia- point clouds. Column (d) in Figure 7 shows that after
+tions. Thisisduetothetrainedscale-managernetwork training on the TV data, the normal vector estimation
+withintheMoE.Thesingle-scaleversionperformswell of the underlying surface improves significantly. Col-
+for specific noise-scale pairs but inferior performance umn(b)showstheresultsofPCAwithamediumscale
+foraninadequatescaleselection. Themulti-scalevaria- forreference,forsmallradius,theresultissignificantly
+tionsshowimprovement;however,selectingthecorrect noisier and for large radius it over-smooths detail, see
+scale yields improved performance over concatenating supplemental material. Note that Nesti-Net performs
+multiple scales. The main advantage of Nesti-Net over theestimationontherawpointcloudanddoesnotuse
+the switching variation is that the scale prediction is the depth image grid structure.
+10118
+
+--- Page 8 ---
+
+[5] A. Boulch and R. Marlet. Fast and robust normal
+estimation for point clouds with sharp features. In
+Computer Graphics Forum, volume 31, pages 1765–
+1774. Wiley Online Library, 2012.
+[6] A. Boulch and R. Marlet. Deep learning for robust
+normalestimationinunstructuredpointclouds. Com-
+puter Graphics Forum, 35(5):281–290, 2016.
+[7] F.CazalsandM.Pouget.Estimatingdifferentialquan-
+titiesusingpolynomialfittingofosculatingjets. Com-
+Figure7.Normalestimationresultsonscannedpointclouds puter Aided Geometric Design, 22(2):121–146, 2005.
+fromtheScanNet[8](top),andNYUDepthV2dataset[19] [8] A. Dai, A. X. Chang, M. Savva, M. Halber, T. A.
+(bottom). (a)RGBimage,(b)PCAresultsusingamedium Funkhouser, and M. Nießner. Scannet: Richly-
+scale, (c) Nesti-Net results trained on synthetic data (d) annotated3dreconstructionsofindoorscenes. InThe
+Nesti-net results trained on TV algorithm data. IEEE Conference on Computer Vision and Pattern
+Recognition (CVPR), volume 2, page 10, 2017.
+[9] T. K. Dey and S. Goswami. Provable surface recon-
+5. Summary
+struction from noisy samples. Computational Geome-
+try, 35(1-2):124–141, 2006.
+Inthiswork,weproposemulti-scalepointstatistics,
+[10] G. Guennebaud and M. Gross. Algebraic point set
+a new representation for 3D point clouds that encodes
+surfaces. ACM Transactions on Graphics (TOG),
+fineandcoarsedetailswhileusingagridstructure. The
+26(3):23, 2007.
+representation is effective processed by a CNN archi-
+[11] P. Guerrero, Y. Kleiman, M. Ovsjanikov, and N. J.
+tecture(Nesti-Net)forprovideaccuratenormalestima-
+Mitra.Pcpnetlearninglocalshapepropertiesfromraw
+tion, which can be used for various applications, e.g.
+pointclouds. Computer Graphics Forum,37(2):75–85,
+surface reconstruction. The mixture-of-experts design 2018.
+ofthearchitectureenablesthepredictionofanoptimal
+[12] H. Hoppe, T. DeRose, T. Duchampt, J. McDonald,
+local scale and provides insights into the network’s re- andW.Stuetzle. Surfacereconstructionfromunorga-
+source distribution. The proposed representation and nized points. Computer Graphics, 26:2, 1992.
+architecture achieve state-of-the-art results relative to [13] R. A. Jacobs, M. I. Jordan, S. J. Nowlan, and G. E.
+allothermethodsanddemonstraterobustnesstonoise Hinton. Adaptive mixtures of local experts. Neural
+and occlusion data corruptions. Computation, 3(1):79–87, 1991.
+[14] R.KlokovandV.Lempitsky. Escapefromcells: Deep
+6. Acknowledegment kd-networksfortherecognitionof3dpointcloudmod-
+els. In The IEEE International Conference on Com-
+We gratefully acknowledge the support of NVIDIA puter Vision (ICCV), pages 863–872, Oct 2017.
+Corporation with the donation of the Titan Xp GPU [15] J. Krapac, J. Verbeek, and F. Jurie. Modeling spatial
+used for this research. layout with fisher vectors for image categorization. In
+The IEEE International Conference on Computer Vi-
+References sion (ICCV), pages 1487–1494. IEEE, 2011.
+[16] D. Maturana and S. Scherer. Voxnet: A 3d convo-
+[1] P.Alliez,D.Cohen-Steiner,Y.Tong,andM.Desbrun. lutional neural network for real-time object recogni-
+Voronoi-basedvariationalreconstructionofunoriented tion. In IEEE/RSJ International Conference on In-
+point sets. In Symposium on Geometry Processing, telligent Robots and Systems (IROS), pages 922–928.
+volume 7, pages 39–48, 2007. IEEE, 2015.
+[2] N. Amenta and M. Bern. Surface reconstruction by [17] Q.M´erigot,M.Ovsjanikov,andL.J.Guibas.Voronoi-
+voronoifiltering.Discrete&ComputationalGeometry, based curvature and feature estimation from point
+22(4):481–504, 1999. clouds. IEEETransactionsonVisualizationandCom-
+[3] Y. Ben-Shabat, T. Avraham, M. Lindenbaum, and puter Graphics, 17(6):743–756, 2011.
+A. Fischer. Graph based over-segmentation methods [18] N. J. Mitra and A. Nguyen. Estimating surface nor-
+for 3d point clouds. Computer Vision and Image Un- mals in noisy point cloud data. In Proceedings of the
+derstanding, 2018. Nineteenth Annual Symposium on Computational ge-
+[4] Y. Ben-Shabat, M. Lindenbaum, and A. Fischer. ometry, pages 322–328. ACM, 2003.
+3dmfv: Three-dimensionalpointcloudclassificationin [19] P. K. Nathan Silberman, Derek Hoiem and R. Fer-
+real-time using convolutional neural networks. IEEE gus. Indoor segmentation and support inference from
+Robotics and Automation Letters, 3(4):3145–3152, RGBD images. In European Conference on Computer
+2018. Vision (ECCV), pages 746–760, 2012.
+10119
+
+--- Page 9 ---
+
+[20] C. R. Qi, H. Su, K. Mo, and L. J. Guibas. Pointnet:
+Deep learning on point sets for 3d classification and
+segmentation. In The IEEE Conference on Computer
+Vision and Pattern Recognition (CVPR), July 2017.
+[21] C.R.Qi,L.Yi,H.Su,andL.J.Guibas. Pointnet++:
+Deep hierarchical feature learning on point sets in a
+metric space. arXiv preprint arXiv:1706.02413, 2017.
+[22] J.Sa´nchez,F.Perronnin,T.Mensink,andJ.Verbeek.
+Imageclassificationwiththefishervector: Theoryand
+practice. International Journal of Computer Vision,
+105(3):222–245, 2013.
+[23] B. Zeisl, M. Pollefeys, et al. Discriminatively trained
+dense surface normal estimation. In European con-
+ference on computer vision, pages 468–484. Springer,
+2014.
+10120

@@ -1,0 +1,345 @@
+# Surface_Reconstruction_from_Point_Clouds.pdf
+# Converted: 2025-07-19 12:45:30
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Surface_Reconstruction_from_Point_Clouds.pdf
+# Output: ../layer2_completion/txt/Surface_Reconstruction_from_Point_Clouds.txt
+
+
+--- Page 1 ---
+
+See discussions, stats, and author profiles for this publication at: https://www.researchgate.net/publication/221511837
+Surface Reconstruction from Point Clouds
+Conference Paper  in  IFIP Advances in Information and Communication Technology · January 1998
+DOI: 10.1007/978-0-387-35392-0_18 · Source: DBLP
+CITATIONS
+10
+READS
+626
+2 authors:
+Bill Toll
+Taylor University
+3 PUBLICATIONS   13 CITATIONS   
+SEE PROFILE
+Fuhua Cheng
+University of Kentucky
+66 PUBLICATIONS   1,070 CITATIONS   
+SEE PROFILE
+All content following this page was uploaded by Fuhua Cheng on 01 May 2014.
+The user has requested enhancement of the downloaded file.
+
+
+--- Page 2 ---
+
+Chapter #
+Surface Reconstruction from Point Clouds
+Bill Toll (btoll@css.tayloru.edu)
+Computing and System Sciences, Taylor University, Upland, IN
+Fuhua (Frank) Cheng (cheng@cs.engr.uky.edu)
+Computer Science, University of Kentucky, Lexington, KY
+Key words:
+surface reconstruction, point clouds, feature points, reverse engineering
+Abstract:
+Surface reconstruction from point clouds is an important element of reverse
+engineering as used to create solid models of existing objects.  The research
+presented in this paper assumes no knowledge of relationships among the
+elements of the point cloud.  The approach to initial mesh creation is based on
+extraction of points, called “feature points”, from the cloud based on geometric
+relationships with nearby points.  A neighborhood is established for each data
+point, the points in the neighborhood are ordered, and feature points are
+identified based on relationships among the neighbors.  Feature points within a
+neighborhood are linked to construct a polygonal mesh that is then
+triangulated.
+1. 
+INTRODUCTION
+Solid models of surfaces are desired for many purposes including input
+of existing physical parts to CAD/CAM systems for modification, automatic
+creation of machine tool paths, error inspection, and input to finite element
+systems.  If such models do not exist, they may be created from point clouds
+sampled from the surface by technologies such as laser scanners.
+The creation of a model from a point cloud typically begins with the
+reconstruction of the surface in the form of a piecewise linear mesh surface.
+Although some situations allow the use of known properties of the data, the
+abstract problem was first stated by Hoppe, et al1.  Their formulation views
+
+
+--- Page 3 ---
+
+the problem as the process of converting an input set of 3D points, sampled
+from or near a surface, into a polygonal mesh.
+One general approach to the problem creates a dense initial mesh that is
+simplified by one of several techniques including application of an energy
+function that measures deviation from the original (constructed) mesh2.
+Another technique3 uses bounded approximation to construct a surface mesh
+with each vertex within a prescribed distance from a vertex in the original
+mesh.  The new mesh is constructed by merging faces of the original mesh.
+Another technique4 merges faces by triangle decimation (iterative removal of
+vertices).
+Other approaches begin with an initial mesh and extract a surface
+representation directly from the mesh.  The work of Hoppe’s group1, for
+example, creates a mesh of all data points and extracts a surface from the
+mesh by contour tracing a signed distance function to approximate tangent
+planes.  The vertices of the resulting triangulation are not necessarily part of
+the original data set, but may be created points.  This triangulation, however,
+requires simplification as presented in following work by the same group
+where the mesh is optimized2 and a piecewise smooth (tangent plane
+continuous) surface is constructed by subdivision from the optimized
+triangular mesh5.
+An alternate approach6 is to construct a three-dimensional Delaunay
+triangulation of volume elements, smooth the surface triangulation, and
+compute smooth Bernstien-Bezier patches to approximate the triangulated
+surface.  A very recent approach7 constructs an output mesh that interpolates,
+rather than approximates, the input points by use of 3D Voronoi diagrams.
+This technique functions best when it is possible to control the sampling
+density over the surface.
+2. 
+FEATURE POINT BASED RECONSTRUCTION
+The focus of this work is to prepare an initial mesh that is smaller than a
+dense initial mesh, but is an accurate representation of the surface and at
+least comparable to reduced meshes produced by other techniques.  The
+mesh that is created can be a representation of the surface or the starting
+point for a mesh optimization or surface fitting algorithm.  One of the
+characteristics that differentiates the feature point approach is that it is based
+on the identification of points in the original data set that represent the
+surface topology and shape.  Therefore, all the points in the resulting mesh
+are from the original data set and the surface, at this point in the process,
+approximates the surface as a well-chosen subset.
+
+
+--- Page 4 ---
+
+Conceptually, the approach attempts to identify “feature curves” that are
+natural edges of the surface.  These curves are constructed by connecting
+feature points. The feature points are selected by a point-driven algorithm
+without previous mesh construction.  The algorithm consists of pre-
+processing, feature point extraction, and mesh generation.
+3. 
+ALGORITHM
+The first step is pre-processing where the data is input, organized, and
+partially analyzed to prepare for the remaining operations.  Pre-processing
+includes data input, sorting, determination of a neighborhood for each point,
+and computation of an approximate normal vector to the surface at each
+point.  The second step is extracting feature points from the data.  This
+process is accomplished by detecting areas where there is an obvious edge
+based on the distribution of points in the neighborhood or areas where there
+is significant variation in approximate surface normals within the
+neighborhood.  The final step of mesh generation consists of extraction of
+additional points as needed, generation of edges, generation of polygons
+from the edges, and triangulation of the polygons.
+3.1 
+Neighborhoods
+Since extraction of feature points from a data set is based on examination
+of the local variation of the surface in the vicinity of the point, a
+neighborhood is established for each point. A neighborhood of a point
+consists of data points from the original data set which are “near” the given
+point.
+An ideal definition of neighborhood for the purpose of feature point
+extraction would be that a neighborhood includes only those data points that
+describe the surface at the given point but includes all points necessary for
+measurement of the variation of the surface around the given point.
+Due to the above considerations and the potentially varying density of
+data points, a neighborhood is chosen for each point that includes all points
+within a given distance of the point in combination with a limit on the
+maximum number of points in a neighborhood.
+3.2 
+Normal Vectors
+Normal vectors are defined in a statistical sense for each data point based
+on the points in its neighborhood.  The method used to find the normal
+vector is similar to that used by other surface reconstruction algorithms that
+
+
+--- Page 5 ---
+
+make use of the tangent plane as an approximation to the surface in the
+neighborhood.  The normal is calculated by applying principle component
+analysis on the covariance matrix of the neighbor points around the point
+being investigated.  The normal vector is used to establish a tangent plane,
+but this plane is used only for sorting neighboring points rather than surface
+approximation.
+Some surface reconstruction techniques1 replace the data point with the
+centroid of the neighborhood and have the additional requirement that the
+surface normals for all neighborhoods must be consistently oriented in that
+they all point “out”.  This problem has been shown to be NP-complete8.  The
+feature point technique uses the normal and tangent plane only for sorting
+and, thus, does not require a globally consistent orientation.
+3.3 
+Feature Point Extraction
+Feature points are extracted from the data set based on variation among
+the points in a neighborhood.  Therefore, neighboring points must be
+compared with each other.  There are two types of comparisons used, both of
+which compare “adjacent” points.  Therefore, the concept of adjacent points
+in a 3D neighborhood must be defined.  The approach used is to project the
+points to the tangent plane for the neighborhood where the tangent plane is
+defined to be perpendicular to the normal vector.  The projected points are
+then sorted by angle in the plane so adjacency relationships can be
+determined.  Figure 1 illustrates this process.
+There are three basic types of feature points and three corresponding
+extraction mechanisms.
+Boundary feature points are data points that are selected because analysis
+of the points in the neighborhood indicate that there is a boundary, or natural
+edge, of the surface near the point.
+Variation feature points are selected by a mechanism that indicates that
+the surface changes shape near the point.  The extraction is based on the
+amount of variation of approximate surface normals around the data point.
+Finally, there may be regions of a surface where no "interesting" shape
+transitions occur.  The surface is smooth and uniform, but not flat.  For such
+surfaces, it is common that no boundary or variation feature points would be
+extracted.  Some points need to be selected from this surface so that the
+region is not represented as a flat region bounded by boundary and variation
+feature points.  Such points are labeled complementary feature points.
+
+
+--- Page 6 ---
+
+Figure 1.  Data points and projection (a) data points, (b) neighborhood, (c) projection plane,
+(d) points projected to plane, (e) projected points
+3.4 
+Boundary Feature Points
+Boundary points are feature points that are identified, or extracted, from
+the original data set, based on the property that points in its neighborhood
+indicate that an edge of the actual surface is present in the neighborhood.
+Furthermore, the identified point is, itself, a part of this edge.
+Such points are identified based on the spatial distribution of projected
+neighbor points. It is assumed that if a natural edge exists that passes through
+the data point, then there will be points in the neighborhood that lie along the
+natural edge.  If there is a line formed in the projection plane, that line is
+assumed to indicate the presence of an edge of the surface.  Line in this
+context means two adjacent neighbor points which when connected through
+the prospective feature point form an approximately straight line.  Thus, if
+there are adjacent points in the neighborhood which have an angle between
+( a )
+( b )
+( c )
+( d )
+( e )
+
+
+--- Page 7 ---
+
+them greater than a given value, typically 160o, then the point is labeled a
+feature point.  Figure 2 illustrates a boundary feature point determination.
+Figure 2. Testing for boundary feature point
+3.5 
+Variation Feature Points
+Variation feature points are extracted based on variation in surface
+normals within a neighborhood around a point.  However, the normals
+calculated for each point are not used.  Rather, a series of triangles are
+formed by using the central point as one vertex of each triangle and using
+two adjacent neighbor points as the other vertices for a given triangle.  The
+surface normal for each triangle is calculated with the cross product of the
+vectors from the central point to the two adjacent neighbors.  Note that the
+3D neighbor points are used as the projected points all lie in the same plane.
+Figure 3 illustrates this process by displaying the normal vectors for the
+triangles in a neighborhood.
+If there is sufficient variation between normals for adjacent triangles, the
+central point is labeled a variation feature point.  While this technique will
+identify some points that would have been previously extracted as boundary
+feature points, boundary points from a flat or nearly flat surface would not
+be detected with the variation approach.
+Figure 3. Testing for variation feature point
+
+
+--- Page 8 ---
+
+3.6 
+Complementary Feature Points
+Regions of a surface where no boundary or variation feature points exist
+may be flat and could be represented by large triangles in a mesh.  However,
+since there is no prior knowledge of the surface, it is not known if the
+surface is flat or is smoothly curved such that no variation feature points are
+detected.  An example of such a surface is the side of a cylinder.
+A point is labeled a complementary feature point if it is not a feature
+point and there are no feature points in its neighborhood.
+It is also important that all feature points have at least two feature points
+in their neighborhood so that the mesh generated by connecting feature
+points forms closed polygons.  If a feature point does not have at least two
+feature point neighbors, additional points must be identified.  These added
+points can also be viewed as complementary feature points.
+3.7 
+Mesh Generation
+The mesh is created from edges formed by connecting feature points.  A
+feature point should be connected to all feature points in its neighborhood.  It
+is not necessary that all feature points in a common neighborhood are
+connected to each other.  Indeed, if all such edges are formed, there will be
+intersecting edges.  Before the edge data structure is built, intersecting edges
+are disallowed by removing feature points from neighborhoods that cause
+intersecting edges.  Additional complementary points may need to be labeled
+so that closed polygons are formed.
+Edges are generated by connecting each feature point to all feature points
+remaining in its neighborhood.  The edges are traversed in each direction to
+verify that closed polygons are formed and the polygons are triangulated to
+form a triangular mesh.
+As polygon edge E is traversed from point P to point Q, the next edge of
+the polygon is the next edge counterclockwise in order around point Q.
+However, if the normals for the neighborhoods are not consistent, the
+definition of clockwise varies between the neighborhoods.  Therefore, the
+dot product of the normal vectors is used to determine if the next edge
+should be chosen in a clockwise direction.  If so, this direction is maintained
+in the traversal of the given polygon until another such transition occurs.
+4. 
+RESULTS
+While further investigation is needed to better understand the role of
+various parameters of the algorithm and locally adaptive approaches should
+
+
+--- Page 9 ---
+
+be investigated for neighborhood determination, encouraging results have
+been obtained with the technique.
+The following figures illustrate the results of the algorithm on a
+distributor cap data set found in Hoppe’s work1.  Figure 4 is the data set
+consisting of 12,745 points.  Figures 5-8 illustrate the feature point
+extraction process with Figure 5 displaying 594 boundary feature points,
+Figure 6 displaying 3,675 feature points after the extraction of variation
+feature points, Figure 7 displaying 4,101 feature points including
+complementary points, and Figure 8 displaying the final feature point set
+after edge extension consisting of 4,347 points.
+Figure 9 is the final triangulation that contains 12,635 edges.
+Figure 4. Distributor cap data set
+
+
+--- Page 10 ---
+
+Figure 5. Boundary feature points
+Figure 6. Variation and boundary feature points
+
+
+--- Page 11 ---
+
+Figure 7. Complementary, variation, and boundary feature points
+Figure 8. Final feature point set
+
+
+--- Page 12 ---
+
+Figure 9. Triangulation of feature points
+REFERENCES
+1 
+Hoppe, Hugues, DeRose, Tony, Duchamp, Tom, McDonald, John and Stuetzle, Werner.
+Surface Reconstruction from Unorganized Points. Computer Graphics (Proceedings of
+Siggraph) 26(2), July 1992, 71-78.
+2 
+Hoppe, Hugues, DeRose, Tony, Duchamp, Tom, McDonald, John, and Stuetzle, Werner.
+Mesh Optimization. Computer Graphics (Proceedings of Siggraph), 1993, 19-26.
+3 
+Kalvin, Alvin D. and Taylor, Russell H.. Superfaces: Polygonal Mesh Simplification
+with Bounded Error. IEEE Computer Graphics and Applications, May 1996, 64-77.
+4 
+Schroeder, W. J., Zarge, J. A., and Lorensen, W. E.. Decimation of Triangle Meshes.
+Computer Graphics (Proceedings of Siggraph), 26(2), July 1992, 65-70.
+5 
+Hoppe, Hugues, DeRose, Tony, Dechamp, Tom, Halstead, Mark, Jin, Hubert,
+McDonald, John, Schweitzer, Jean, and Steutzle, Werner.  Piecewise Smooth Surface
+Reconstruction, Computer Graphics (Proceedings of Siggraph), 1994, 295-302.
+6 
+Bajaj, Chandrajit L., Bernardini, Fausto, and Xu, Guoliang.  Automatic Reconstruction
+of Surfaces and Scalar Fields from 3D Scans.  Computer Graphics (Proceedings of
+Siggraph), 1995, 109-118.
+7 
+Amenta, Nina, Bern, Marshall, and Kamvysselis, Manolis.  A New Voronoi-Based
+Surface Reconstruction Algorithm, Computer Graphics (Proceedings of Siggraph), 1998,
+415-421.
+8 
+Garey, Michael R. and Johnson, David S.. Computers and Intractibility, W. H. Freeman
+and Company, 1979.
+View publication stats

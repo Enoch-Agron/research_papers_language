@@ -1,0 +1,630 @@
+# Fast and Accurate Normal Estimation for Point.pdf
+# Converted: 2025-07-18 12:59:06
+# Method: pdfplumber
+# Domain: pixel2physics
+# Source: /home/user/vekt/papers/pixel2physics/pdfs/layer2/Fast and Accurate Normal Estimation for Point.pdf
+# Output: /home/user/vekt/papers/pixel2physics/dot_txt/layer2/Fast and Accurate Normal Estimation for Point.txt
+
+
+--- Page 1 ---
+
+Fast and Accurate Normal Estimation for Point
+Cloud via Patch Stitching
+Jun Zhou∗, Wei Jin, Mingjie Wang, Xiuping Liu, Zhiyang Li, Zhaobin Liu
+Abstract—This paper presents an effective normal es-
+timation method adopting multi-patch stitching for an un-
+P
+structured point cloud. The majority of learning-based ap- 2
+proachesencodealocalpatcharoundeachpointofawhole
+modelandestimatethenormalsinapoint-by-pointmanner.
+In contrast, we suggest a more efficient pipeline, in which
+we introduce a patch-level normal estimation architecture P 3
+to process a series of overlapping patches. Additionally, a
+multi-normal selection method based on weights, dubbed P
+1 Overlapping Parts
+as multi-patch stitching, integrates the normals from the
+Normals Stitching
+overlappingpatches.Toreducetheadverseeffectsofsharp
+cornersornoiseinapatch,weintroduceanadaptivelocal
+featureaggregationlayertofocusonananisotropicneigh- Fig.1. Theillustrationofmulti-patch(normals)stitching.
+borhood. We then utilize a multi-branch planar experts
+module to break the mutual influence between underlying
+piecewise surfaces in a patch. At the stitching stage, we size is greatly affected by noise. The multi-scale strategy may
+use the learned weights of multi-branch planar experts
+achieve higher accuracy but suffers from high computation
+and distance weights between points to select the best
+time.Besides,assumingthatamodelcontains100kpointsand
+normal from the overlapping parts. Furthermore, we put
+forward constructing a sparse matrix representation to re- 256 neighbors are sampled by each point, a large repetition
+ducelarge-scaleretrievaloverheadsfortheloopiterations rate would occur (Each point would be used about 256 times
+dramatically. Extensive experiments demonstrate that our evenly), leading to a computational redundancy. Although
+methodachievesSOTAresultswiththeadvantageoflower
+the IterNet [7] can quickly implement normal estimation
+computational costs and higher robustness to noise over
+with fewer parameters, the whole model needs to be input
+mostoftheexistingapproaches.
+simultaneously, making the algorithm inflexible.
+IndexTerms—NormalEstimation,PatchStitching.
+Motivated by these challenges, we adopt a patch-by-patch
+normal estimation method to effectively reduce the repetition
+I. INTRODUCTION rate of each point on the model without sacrificing the size
+of the sampling range, and only a few patches are used for
+DUEtotheadvancesin3Dacquisitiontechnologies,point-
+whole model estimation (see Fig. 1). A sparse index matrix
+based representations can be captured in various vision
+is constructed to map the point IDs of the patches to the
+applications. Generally, the scanned large-scale point cloud
+entire point cloud, significantly reducing the time-cost of the
+is noisy, incomplete, and contains sampling irregularity while
+multi-normal stitching process. Besides, large-scale sampling
+lacking the essential local geometry properties such as point
+patches with isotropy may contain underlying piecewise sur-
+normals.Anaccurateandfastnormalestimationalgorithmcan
+faces and noise. Thus, the useless information within neigh-
+significantlyimprovethedownstreamtaskssuchas3Dsurface
+borsandmutualinterferencebetweenunderlyingsurfaceswill
+reconstruction [1], point cloud consolidation [2], [3].
+leadto entanglementbetween pointsatthe patch-levelnormal
+Compared with traditional methods, the learning-based
+estimationstage.Tosolvetheentanglementproblem,wefirstly
+methods [4]–[6] can well handle the problem of parameter
+employ an adaptive local feature aggregation layer to focus
+tuning. Commonly, given a point, neighboring points should
+on a meaningful neighborhood for each point at the feature
+be extracted via K nearest neighbor (kNN) search and used
+extraction stage. Then a multi-branch planar experts module
+to infer the normal of the center point via the deep learning
+is introduced to break down the mutual interference between
+architecture. In this process, the selection of neighborhood
+the underlying surfaces at the normal estimation stage. The
+contributions of our work are summarized as follows:
+ThisworkissupportedbytheNationalNaturalScienceFoundationof • A flexible and fast multi-patch stitching framework is
+China(No.62002040,No.61976040).
+proposed, and the network’s time complexity can be
+J.Zhou,Z.Li,Z.LiuarewiththeSchoolofinformationscienceand
+technology,DalianMaritimeUniversity,China ignored relative to the scale of point cloud.
+W.JiniswithDalianNeusoftUniversityofInformation,China. • A sparse index matrix is introduced to speed up the
+M.WangiswithMemorialUniversityofNewfoundland,Canada.
+process that maps the point IDs of patches to the point
+X.LiuiswithwithDalianUniversityofLiaoningProvince,China.
+E-mail:jun90@dlmu.edu.cn cloud. The mapping table can be used at the stage of
+1202
+raM
+13
+]VC.sc[
+2v66061.3012:viXra
+
+--- Page 2 ---
+
+Multi-branch planar experts
+Residual DGCNN
+K×3 K×3
+3×3
+Rotation
+T-Net
+K×64 K×64 K×64
+Multi- Scale
+Features
+K×64
+Branch Net 1
+Branch Net 2
+Branch Net 3
+Concatenate
+Weights Estimation Net
+N̂1(K×3)
+N̂2(K×3)
+N̂3(K×3)
+N̂
+(K×3)
+K×3
+Weights
+Sampled Patches
+1 2 3 4 5 … 1 2
+...
+N
+)ledoM(sDI_tnioP
+Training Stage
+Model
+(Multi-head Point Transformer)
+Distance weights The attention weights
+between PointsMi
+Weights Table ϕi(F):
+Sparse Index Matrix Table 1 2 3 4 5 6 7 8 9 …M K×
+1
+Points_IDs(Patches)
+M K ×
+2
+...
+ρi(F):
+Sparse Matrix N Best Normal Representation 1 2 Mu 3 lti- 4 No 5 rm 6 als 7 Ta 8 ble 9 …M K× Selection αi(F):
+1
+2
+...
+N
+Concatenate
+Output
+Loss
+P i∈RK×3 F∈RK×192
+Local Features
+Aggregation
+S
+Be Used Again！
+Inference Stage：Patches Stitching
+P 1 K×K
+F new P 2
+The Predicted normals from Different Patches
+PM
+Fig.2. Thepipelineofournormalestimationmethod.GivenapointcloudS,weemploythetrainednetworktoestimatepatch-levelnormalsfrom
+thesampledpatches,andtheweightsofmulti-branchplanarexpertscanbeobtainedsimultaneously.Inthestageofpatchstitching,asparseindex
+representationisconstructedtomapthepointsIDsoftheoverlappingpatchestotheIDsofthepointcloud.Thelearnedexpertsweightsandthe
+patchdistanceweightsareusedtoselectthebestnormalfromtheoverlappingpartswiththesameIDs.
+weight-based normals selection. methods are essentially necessary technologies to improve the
+• A multi-branch planar experts module and an adaptive robustness of the point cloud normal estimation.
+local feature aggregation layer are introduced to greatly
+improved the robustness of our patch-level network. B. Learning-basednormalestimation
+Several deep learning approaches have been proposed to
+II. RELATED WORK estimate normal vectors from unstructured point clouds in
+recent years. Commonly, the existing deep learning strat-
+The task of normal estimation for point cloud is a long-
+egy is always inspired by the traditional methods: a local
+standing fundamental problem in geometry processing. In this
+neighborhood should be selected first, and then a regressor
+section, we will review traditional and popular deep-based
+is proposed to evaluate the normal of a center point. As a
+methods for normal estimation.
+pioneer,BoulchandMarlet[17]firstapply2DCNNtoregress
+the point normal. Then, inspired by PointNet [4], PCPNet [4]
+A. Traditionalnormalestimation
+directly uses local neighboring points to regress the point
+A classic regression method for normal estimation uses cloud normal. Besides, based on 3D modified fisher vectors
+principal component analysis (PCA) [8]. However, the perfor- (3DmFV)[18]presentations,Nesti-Net[5]isproposedtousea
+mance of this approach usually depends on the patch sizes mixture-of-experts architecture, which relies on a data-driven
+and the noise scales. Thus, some more effective sampling approach for selecting the optimal scale around each point
+methods [9], [10] are proposed. Several variants are also and encourages sub-network specialization. The multi-scale
+proposed for plane fitting, such as local spherical surfaces methods can effectively improve the results, but it caused a
+fitting [11] and Jets [12]. However, the effect of sampling great time consumption. Recently, Zhou et al. [19] introduce
+size is still existed in these methods, in which the isotropic an extra feature constraint mechanism that can effectively
+neighborhoods (which always contain different underlying distinguish the piecewise surfaces near the sharp edges of a
+piecewise surfaces) will affect the final fitting process. For patch.ThenDeepfit[6]incorporatesaneuralnetworktolearn
+better discarding the neighbors belonging to different surfaces pointwise weights for weighted least squares surface fitting
+on the patch, more robust statistics approaches are employed and make a significant performance. However, these methods
+to select an adaptive region [13]–[16]. While many of these alsofollowthepipelineofPCPNet,whichevaluatesnormalin
+methods hold theoretical guarantees on approximation and a point-by-point way. Lenssen et al. [7] employ an iteration
+robustness, all the above methods require a careful setting normal estimation method to reduce time consumption. This
+of parameters for different shape types. So the data-driven method has to input the entire model, thus reducing the
+
+--- Page 3 ---
+
+256 1024 256 1024
+points points points points
+None 0
+1
+High
+Fig.3. Visualizationofattentionweightssampledfromtwokindsofmodels.Fromtoptobottom:patcheswithoutnoise,0.012Gaussiannoise,and
+0.006Gaussiannoise.Foreachmodel,fromlefttoright:patcheswithdifferentsamplingsizes.Patchesarecoloredaccordingtoweightmagnitude
+mappedtoaheatmaprangingfrom0to1.
+flexibility of the network. Considering the time-cost and the graphconvolutionlayersareusedtoextractpointwisefeatures
+flexibility of the network, we propose a fast patch stitching of the rotated patch Pˆ.
+methodfornormalestimation.Ourmethodcanachievenormal Specifically, in the first layer, we construct a directed graph
+estimationmoreefficientlybyastitchingway(seeFig.1)than G0 = (V0,E0) where V0 and E0 are unordered point set
+most existing deep learning methods regardless of network’s {pˆ}K andkNNgraphofthepatchPˆ,respectively.Wedefine
+i i=1
+time complexity. edgefeaturesofthe0-thlayerase0 =h (pˆ,pˆ ),whereh
+ij Θ0 i j Θ0
+is
+III. OVERVIEW h
+Θ0
+=ReLU(θ
+0
+·(pˆ
+j
+−pˆ
+i
+)+θ¯
+0
+·pˆ
+i
+). (1)
+This paper presents a novel pipeline that uses a multi- Here, (pˆ,pˆ ) ∈ E0, Θ = (θ ,θ¯ ), and the output feature
+patch stitching strategy to accelerate the process of normal i j 0 0 0
+F0 ∈RK×64 at the vertex i is thus given by
+estimation (see Fig. 2). It consists of the following two main
+parts: patch-level normal estimation and multi-patch normal f0 = max h (pˆ,pˆ ). (2)
+stitching. Firstly, a residual DGCNN (Sec. IV-B) is proposed
+i
+j:(i,j)∈E0
+Θ0 i j
+as our patch-level network, which incorporates an adaptive
+Fromthesecondtoforthlayerofthebasicnetwork,aresidual
+localfeature aggregationlayer (Sec.IV-C)and amulti-branch
+mapislearnedtotakefeatureFl ∈RK×64asinputandoutput
+planarexpertsmodule(Sec.IV-D).Then,asparseindexmatrix
+residual feature representation Fl+1 for the next layer. The
+isbuilttoefficientlymapthepointIDsofpatchestothewhole
+learned feature of vertex i can be defined as
+point cloud in the multiple patches stitching (Sec. V). Finally,
+evaluating weight is used to select the best normal from the fl+1 = max h (fl,fl)+fl, (3)
+overlapping patches.
+i
+j:(i,j)∈El+1
+Θl+1 i j i
+where l = 0,1,2,3, and the El+1 is updated via a dynamic
+IV. PATCH-LEVEL NORMAL ESTIMATION graph strategy [20]. Finally, we concatenated the multi-scale
+A. Pre-processing features as global feature F = F1(cid:76) F2(cid:76) F3 ∈ RK×192,
+and {Θ ,Θ ,Θ ,Θ ,Θ } are the training parameters of the
+The full pipeline is illustrated in Fig. 2. Given a 3D point t 0 1 2 3
+basic network.
+cloud S ∈ RN×3 and a query point p ∈ S, a local patch
+i
+P ∈RK×3canbeextractedviakNN.Inthetrainingstage,we
+i
+randomlysamplepatchesfromthemodelstoensuresufficient
+C. Adaptivelocalfeatureaggregation
+training samples. In the inference stage, the M patches that
+cover the entire model S are extracted by using the farthest For point cloud normal estimation, an accurate pointwise
+point sampling (FPS) algorithm and M (cid:28)N. weight prediction can help to softly select the most relevant
+points and improve normal estimation performance. Inspired
+bythis,weconsidercalculatingpointwiseattentionweightsin
+B. TheBasicnetwork:residualDGCNN
+a patch, and then we can adaptively extract richer feature at
+Given a sampled patch P ∈ Rk×3 as input, our estimator eachpointbyaggregatingfeaturesofpointsfromitsweighted
+i
+can predict each point normal of the patch. Therefore, we neighborhood. Thus, an adaptive local feature aggregation
+design a basic network inspired by DGCNN [20], which can layerisproposedbasedonamulti-headpointtransformer[21].
+extractthepointwisefeatureofapatchandasimpleregressor Fig.3showssomevisualizationexamplesinwhichanaverage
+can be followed to estimate the pointwise normals. Firstly, a multi-head attention map of the specified point is given.
+quaternion spatial transformer (QST) is used to transform the Specifically, given the concatenated feature F ∈ RK×C
+input patch to a canonical pose Pˆ =P ·T (P), and T (P) extracted from the basic network, a multi-head scaled dot-
+Θt Θt
+is a learned rigid rotation transformation. Then, four stacked product attention is introduced. In each head, we should first
+
+--- Page 4 ---
+
+sehctap
+prahS
+sehctaP
+htoomS
+enoN
+esioN
+enoN
+esioN
+Fig.4. Visualizationofangularerrorandplanarexpertsweights.Foreachmodel,fromlefttoright:inputmodelwithaspecifiedneighborhood(two
+samplingscalesaregiven),angularerrormap,andthreeplanarexpertsweights.Foreachkindofmodel(sharpandsmooth),fromtoptobottom:
+patcheswithoutnoiseand0.006Gaussiannoise.
+learn a weight matrix (self-attention matrix) M ∈ RK×K multi-planar experts module for different kinds of patches
+i
+between the points: (smooth and sharp ones).
+Specifically, the multi-branch planar experts module has
+φ (F)Tρ (F)
+M =softmax( i √ i ), (4) three planar branches and a weight estimation branch. The
+i
+K branch j can give output as Nˆ ∈ RK×3 where j = 1,2,3
+j
+where M is the output attention matrix of the head i. φ and and the weight estimation branch learns a probability weight
+ρ i are lin i ear projections used to transform pointwise fea i ture. foreachbranchw ∈RK×3,and (cid:80)3 j=1 w i,j =1issatisfiedfor
+Then our aggregation features head can be calculated by the each point i on the patch. The loss function L can be written
+i
+attention matrix as: as:
+K 3
+head i =M i ·α i (F), (5) L= K 1 (cid:88)(cid:88) w(i,j)∗min((cid:107)Nˆ j [i]+N[i](cid:107) 2 , (7)
+i=1j=1
+whereα isalsoalinearprojection.Fig.3qualitativelydepicts
+i (cid:107)Nˆ [i]−N[i](cid:107) )
+the average map of the multi-head attentions, which can be j 2
+calculated by M = (cid:80) n Mi where n is denoted the number of where N andNˆ j are the ground truth normal of the patch P
+the heads. Finally, the aggregated feature F new ∈RK×C can and the predicted normal from the branch j, respectively. At
+be obtained: test time, we compute only one normal, which is associated
+(cid:77) (cid:77) (cid:77) with the maximal w, and the maximum weight of each point
+F =(head head ··· head )·W, (6)
+new 1 2 n will be reused in the patch stitching stage.
+(cid:76)
+whereW isalearnableprojectionmatrixand isaconcate-
+nation operator. Generally, n=8 in our network. V. MULTI-PATCH NORMAL STITCHING
+As illustrated in Fig. 1, a group of overlapping patches
+{P } issampledfrommodelS,andapatchstitching
+i i=1,2,···,M
+D. Multi-branchplanarexpertsfornormalestimation
+operationneedstobeexecutedtorealizenormalselectionfrom
+After obtaining the pointwise feature F from the local the overlapping patches. Although the number of sampled
+new
+feature aggregation layer, as shown in Fig. 2, a normal patches M (cid:28) N (e.g. 103 vs. 105), where N is the point
+estimator module is employed in our patch-level network. An numberofmodelS,thetotalnumberofpoints(K×M)isstill
+intuitive consideration is that the canonical patch Pˆ in the 3D enormous.Theloopsthatmapeachpointfromtheoverlapping
+space is oriented to three main directions of the axes x, y and patchestoS andcompletethemulti-normalstitchingaretime-
+z, the visualization illustrations can be seen in the third to consuming.
+sixthcolumnsofFig.4(seethefirstmodel).Inthispaper,we In this paper, the loop process consists of sparse index
+look for a simple way, namely, multi-branch planar experts, matrix construction and multi-normal selection (see Fig. 2).
+tobreakdowntheseunderlyingsurfaces,therebyreducingthe First, we perform a sparse matrix of large-scale indicators to
+interaction between surface features in the process of normal realizetheunifiedsortingoftheindexesandquicklyrealizethe
+estimation. Fig. 4 qualitatively visualizes the performance of points IDs mapping from the multi-patch to model S. Based
+
+--- Page 5 ---
+
+TABLEI
+COMPARISONOFTHERMSEANGLEERRORFORUNORIENTEDNORMALESTIMATIONOFOURMULTI-PATCHSTITCHINGMETHOD(THREESAMPLING
+SIZES)TOCLASSICALGEOMETRICMETHODS,ANDDEEPLEARNINGMETHODS.
+Ours PCA Jet HoughCNN PCPNET Nesti-Net Lenssen DeepFit
+1024 512 256 small med large small med large ss ss ms ms(MoE) ss ss
+None 7.09 6.72 6.42 8.31 12.29 16.77 7.60 12.35 17.35 10.23 9.68 9.62 6.99 6.72 6.51
+Noiseσ
+0.00125 9.11 9.06 9.04 12.00 12.87 16.87 12.36 12.84 17.42 11.62 11.46 11.37 10.11 9.95 9.21
+0.006 16.24 16.22 16.42 40.36 18.38 18.94 41.39 18.33 18.85 22.66 18.26 18.37 17.63 17.18 16.72
+0.012 21.06 21.49 22.20 52.63 27.50 23.50 53.21 27.68 23.41 33.39 22.80 23.28 22.28 21.96 23.12
+Density
+Gradient 8.37 8.09 7.85 9.14 12.81 17.26 8.49 13.13 17.80 12.47 13.42 11.70 9.00 7.73 7.31
+Stripes 7.65 7.27 6.88 9.42 13.66 19.87 8.61 13.39 19.29 11.02 11.74 11.16 8.47 7.51 7.92
+Average 11.59 11.48 11.47 21.97 16.25 18.87 21.95 16.29 19.02 16.90 14.56 14.34 12.41 11.84 11.80
+TABLEII
+COMPARISONOFTIMEANDSPACECOMPLEXITYBETWEENTHEPROPOSEDAPPROACH(DIFFERENTOVERLAPPINGRATEr)ANDOTHERDEEP
+LEARNINGNORMALSESTIMATIONMETHODS.
+Ours(r =12) Ours(r =16) Ours (r =24) DeepFit IterNet Nesti-Net PCPNet(ms)
+Num. parameters 19.41M 19.41M 19.41M 3.5 M 7981 170.1 M 21.3 M
+Run time 0.09 0.13 0.20 1.02 0.05 8.9 3.79
+Relative time 1.8× 2.6× 4× 20.4× 1 × 111× 178×
+on the sparse matrix table, we can quickly find the normals TABLEIII
+and weights from overlapping patches and select the best nor- ARCHITECTUREOFOUREXPERTSWEIGHTSESTIMATOR.
+mal by a weight evaluation process. Specifically, we assume
+that Nˆ = {nˆ ,nˆ ,··· ,nˆ }, {pˆ ,pˆ ,··· ,pˆ } and Layertype Settings Outputs
+i i,1 i,2 i,mi i,1 i,2 i,mi Input K×192 -
+{Pˆ i,1 ,Pˆ i,2 ,··· ,Pˆ i,mi } denote the predicted normals from the Conv1d(192,64)
+overlapping parts at point i of model S, the correspondence Layer1 BatchNorm K×64
+LeakyRelu(0.2)
+points from the overlapping patches and the correspondence
+Conv1d(64,32)
+patches respectively, where m i is the number of candidate Layer2 BatchNorm K×32
+normals at the point i. LeakyRelu(0.2)
+Conv1d(32,3)
+The sampled patches have an open boundary, and most of Layer3 K×3
+Softmax
+the boundary points only have neighbors on one side, lead-
+ing to inaccurate feature extraction. Therefore, we introduce
+a distance weight to avoid choosing a candidate point far TABLEIV
+ARCHITECTUREOFOURPLANEREXPERTSBRANCH.
+from patch center. The distance weights w (i,j) of each
+dist
+candidate normal nˆ i,j is Layertype Settings Outputs
+Input K×192 -
+(cid:107)pˆ −cˆ (cid:107)2 Conv1d(192,64)
+w (i,j)=exp(− i,j i,j 2) (8) BatchNorm
+dist 2σ2 Layer1 LeakyRelu(0.2) K×64
+Dropout(0.3)
+where j =1,2,··· ,m and cˆ is the centroid coordinate of Conv1d(64,32)
+i i,j
+patchPˆ i,j .Thismeansthatthebestnormalshouldbeselected Layer2 Le B ak a y tc R h e N lu or ( m 0.2) K×32
+fromthepointthatmorenearthecenterofthecorrespondence Dropout(0.3)
+patch. Then, the weights of planar experts are reused in this Layer3 Conv1d(32,3) K×3
+stage. We keep the highest weight from the three experts
+on the patch and denote it as w (i,j). Finally, we can
+pred
+obtain the candidate weights via multiply these two weights VI. EXPERIMENTS
+as w (i,j)=w (i,j)·w (i,j). The best normal
+candidate dist pred
+A. Datasetandtrainingdetails
+can be obtained by selecting the maximum candidate weight:
+For training and testing, the PCPNet dataset [4] is used.
+nˆ
+selected
+(i)=Nˆ
+i
+[(cid:101)j], The training set consists of eight shapes with different noise
+(9) levels(nonoise,σ =0.00125,σ =0.0065andσ =0.012),and
+(cid:101)j = argmax w
+candidate
+(i,j),
+j∈{1,2,···,mi} all shapes are given as triangle meshes and densely sampled
+with100kpoints.Thetestsetconsistsof22shapes,including
+wherenˆ (i)denotesthefinalpredictednormalatapoint figurines, CAD objects, and analytic shapes. For evaluation,
+selected
+i of model S. we use the same 5000 point subset per shape as in Guerrero
+
+--- Page 6 ---
+
+Ours(K=256)Ours(K=512)Ours(K=1024) DeepFit
+13.65 15.35 16.59 14.01
+11.85 11.95 12.42 13.06
+10.89 10.61 10.62 11.32
+).ged(
+srorrE
+elgnA
+PCPNet(ms) PCPNet(ss) IterNet Nesti-Net regressingonlythecenterpointnormal,patch-levelregression
+is more likely to be affected by the mutual information
+between the underlying surfaces. The point pairs distributed
+on different underlying surfaces may interact with each other.
+Thus, we propose a multi-branch planar experts module to
+23.61 26.91 17.70 16.33
+disentangle the interference between the surfaces effectively.
+Fig.4showsthatourplanarexpertscandistinguishtheunderly
+14.27 15.48 13.54 12.77
+surfaces and adaptively adjust the selected surface of each
+0∘ branchaccordingtothenumbersofunderlyingplanes(seethe
+13.27 12.35 11.80 11.98 red dotted window of Fig. 4). Also, see the third column of
+Tab.VII,themulti-branchplanarexpertsmodulegivesa7.2%
+90∘ 10.16 9.87 9.78 11.24 10.77 10.70 10.24 10.27 performanceboostcomparedtothebasicnetwork(4layersof
+residual DGCNN followed only one branch regressor).
+Fig.5. Angularerrorvisualizationresultsofourmethod(threesampling
+sizes) compared to others. The colors of the points correspond to Adaptive multi-scale feature aggregation. Typically, the
+angulardifference,mappedtoaheatmaprangingfrom0-90degrees. sampledpatchesincludenoiseandoutliersthatheavilyreduce
+accuracy. To overcome this, Deepfit and IterNet learn local
+weightsandfitlocalsurfaceviaweightedleast-squares.Differ-
+et al. [4]. In the training stage, we use a batch size of 48, the
+ently, we consider learning patch-level weights in the feature
+Adam optimizer, and a base learning rate of 0.1. Our network
+space and adaptively aggregate local features of each point
+is trained on a single Nvidia RTX 2080 Ti GPU.
+on the patch. Inspired by self-attention network, we introduce
+In addition, we show our normal estimation branch and ex-
+anadaptivemulti-scalefeatureaggregationlayer.Visualization
+pertsweightsestimatorinTab.IIIandTab.IVrespectively.We
+of the adaptive local weights in different sampling sizes and
+use three normal estimation branches and an experts weights
+noise scales are exhibited in Fig. 3. It can be seen that the
+estimator to constitute our multi-branch experts module.
+local weights are anisotropic near the edges and corners,
+assigninghighweightsontheplanethatincludesthespecified
+B. Normalestimationperformance
+points. Besides, see the red dotted circle of Fig. 3, at the
+RMSE angle error of our approaches and related methods
+convex point, the learned weights drop rapidly with strong
+on the PCPNet test set are presented in Tab. I. Compared
+self-adaptability.Thevisualizationresultsalsoconfirmthatour
+to HoughCNN [17] (single-scale) and PCPNet [4] (single-
+aggregation layer is robust to noise (see last row of Fig. 3).
+scale and multi-scale), Nest-Net [5] achieves higher accuracy.
+In Tab. I, compared to the basic network with multi-branch
+However, the MoE architecture has 7 sub-networks with
+planar experts module, the adaptive local feature aggregation
+a significantly larger number of parameters. Deepfit [6] is
+layer gives a 7.7 % improvement dramatically.
+based on PCPNet [4]. Considering the local latent surface
+Patch number and sampling size. The RMSE error of
+representation,thereisabigimprovement.However,thetime-
+different sampling sizes and patch numbers are explored (see
+consuming problem is still not solved. IterNet [7] iterates to
+Tab. VIII). Firstly, it shows that a large sampling size will
+estimate point normal and have a low RMSE error compared
+improve the high noise cases, and the patch number affects
+totheabovemethods,butthenetworkneedstoinputthewhole
+the performance of the network in the density cases. Then,
+model simultaneously, which is not a flexible way. In Tab. I,
+the table also shows that a large patch number will increase
+we report results using patch stitching with the following
+the overlapping rate of each point and affects the efficiency
+configurations: patch sizes are set to 1024, 512, 256, and
+of the algorithm. Finally, our accuracy for different parameter
+patch numbers are set to 2304, 6144, 9216, respectively. Our
+choices is relatively stable (from 11.74 to 11.47 on average).
+estimator achieves better performance for the three sampling
+sizes. Fig. 5 also depicts the angular error in each point for
+the different learning-based methods using a heatmap, and
+the noise is increasing from top to bottom. It can be seen
+D. Efficiency
+that large-size sampling can improve the robustness to noise,
+andourresultshaveconsistentadvantageforbothsmoothand Tab. II lists the number of model parameters and average
+sharp models compared to other methods. execution times (ms per point) for estimating normals on a
+Finally, we also use the proportion of good points metric
+point cloud with 100k points via using an Nvidia GTX 2080
+(PGP α), which computes the percentage of points with an
+Ti (almost 11G is occupied). IterNet uses a fixed batch of
+error less than α; e.g., PGP10 computes the percentage of
+size 100k, and it has the lowest number of parameters and
+pointswithangularerroroflessthan10degrees.TableVIand
+running time. Benefits from patch stitching strategy, the time
+Table V report the results of PGP10 and PGP5 respectively
+consumption of our method is not affected by the number
+for different methods compared to ours.
+of model parameters (Ours has 19.41M parameters but 0.1-
+0.2 ms/p running time). Our patch-level normal estimation
+C. AblationStudy method is the second fast (about 1.8 × to IterNet) and highly
+Multi-branch planar experts module. Generally, a sampled competitive compared with other learning-based methods that
+patch contains multiple surfaces, see Fig. 4. Compare to estimate normal in a point-by-point manner.
+
+--- Page 7 ---
+
+TABLEV
+NORMALESTIMATIONRESULTSCOMPARISONUSINGTHEPGP5METRIC(HIGHERISBETTER).
+Ours PCA Jet PCPNET Nesti-Net Lenssen DeepFit
+1024 512 256 small med large small med large ss ms ms(MoE) ss ss
+None 0.8006 0.8115 0.823 0.7756 0.6192 0.5361 0.7905 0.6284 0.5395 0.7078 0.6986 0.8057 0.8730 0.7985
+Noiseσ
+0.00125 0.7493 0.7409 0.7365 0.4758 0.6157 0.5335 0.4132 0.6237 0.5377 0.6245 0.5932 0.6611 0.734 0.7379
+0.006 0.5818 0.5694 0.5359 0.02998 0.42 0.4812 0.027 0.4152 0.4837 0.4486 0.366 0.5618 0.5416 0.5424
+0.012 0.4417 0.4172 0.3568 0.0104 0.154 0.3719 0.0099 0.1462 0.3715 0.3156 0.2482 0.399 0.3634 0.3132
+Density
+Gradient 0.8003 0.8153 0.8275 0.7743 0.647 0.4894 0.7883 0.6442 0.4976 0.6065 0.6254 0.7749 0.8778 0.7912
+Stripes 0.7641 0.7773 0.7881 0.7575 0.6174 0.4415 0.7753 0.6321 0.4598 0.6126 0.6231 0.7676 0.8657 0.7595
+Average 0.6898 0.6886 0.678 0.4706 0.5122 0.4756 0.4674 0.5150 0.4816 0.5526 0.5257 0.6617 0.7092 0.6572
+TABLEVI
+NORMALESTIMATIONRESULTSCOMPARISONUSINGTHEPGP10METRIC(HIGHERISBETTER).
+Ours PCA Jet PCPNET Nesti-Net Lenssen DeepFit
+1024 512 256 small med large small med large ss ms ms(MoE) ss ss
+None 0.902 0.9097 0.918 0.8686 0.7409 0.6606 0.8802 0.7509 0.6584 0.8364 0.8404 0.9120 0.9288 0.9074
+Noiseσ
+0.00125 0.8653 0.8667 0.8649 0.7712 0.7378 0.6598 0.7346 0.7447 0.6575 0.8013 0.8031 0.8384 0.8495 0.8559
+0.006 0.7361 0.7332 0.7232 0.1101 0.6402 0.6301 0.1006 0.6397 0.6311 0.6667 0.6294 0.7164 0.7154 0.7202
+0.012 0.6299 0.6156 0.5853 0.04063 0.394 0.5462 0.0377 0.3827 0.547 0.5546 0.5124 0.6123 0.585 0.553
+Density
+Gradient 0.9093 0.917 0.9239 0.8731 0.7624 0.6366 0.8848 0.7695 0.6401 0.7801 0.8062 0.9003 0.9319 0.9114
+Stripes 0.888 0.8956 0.9022 0.8609 0.7379 0.5879 0.8743 0.7504 0.6001 0.7967 0.8076 0.8929 0.9243 0.8888
+Average 0.8218 0.8230 0.8212 0.4706 0.5122 0.4756 0.4674 0.5150 0.4816 0.5526 0.5257 0.8120 0.8225 0.8061
+TABLEVII TABLEVIII
+EFFECTSOFTHEBASICNETWORK,MULTI-BRANCHPLANAREXPERTS, THERMSEANGLEERRORANDAVERAGERUNNINGTIMEWITHDIFF.
+ANDADAPTIVELOCALFEATUREAGGREGATION.THERMSEANGLE SAMPLINGSIZESANDDIFF.NUMBERSOFPATCHES.THE”OVERLAP”
+ERRORISUSEDONPCPNETDATASET.THESAMPLINGSIZEAND INDICATESTHEAVERAGENUMBEROFTIMESTHATEACHPOINT
+PATCHNUMBERARESETTO1024AND1152,RESPECTIVELY. PARTICIPATESINTHECALCULATION.
+Ours 1024pts 512pts 256pts
+Ours Ours
+Scale PCPNet(ss) (Multi-Branch
+(Basic) (Multi-Branch) #patch 1152 2304 2304 6144 4608 9216
++Aggregation)
+None 9.68 8.62 8.31 7.13 None 7.13 7.09 6.84 6.72 6.44 6.42
+Noiseσ Noiseσ
+0.00125 11.46 10.62 10.05 9.18 0.00125 9.18 9.11 9.10 9.06 9.06 9.04
+0.006 18.26 17.83 17.15 16.28 0.006 16.28 16.25 16.31 16.22 16.44 16.42
+0.012 22.80 23.35 21.85 21.12 0.012 21.12 21.06 21.52 21.49 22.27 22.20
+Density Density
+Gradient 13.42 9.99 9.38 8.32
+Gradient 8.32 7.65 7.96 7.27 7.48 6.88
+Stripes 11.74 11.82 9.57 8.43
+Stripes 8.43 8.37 8.11 8.09 7.92 7.85
+average 14.56 13.70 12.72 11.74
+average 11.74 11.59 11.64 11.48 11.60 11.47
+Times(ms/p) 0.08 0.18 0.09 0.21 0.10 0.19
+Overlap 12 24 12 32 12 24
+VII. CONCLUSION
+Afast,accurate,androbustnormalestimationframeworkis
+proposed, whose efficiency is not affected by network scale. [2] S.Wu,H.Huang,M.Gong,M.Zwicker,andD.Cohen-Or,“Deeppoints
+consolidation,”ACMTransactionsonGraphics(ToG),vol.34,no.6,pp.
+Firstly, the adaptive local feature aggregation layer and multi-
+1–13,2015.
+branchplanarexpertsmoduleareemployedtoimprovetheac- [3] J. Wang, K. Xu, L. Liu, J. Cao, S. Liu, Z. Yu, and X. D. Gu, “Con-
+curacyofthepatch-levelnormalestimatordramatically.Then, solidationoflow-qualitypointcloudsfromoutdoorscenes,”Computer
+GraphicsForum,vol.32,no.5,pp.207–216,2013.
+in the inference stage, a sparse index matrix is constructed to
+[4] P. Guerrero, Y. Kleiman, M. Ovsjanikov, and N. J. Mitra, “Pcpnet
+improve the efficiency of the multi-batch stitching process. learning local shape properties from raw point clouds,” Computer
+Finally, a sufficient weight is used to evaluate the multi- GraphicsForum,vol.37,no.2,pp.75–85,2018.
+[5] Y. Ben-Shabat, M. Lindenbaum, and A. Fischer, “Nesti-net: Normal
+normal of the overlapping parts. The approach demonstrates
+estimation for unstructured 3d point clouds using convolutional neural
+the competitiveness compared to SOTA approaches. networks,”inProceedingsoftheIEEEConferenceonComputerVision
+andPatternRecognition,pp.10112–10120,2019.
+[6] Y. Ben-Shabat and S. Gould, “Deepfit: 3d surface fitting via neural
+REFERENCES network weighted least squares,” arXiv preprint arXiv:2003.10826,
+2020.
+[1] M.Berger,A.Tagliasacchi,L.Seversky,P.Alliez,J.Levine,A.Sharf, [7] J. E. Lenssen, C. Osendorfer, and J. Masci, “Deep iterative surface
+and C. Silva, “State of the art in surface reconstruction from point normal estimation,” in Proceedings of the IEEE/CVF Conference on
+clouds,”EurographicsStarReports,vol.1,no.1,pp.161–185,2014. ComputerVisionandPatternRecognition,pp.11247–11256,2020.
+
+--- Page 8 ---
+
+[8] H. Hoppe, T. DeRose, T. Duchamp, J. McDonald, and W. Stuetzle, vol.39,no.5,pp.408–420,2007.
+“Surface reconstruction from unorganized points,” in Proceedings of [16] Y. Wang, H.-Y. Feng, F.-E´. Delorme, and S. Engin, “An adaptive
+the 19th annual conference on Computer graphics and interactive normalestimationmethodforscannedpointcloudswithsharpfeatures,”
+techniques,pp.71–78,1992. Computer-AidedDesign,vol.45,no.11,pp.1333–1348,2013.
+[9] N.J.MitraandA.Nguyen,“Estimatingsurfacenormalsinnoisypoint [17] A.BoulchandR.Marlet,“Deeplearningforrobustnormalestimation
+cloud data,” in Proceedings of the nineteenth annual symposium on inunstructuredpointclouds,”ComputerGraphicsForum,vol.35,no.5,
+Computationalgeometry,pp.322–328,2003.
+pp.281–290,2016.
+[10] M. Pauly, R. Keiser, L. P. Kobbelt, and M. Gross, “Shape modeling
+[18] Y. Ben-Shabat, M. Lindenbaum, and A. Fischer, “3dmfv: Three-
+withpoint-sampledgeometry,”ACMTransactionsonGraphics(TOG),
+dimensional point cloud classification in real-time using convolutional
+vol.22,no.3,pp.641–650,2003.
+neuralnetworks,”IEEERoboticsandAutomationLetters,vol.3,no.4,
+[11] G. Guennebaud and M. Gross, “Algebraic point set surfaces,” ACM
+pp.3145–3152,2018.
+SIGGRAPH2007papers,pp.23–es,2007.
+[19] J.Zhou,H.Huang,B.Liu,andX.Liu,“Normalestimationfor3dpoint
+[12] F.CazalsandM.Pouget,“Estimatingdifferentialquantitiesusingpoly-
+nomial fitting of osculating jets,” Computer Aided Geometric Design,
+cloudsvialocalplaneconstraintandmulti-scaleselection,”Computer-
+AidedDesign,vol.129,p.102916,2020.
+vol.22,no.2,pp.121–146,2005.
+[13] B. Li,R. Schnabel,R. Klein, Z.Cheng, G. Dang,and S.Jin, “Robust [20] Y. Wang, Y. Sun, Z. Liu, S. E. Sarma, M. M. Bronstein, and J. M.
+normal estimation for point clouds with sharp features,” Computers & Solomon, “Dynamic graph cnn for learning on point clouds,” Acm
+Graphics,vol.34,no.2,pp.94–106,2010. TransactionsOnGraphics(tog),vol.38,no.5,pp.1–12,2019.
+[14] B.Mederos,L.Velho,andL.H.deFigueiredo,“Robustsmoothingof [21] A.Vaswani,N.Shazeer,N.Parmar,J.Uszkoreit,L.Jones,A.N.Gomez,
+noisy point clouds,” in Proc. SIAM Conference on Geometric Design Ł. Kaiser, and I. Polosukhin, “Attention is all you need,” in Advances
+andComputing,vol.2004,no.1,p.2,2003. inneuralinformationprocessingsystems,pp.5998–6008,2017.
+[15] M.Yoon,Y.Lee,S.Lee,I.Ivrissimtzis,andH.-P.Seidel,“Surfaceand
+normalensemblesforsurfacereconstruction,”Computer-AidedDesign,

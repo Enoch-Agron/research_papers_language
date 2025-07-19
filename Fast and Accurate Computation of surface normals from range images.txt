@@ -1,0 +1,1202 @@
+# Fast and Accurate Computation of surface normals from range images.pdf
+# Converted: 2025-07-19 12:45:30
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Fast and Accurate Computation of surface normals from range images.pdf
+# Output: ../layer2_completion/txt/Fast and Accurate Computation of surface normals from range images.txt
+
+
+--- Page 1 ---
+
+2011 IEEE International Conference on Robotics and Automation.
+May 9-13, 2011. Shanghai, China.
+Fast and Accurate Computation of
+Surface Normals from Range Images
+H. Badino, D. Huber, Y. Park and T. Kanade
+Abstract— The fast and accurate computation of surface
+normals from a point cloud is a critical step for many 3D
+robotics and automotive problems, including terrain estimation,
+mapping, navigation, object segmentation, and object recogni-
+tion. To obtain the tangent plane to the surface at a point,
+the traditional approach applies total least squares to its small
+neighborhood. However, least squares becomes computationally
+very expensive when applied to the millions of measurements
+per second that current range sensors can generate. We refor-
+mulate the traditional least squares solution to allow the fast
+computation of surface normals, and propose a new approach
+that obtains the normals by calculating the derivatives of the
+surface from a spherical range image. Furthermore, we show
+that the traditional least squares problem is very sensitive to
+range noise and must be normalized to obtain accurate results.
+Experimental results with synthetic and real data demonstrate
+that our proposed method is not only more efﬁcient by up to
+two orders of magnitude, but provides better accuracy than the
+traditional least squares for practical neighborhood sizes.
+I. INTRODUCTION
+For most robotics and automotive problems, computational
+power is a limited resource, which must be distributed wisely.
+Surprisingly, the efﬁcient computation of normals from a
+point cloud is a topic that has had very little attention in
+the literature considering that surface normals are used for
+a large number of problems in the computer vision domain,
+such as terrain estimation [4], mapping [24], navigation [25],
+object segmentation [10], and object recognition [9].
+In the robotics and automotive domain, the environment is
+usually measured as the sensors move small displacements
+between views, allowing the use of range images to store
+and organize the data [10]. In this paper, we use Spherical
+Range Images (SRI) to efﬁciently compute surface normals.
+Figure 1 shows an example of the extracted surface normals
+from noisy sparse data obtained from a 3D imager.
+The most commonly used method for obtaining surface
+normals from point clouds is total linear least squares [11]
+(least squares, hereafter, for brevity), since it is relatively
+cheap to compute and easy to implement. However, least
+squares becomes computationally very expensive when ap-
+plied to the millions of measurements per second that current
+range sensors such as stereo or high-deﬁnition LIDAR can
+generate.
+In this paper, we make three main contributions towards
+the efﬁcient and accurate computation of surface normals.
+First, we propose two new approaches for computing the
+H. Badino, D Huber and T. Kanade are with the Robotics Institute,
+Carnegie Mellon University, Pittsburgh, PA, USA. Y. Park is with the
+Agency for Defence Development, Daejeon, Korea.
+Fig. 1.
+Normals obtained from noisy sparse 3D data. The data corresponds
+to the marked region of the spherical range image shown in Figure 6c.
+normals with linear least squares. For this purpose, the
+traditional least squares loss function is reformulated in such
+a way, that box-ﬁltering techniques can be applied to mini-
+mize the number of operations required. The new algorithms
+present speed up factors of up to two orders of magnitude
+over the traditional method. Second, we propose a novel
+method for solving the normals by computing derivatives of
+the surface deﬁned by the spherical range image. The new
+method is not only computationally very efﬁcient, but also
+more accurate than least squares for small window sizes.
+Third, we show that without a proper normalization, the
+traditional least squares fails to compute accurate normal
+estimates. This problem is solved by applying a non-isotropic
+scaling to the data matrix.
+II. RELATED WORK
+The computation of surface normals has been widely
+addressed by surface reconstruction approaches, where the
+3D points are usually unorganized. The surface can be
+reconstructed up to the ﬁrst order with the normal vectors at
+the measured points. In [11], the computation of the tangent
+plane at each point with least squares was ﬁrst proposed. The
+least squares solution was also addressed by [18], where the
+authors evaluated the effects of neighborhood size, measure-
+ment noise, and surface curvature when estimating planes
+with least squares and derived error bounds for the estimated
+normals. An alternative solution to the normal computation
+is based on the construction of Voronoi diagrams [1]. In this
+approach, the normals can be estimated from the center of
+large polar balls. Since the initial approaches to the normal
+estimation problem using polar balls assumed noise free data
+International Conference on Robotics and Automation (ICRA) 
+Shanghai, China, May 9-13, 2011
+H. Badino, D. Huber, Y. Park and T. Kanade, "Fast and Accurate Computation of Surface Normals from Range Images," 
+International Conference on Robotics and Automation (ICRA), Shanghai, China, May 2011.
+
+
+--- Page 2 ---
+
+[20], the method was adapted to the case of noisy point
+clouds [5], [7]. Both, the least squares and the polar balls
+methods were compared in accuracy and computation time
+in [6]. The experiments showed that the polar ball method is
+more robust to noise but that least squares is more accurate
+for low noise levels. It also showed that least squares is by
+far the fastest method for the computation of the normals.
+In the robotics and automotive domain, the points are
+usually organized in graphs or range images, and the com-
+putation of surface normals focuses almost exclusively on
+least squares solutions [9], [10], [16], [21], [22], [24], [28].
+Alternative methods for computing normals from organized
+point clouds rely on averaging the normals of adjacent
+triangles [2], [13], [19], [26], but the obtained normals are
+sensitive to noise and to the proper construction of the graph.
+Least squares and some of these averaging methods were
+compared in quality and computation time in [13], [21], [27].
+In all these experiments, least squares shows the best results
+in terms of accuracy and speed.
+III. DEFINITIONS
+In this section, we deﬁne the variables, transformation
+equations, and the range image that are used in the next
+sections.
+A. Spherical Coordinates
+A coordinate vector in the spherical coordinate system
+is deﬁned as m = (r, θ, φ)T , where r is the range, θ
+the azimuth, and φ the elevation component. The coor-
+dinates are constrained so that r ≥0, −π < θ ≤π, and
+−π/2 < φ ≤π/2.
+A point in Cartesian coordinates is represented by
+p = (x, y, z)T . The transformation from the spherical to the
+Cartesian coordinate system is given by
+p = rv
+(1)
+where v is a unit direction vector deﬁned as:
+v =
+
+
+sin θ cos φ
+sin φ
+cos θ cos φ
+
+
+(2)
+The transformation from Cartesian to spherical coordinate
+system is given by
+m =
+
+
+r
+θ
+φ
+
+=
+
+
+p
+x2 + y2 + z2
+arctan (x/z)
+arcsin (y/
+p
+x2 + y2 + z2)
+
+.
+(3)
+Given a set of n measurements mi of a scene observed
+from a single viewpoint, we seek to estimate the unit surface
+normals ni at positions pi. The next sections are dedicated
+to solving this problem.
+B. Spherical Range Images
+A Spherical Range Image (SRI) is a function s(θ, φ) in
+which the domain (θ, φ) represents the azimuth and elevation
+components, and the codomain s() is a real value that
+represents a distance or range. The three components of the
+image −azimuth (column), elevation (row) and range (image
+value) −deﬁne the coordinate vector of a 3D point, i.e.,
+(θ, φ, r)T with r = s(θ, φ). In the actual implementation
+of the SRI, the domain is discretized and the codomain is
+approximated by a ﬂoating point variable. In this way, an
+SRI stores an image as observed from a single viewpoint,
+providing a 2.5D representation of the scene.
+Range images are widely used for data processing and vi-
+sualization purposes [4], [9], [10], [19], [27]. Figure 3 shows
+some examples of synthetic SRIs with their corresponding
+3D model, and Figure 6c shows an example of a real SRI
+obtained from a Velodyne LIDAR.
+C. Procedure
+As noted by [20], most methods for computing normals
+follow three main steps: 1) identify neighbors, 2) estimate
+the normal vector using the neighbors, and 3) deﬁne the
+direction of the obtained normal. For the ﬁrst step we use a
+small rectangular window of size k = w×h around the point
+to be estimated. The second step corresponds to the proper
+estimation of the normals using the extracted neighbors
+points. The next two sections deal with this step, and Section
+VI compares the accuracies and computation times. The
+third step is required to be able to identify the insides
+and outsides of complex objects. When estimating normals
+of surfaces observed from a single viewpoint, a globally
+consistent normal orientation is obtained by constraining the
+dot product pT n to be negative (i.e., if the obtained normal
+is such that pT n > 0, then n is negated).
+IV. LEAST SQUARES APPROACHES
+This section presents three different least squares formu-
+lations to the surface normal estimation problem.
+A. Traditional Total Least Squares
+In the simplest case, least squares is formulated to ﬁnd
+the plane parameters that optimally ﬁt some small area of
+the surface [11], [18]. A plane is deﬁned by the equa-
+tion nxx + nyy + nzz −d = 0, where (x, y, z)T lies on the
+plane and (nx, ny, nz, d) are the sought plane parameters.
+Given a subset of k 3D points pi, i
+=
+1, 2, ..., k of
+the surface, least squares ﬁnds the optimal normal vector
+n = (nx, ny, nz)T and scalar d that minimizes
+e =
+k
+X
+i=1
+ pT
+i n −d
+2
+subject to
+|n| = 1.
+(4)
+The
+closed
+form
+solution
+to
+Equation
+4
+for
+n
+is
+given by ﬁnding the eigenvector corresponding to the
+smallest
+eigenvalue
+of
+the
+sample
+covariance
+matrix
+M = 1/k Pk
+i=1(pi −¯p)(pi −¯p)T with ¯p = 1/k Pk
+i=1 pi.
+The component d is found as the normal distance to the
+plane, i.e., d = ¯pT n. This is the most widely used method
+in the literature [10], [11], [14], [16], [18], [21], [22], [23],
+[24], [28].
+The computational complexity of the implementation of
+the above solution is linear in the number of neighbors
+k. The main problem with the above algorithm is that
+the computation of the matrix M, and its corresponding
+
+
+--- Page 3 ---
+
+eigen analysis, makes the algorithm extremely slow for
+practical image sizes. Table Ia shows the minimum number
+of operations required for this method, which we will call
+“traditional least squares.”
+B. Normalized Least Squares
+The traditional least squares assumes independent iden-
+tically distributed noise. Nevertheless, the noise is caused
+mainly due to range measurement error, which propagates
+linearly in the viewing direction v of the 3D vector p
+(see Equation 1). In consequence, obtaining the eigenvectors
+directly from M produces bad results. The solution to this
+problem is to normalize the coordinates of the 3D points
+so that the three principal moments of the M becomes all
+equal to unity while ensuring a good conditioning of the
+data matrix. This is analogous to the conditioning method
+proposed by Hartley [8], but in a different domain. Before
+computing the eigenvalues, the matrix M is normalized by
+(a) TRADITIONAL LEAST SQUARES
+Operation
+Mult.
+Add.
+Calculation of pi
+3
+0
+Calculation of M
+5 × k + 7
+9 × (k −1) + 6
+Eigen analysis
+66
+38
+Total
+5 × k + 76
+9 × (k −1) + 44
+(b) NORMALIZED LEAST SQUARES
+Operation
+Mult.
+Add.
+Traditional LS
+5 × k + 76
+9 × k + 35
+3x3 Cholesky Fact.
+7
+4
+Inversion of K
+11
+1
+Scaling
+18 × 4
+18 × 4
+Total
+5 × k + 166
+9 × k + 112
+(c) UNCONSTRAINED LEAST SQUARES
+Operation
+Mult.
+Add.
+Calculation of pi
+3
+0
+Product pipT
+i
+6
+0
+Box-ﬁlt. for f
+M
+0
+4 × 6
+Box-ﬁlt. for ˜b
+0
+4 × 3
+Inversion of f
+M
+24
+10
+Equation 7
+9
+6
+Total
+42
+52
+(d) FAST LEAST SQUARES
+Operation
+Mult.
+Add.
+Box-ﬁltering for ˆb
+0
+4 × 3
+Calculation of vi/ri
+3
+0
+Equation 10
+9
+2 × 3
+Total
+12
+18
+(e) SRI DERIVATIVE METHOD
+Operation
+Mult.
+Add.
+Prewitt k × k
+k −2
+k
+Gauss 3 × 3
+9
+8
+Equation 13
+11
+6
+Total
+18 + k
+14 + k
+TABLE I
+NUMBER OF MULTIPLICATIONS AND ADDITIONS REQUIRED FOR ONE NORMAL
+COMPUTATION USING k NEIGHBOR POINTS.
+Cholesky factorization, i.e.:
+M ′ = K−1MK−T
+(5)
+where
+K
+is
+a
+lower
+triangular
+matrix
+such
+that
+Pk
+i=1 pipT
+i = KKT . The eigenvectors are then obtained
+from the normalized matrix M ′. Table Ib shows the total
+number of operations required for the normalized least
+squares. As it can be seen, the Cholesky factorization does
+not depend on the number of neighbors k, but it adds a
+signiﬁcant overhead to the traditional least squares.
+C. Unconstrained Least Squares
+We present now a computationally efﬁcient solution that
+does not require eigen-analysis and the corresponding fac-
+torization. We ﬁrst divide both parts of the loss function in
+Equation 4 by d2 and eliminate the constraint on the normal
+vector to obtain:
+˜e =
+k
+X
+i=1
+ pT
+i ˜n −1
+2
+(6)
+where ˜n is the sought normal vector, deﬁned up to a scale
+factor. Note that this formulation degenerates for planes
+passing through the origin (for d = 0), but this situation
+cannot happen for range images. We will show in the
+experimental results that, although this formulation is not
+theoretically optimal, it is more accurate than the traditional
+least squares in practical real situations. The closed form
+solution for ˜n is given by
+˜n = f
+M
+−1˜b
+(7)
+where f
+M = Pk
+i=1 pipT
+i and ˜b = Pk
+i=1 pi. The ﬁnal unit
+normal is found by normalization, i.e., n = ˜n/|˜n|.
+The matrices f
+M and ˜b can be computed efﬁciently. First,
+an image I that contains the outer products is built, i.e.,
+I(l, m) = pl,mpT
+l,m, where pl,m is the 3D point correspond-
+ing to image location (l, m). Then, box-ﬁltering is applied
+to obtain a new image with the sums of the outer products
+within the window (Fig. 2). The same procedure is applied
+to obtain an image of vectors for ˜b. Box-ﬁltering is a well-
+known technique in computer vision [17]. This technique not
+only minimizes the number of operations required, but is also
+computationally independent of the window size.
+Most of the computational power required for the above
+method is spent in the summation and inversion of matrices,
+which, although independent of k, represents a considerable
+computational burden (see Table Ic)1.
+D. Fast Approximate Least Squares
+In this section, we simplify the loss function to completely
+avoid the computation of the matrix f
+M −1 every time. By
+multiplying and dividing the right hand side of Equation 6
+by r2
+i we obtain:
+˜e =
+k
+X
+i=1
+r2
+i
+ vT
+i ˜n −r−1
+i
+2
+(8)
+1Observe that Cholesky factorization could be use to solve Eq. 7, but
+it would require more operations than the single matrix inversion of f
+M.
+
+
+--- Page 4 ---
+
+Fig. 2.
+Box-ﬁltering technique. The box-ﬁltering technique consists in three main steps. An initialization, where a vector of column sums is built and
+the initial sum within the window is calculated. After initialization, 2 steps are performed iterating from top to bottom and from left to right. The ﬁrst
+step consists in updating the previous window sum by a subtraction and addition of vector sums. The second step consist in updating the vector sum that
+is not longer required in the current row by an addition and subtraction of original image components. Observe that, independent of the window size,
+two additions and two subtractions are required to compute the total sum within the window. There is an overhead in the initialization that is linearly
+dependent on k, but it becomes negligible for large image size n and small window size k. Observe that the codomain of the image can be scalars, vectors
+or matrices.
+with vi as deﬁned in Equation 2. Since all points pi are in a
+small neighborhood, all ri are similar. Dropping the r2
+i from
+the above equation leads us to the following approximate
+formulation of the loss function:
+ˆe =
+k
+X
+i=1
+ vT
+i ˆn −r−1
+i
+2
+(9)
+whose solution for ˆn is given by
+ˆn = c
+M
+−1ˆb
+(10)
+with c
+M = Pk
+i=1 vivT
+i and ˆb = Pk
+i=1 vi/ri. In this new,
+approximate formulation, the matrix c
+M −1 is independent
+of the ranges (i.e., the measurements), and depends only on
+the image parameters, so that it can be precomputed. The
+vector ˆb is obtained using the same box-ﬁltering technique
+described above. This simpliﬁcation greatly reduces the com-
+putational requirements and is independent of the window
+size k (see Table Id). Observe that this method works directly
+with spherical coordinates, not requiring the pre-computation
+of 3D points in Cartesian coordinates as in the three previous
+formulations. A similar formulation was presented in [9].
+V. SRI DERIVATIVE APPROACH
+We propose now a method, which obtains the normals
+by performing calculations directly in the spherical space.
+Instead of ﬁtting a plane to obtain the normal vector, we
+compute the normal directly from the surface deﬁned by the
+SRI.
+A. Derivation of the del Operator
+We will ﬁrst demonstrate how transform the Cartesian del
+operator to spherical coordinates. In the next section, we will
+apply the resulting operator to the SRI to obtain the normal
+vector. The del operator in the Cartesian coordinate system
+is given by
+∇≡ˆx ∂
+∂x + ˆy ∂
+∂y + ˆz ∂
+∂z
+(11)
+where ˆx, ˆy, and ˆz are the unit vectors in the respective
+coordinate directions. Applying the chain rule to the partial
+derivatives in 11 gives
+∂
+∂x
+=
+∂
+∂r
+∂r
+∂x + ∂
+∂θ
+∂θ
+∂x + ∂
+∂φ
+∂φ
+∂x
+∂
+∂y
+=
+∂
+∂r
+∂r
+∂y + ∂
+∂θ
+∂θ
+∂y + ∂
+∂φ
+∂φ
+∂y
+∂
+∂z
+=
+∂
+∂r
+∂r
+∂z + ∂
+∂θ
+∂θ
+∂z + ∂
+∂φ
+∂φ
+∂z .
+We apply ﬁrst the above partial derivatives to Equation 3 and
+substitute the results into 11 to obtain:
+∇
+≡
+ˆx
+ ∂
+∂r sin θ cos φ + ∂
+∂θ
+cos θ
+r cos φ −∂
+∂φ
+sin θ sin φ
+r
+
++
+ˆy
+ ∂
+∂r sin φ + ∂
+∂φ
+cos φ
+r
+
++
+ˆz
+ ∂
+∂r cos θ cos φ −∂
+∂θ
+sin θ
+r cos φ −∂
+∂φ
+cos θ sin φ
+r
+
+The expressions in parentheses deﬁne a rotation of a vector
+so that the previous equation can be expressed as
+∇≡
+ ˆz
+ˆx
+ˆy 
+Rθ,φ
+
+
+∂/∂r
+1
+r cos φ ∂/∂θ
+1
+r ∂/∂φ
+
+
+(12)
+where
+Rθ,φ =
+
+
+cos θ
+−sin θ
+0
+sin θ
+cos θ
+0
+0
+0
+1
+
+
+
+
+cos φ
+0
+−sin φ
+0
+1
+0
+sin φ
+0
+cos φ
+
+.
+Equation 12 expresses the Cartesian del operator as a func-
+tion of variables and derivatives in spherical coordinates.
+
+
+--- Page 5 ---
+
+(a) Sphere
+(b) Cylinder
+(c) Prism
+(d) Floor and Ceiling
+Fig. 3.
+Synthetic Data sets. The top images show the modeled object of each data set. The grids have a size of 2x2 meters. The sensor is located at the
+center of the objects and the color encodes the range. The bottom images show the Spherical Range Image for the corresponding top image.
+B. Obtaining the Surface Normals
+The SRI implies a functional dependence of the range on
+the azimuth and elevation components, i.e., r = s(θ, φ). The
+normal vectors of a surface can be obtained by computing
+the derivatives of the function deﬁning the surface. For this,
+we apply the del operator of Equation 12 to the function s()
+to obtain
+n = ∇s(θ, φ) = ˆ
+Rθ,φ
+
+
+1
+1
+r cos φ∂r/∂θ
+1
+r∂r/∂φ
+
+
+(13)
+where ˆ
+Rθ,φ =
+ ˆz
+ˆx
+ˆy 
+Rθ,φ. Observe that ˆ
+Rθ,φ is
+independent of the ranges and can be precomputed and stored
+in a look-up table.
+The partial derivatives are obtained by applying standard
+image processing convolution kernels on the SRI, as is
+usually done for edge extraction in images [3]: the image is
+pre-ﬁltered with a Gaussian 3 × 3 mask, and then a Prewitt
+operator is applied. The Prewitt computational complexity
+depends linearly on the number of neighbors k (see Table Ie),
+but it can be implemented very efﬁciently for practical
+window sizes, as we demonstrate in the next section.
+VI. EXPERIMENTAL RESULTS
+We have conducted experiments with simulated and real
+data in order to evaluate the accuracy of each method under
+different types of objects and window sizes.
+A. Synthetic Data
+Figure 3 shows four synthetic SRIs with corresponding
+3D models that were used for the evaluation. Four data sets
+were generated:
+• Sphere: a centered sphere with a radius of 10 m.
+• Cylinder: an open cylinder with planar radius of 10 m
+and height of 20 m.
+• Prism: a uniform triangular open prism of 22 m maxi-
+mal height.
+• Floor and Ceiling: two parallel planes emulating a ﬂoor
+and a ceiling, each at a normal distance of 2 m from
+the sensor.
+The Sphere data set covers the full ﬁeld of view with an
+angular resolution of approximately 0.5◦for the azimuth
+and elevation components forming a range image size of
+750 × 375. The last three data sets cover a ﬁeld of view of
+360◦× 86◦with the same angular resolution and an image
+size of 750 × 175. The lower part of Figure 3 shows the
+corresponding SRIs for each object. The parameter conﬁgu-
+ration was chosen to simulate a typical LIDAR sensor. The
+data sets are available online [12].
+The traditional LS and the three new proposed meth-
+ods were used to estimate the normals under different
+levels of noise and window sizes. The evaluation was
+performed obtaining the average angular error in the es-
+timation of the normals. The angular error is deﬁned as
+ei = arccos(nT
+i ¯ni) where ni is the estimated normal and
+¯ni is the known truth normal to the surface at point pi. The
+average error in degrees is then 180
+πn
+Pn
+j=1 ei. Furthermore,
+30 trials were averaged to obtain the ﬁnal error.
+In the experiments, Gaussian noise with σ up to 1.0
+meter was added to the SRIs. The magnitude of the noise
+might appear large for standard LIDAR sensors, but it is the
+typical level for distant points measured with stereo systems.
+Choosing a wide noise interval allows us to analyze the
+accuracy of the estimation at all levels of noise.
+Figures 4a to 4d show the results when window sizes
+are varied from 3 × 3 to 9 × 9. The obtained results were
+consistent between all data sets and window sizes. Because
+of space limitations, only the most representative plot for
+each data set and window size is shown. The results for
+the normalized LS and the unconstrained LS were exactly
+equivalent. For readability, only one curve is shown for both
+approaches.
+The most remarkable result obtained from the plots of
+Figure 4 is that the traditional least squares performs badly
+for all objects and window sizes. The normalized least
+squares provides better results by just normalizing the data
+matrix before the eigen-analysis, as addressed in Section IV-
+B. The fast least squares shows a very similar estimation
+error to the unconstrained LS, conﬁrming that the elimination
+of the ranges from Equation 8 is reasonable. Only a very
+small difference can be observed between those two curves
+at very large noise levels. As expected, the difference is
+less marked on the Sphere data set, where the assumption
+of constant ranges within the mask does actually hold.
+The SRI derivative approach performs better than all LS
+approaches for small window sizes. For large window sizes,
+
+
+--- Page 6 ---
+
+0
+10
+20
+30
+40
+50
+60
+70
+80
+90
+0.00
+0.20
+0.40
+0.60
+0.80
+1.00
+Angular Error [deg]
+Noise Sandard Deviation [m]
+SRI
+Norm. and Unc. LS
+Fast LS
+Trad. LS
+(a) Sphere 3 × 3
+0
+10
+20
+30
+40
+50
+60
+70
+80
+90
+0.00
+0.20
+0.40
+0.60
+0.80
+1.00
+Angular Error [deg]
+Noise Sandard Deviation [m]
+SRI
+Norm. and Unc. LS
+Fast LS
+Trad. LS
+(b) Cylinder 5 × 5
+0
+10
+20
+30
+40
+50
+60
+70
+80
+90
+0.00
+0.20
+0.40
+0.60
+0.80
+1.00
+Angular Error [deg]
+Noise Sandard Deviation [m]
+SRI
+Norm. and Unc. LS
+Fast LS
+Trad. LS
+(c) Prism 7 × 7
+0
+10
+20
+30
+40
+50
+60
+70
+80
+90
+0.00
+0.20
+0.40
+0.60
+0.80
+1.00
+Angular Error [deg]
+Noise Sandard Deviation [m]
+SRI
+Norm. and Unc. LS
+Fast LS
+Trad. LS
+(d) Floor and ceiling 9 × 9
+Fig. 4.
+Accuracy results with synthetic data for different window sizes.
+the new proposed LS formulations perform better. The reason
+for this is that the derivative is a local property of the surface
+and will not be estimated with much greater accuracy as the
+window size increases. This leads to a limited improvement
+of the normal estimate when using larger window sizes.
+Least squares, on the other hand, fully beneﬁts from more
+measurements, increasing the estimation accuracy.
+Figure 5 shows the results for all methods, data sets and
+window sizes for the noise level σ = 0.2 m. The four charts
+show that the results for all ﬁve methods are consistent for
+all objects and window sizes.
+As a general guideline, we can conclude that SRI deriva-
+tive method is the best for small window sizes. For large
+window sizes the least squares methods produce better results
+at the expense of a higher computation time.
+B. Computation Times
+Table II shows the obtained computation times for each
+method. For the test, each algorithm was implemented in
+C++ using OpenMP and executed 50 times with the Cylinder
+data set on an Intel Core 2 Duo 2.66GHz CPU. The times
+are shown in milliseconds and they correspond to the average
+time for the whole range image. As predicted in Table I, the
+M. Size
+Methods
+Time (ms) ± σ
+SUF
+3 × 3
+Trad. LS
+192.25 ± 5.92
+1
+Norm. LS
+227.52 ± 4.04
+0.85
+Unc. LS
+18.87 ± 0.18
+10.19
+Fast LS
+7.02 ± 0.05
+27.39
+SRI
+3.66 ± 0.01
+52.53
+5 × 5
+Trad. LS
+195.00 ± 3.04
+1
+Norm. LS
+237.2 ± 4.04
+0.82
+Unc. LS
+19.14 ± 0.16
+10.18
+Fast LS
+7.04 ± 0.03
+27.70
+SRI
+3.71± < 0.01
+52.56
+7 × 7
+Trad. LS
+436.12 ± 7.2
+1
+Norm. LS
+483.5 ± 3.1
+0.9
+Unc. LS
+19.14 ± 0.14
+15.57
+Fast LS
+7.07 ± 0.03
+42.14
+SRI
+4.33 ± 0.01
+68.81
+9 × 9
+Trad. LS
+436.12 ± 2.58
+1
+Norm. LS
+489.96 ± 4.8
+0.89
+Unc. LS
+19.35 ± 0.16
+22.54
+Fast LS
+7.18 ± 0.12
+60.74
+SRI
+4.40 ± 0.01
+99.12
+TABLE II
+ACTUAL COMPUTATION TIMES WITH SPEED UP FACTORS (SUF) OVER THE
+TRADITIONAL LS.
+
+
+--- Page 7 ---
+
+0.00
+10.00
+20.00
+30.00
+40.00
+50.00
+60.00
+70.00
+80.00
+90.00
+Sphere
+Cylinder
+Prism
+F. and C.
+Angular Error [deg]
+SRI
+Norm. And Unc. LS
+Fast LS
+Trad. LS
+(a) 3 × 3
+0.00
+10.00
+20.00
+30.00
+40.00
+50.00
+60.00
+70.00
+80.00
+90.00
+Sphere
+Cylinder
+Prism
+F. and C.
+Angular Error [deg]
+SRI
+Norm. And Unc. LS
+Fast LS
+Trad. LS
+(b) 5 × 5
+0.00
+10.00
+20.00
+30.00
+40.00
+50.00
+60.00
+70.00
+80.00
+90.00
+Sphere
+Cylinder
+Prism
+F. and C.
+Angular Error [deg]
+SRI
+Norm. And Unc. LS
+Fast LS
+Trad. LS
+(c) 7 × 7
+0.00
+10.00
+20.00
+30.00
+40.00
+50.00
+60.00
+70.00
+80.00
+90.00
+Sphere
+Cylinder
+Prism
+F. and C.
+Angular Error [deg]
+SRI
+Norm. And Unc. LS
+Fast LS
+Trad. LS
+(d) 9 × 9
+Fig. 5.
+Estimation errors with the synthetic data sets for σ = 0.2m.
+Method
+Angular Difference
+SRI & Unc. LS
+3.71◦± 1.51◦
+SRI & Fast LS
+3.75◦± 1.51◦
+Unc. & Fast LS
+0.39◦± 0.11◦
+TABLE III
+AVERAGE ANGULAR DIFFERENCES FOR THE REAL DATA SEQUENCE.
+computation time for the fast and unconstrained LS does
+not increase with the window size. Observe that according
+to Table I, the fast LS method should be faster than the
+SRI derivative method. However, Table I shows theoretical
+values of an optimal implementation and does not count for
+overhead in the form of indexing operations and memory
+accesses. The SRI derivative method is the fastest to compute
+and provides a speed up factor of up to two orders of
+magnitude with respect to the traditional least squares.
+C. Results with Real Data
+We have also conducted experiments with real data ob-
+tained from a Velodyne HDL-64E High Deﬁnition LIDAR
+scanner [15] mounted on the top of a vehicle. An SRI
+is deﬁned with the sensor speciﬁcations, and the sensor
+measurements are registered in the range image as they are
+acquired. The registration of the sensor measurements in the
+SRI leads to a sparse image, since not every image position
+is occupied with a measurement. A linear interpolation step
+is used to ﬁll those holes. To avoid interpolating image
+locations at depth discontinuities, an empty image position
+is only ﬁlled if the ranges to be interpolated are proportional
+up to a scale. An example of the resulting SRI for a real
+scenario is shown in Figure 6c.
+All methods were tested with 6 sequences of data acquired
+on different scenarios. Figure 1 shows a snapshot of the nor-
+mals obtained with the SRI derivative method on one of the
+sequences containing more than 23 million measurements.
+The sequence was acquired as the vehicle was traveling
+in rough terrain containing some human-made structures.
+Table III shows the average angular differences between the
+proposed methods for the whole sequence, from where it
+can be seen that all three methods provide consistent normal
+estimates.
+VII. CONCLUSIONS
+Based on the experiments performed in this paper we
+can draw the following conclusions when computing sur-
+face normals with range images. First, the traditional least
+
+
+--- Page 8 ---
+
+(a) Visual snapshot
+(b) Bird’s eye view. red: vertical, green: horizontal.
+(c) Spherical range image: the color encodes the range. The size of the image is 3300 × 100 covering a ﬁeld of view of 360◦× 30◦with angular
+resolution of 0.11 × 0.2 deg/px. The rectangle corresponds to the snapshot of Figure (a) and the normal estimates of Figure 1.
+Fig. 6.
+Experiment results with real data
+squares is very sensitive to noise and does not perform
+accurately without a proper normalization. This problem is
+easily solved by an appropriate scaling of the data matrix.
+Most remarkably, the literature on normal estimation usually
+does not specify if such a normalization step is performed,
+even though this is a critical step for the accurate estimation
+of surface normals. Second, the proposed unconstrained least
+squares and the fast approximate least squares show the same
+accuracy level as the normalized version, while being up
+to 17 times faster. Third and last, the new proposed SRI
+derivative approach is the fastest and more accurate method
+for small window sizes. It is also clearly the best option
+for large window sizes when time constraints prevail over
+accuracy requirements.
+REFERENCES
+[1] N. Amenta and M. Bern. Surface reconstruction by Voronoi ﬁltering.
+Discrete and Computational Geometry, 22:481–504, 1999.
+[2] M. Bosse and R. Zlot. Map matching and data association for large-
+scale two-dimensional laser scan-based SLAM. International Journal
+of Robotics Research, 27(6):667–691, 2008.
+[3] J. Canny. A computational approach to edge detection. Transactions
+on Pattern Analysis and Machine Intelligence, 8(6):679–698, 1986.
+[4] C. Castej´on, B. L. Boada, D. Blanco, and L. Moreno. Traversable
+region modeling for outdoor navigation. Journal of Intelligent and
+Robotic Systems, 43(2-4):175–216, 2005.
+[5] T. K. Dey and S. Goswami.
+Provable surface reconstruction from
+noisy samples. Computational Geometry: Theory and Applications,
+35(1):124–141, 2006.
+[6] T. K. Dey, G. Li, and J. Sun. Normal estimation for point clouds:
+a comparison study for a Voronoi based method.
+In Point-Based
+Graphics, Eurographics/IEEE VGTC Symposium, pages 39–46, 2005.
+[7] T. K. Dey and J. Sun. Normal and feature approximations from noisy
+point clouds. In Foundations of Software Technology and Theoretical
+Computer Science, pages 21–32, 2006.
+[8] R. I. Hartley. In defense of the 8-point algorithm. IEEE Transactions
+on Pattern Analysis and Machine Intelligence, 19:580–593, 1997.
+[9] M. Hebert and T. Kanade. Outdoor scene analysis using range data. In
+International Conference on Robotics and Automation, pages 1426–
+1432, 1986.
+[10] R. Hoffman and A. K. Jain.
+Segmentation and classiﬁcation of
+range images. IEEE Transactions on Pattern Analysis and Machine
+Intelligence, 9:608–620, September 1987.
+[11] H. Hoppe, T. DeRose, T. Duchamp, J. McDonald, and W. Stuetzle.
+Surface reconstruction from unorganized points. SIGGRAPH Comput.
+Graph., 26:71–78, July 1992.
+[12] http://www.cs.cmu.edu/vmr/datasets/normals, 2011.
+[13] K. Klasing, D. Althoff, D. Wollherr, and M. Buss. Comparison of
+surface normal estimation methods for range sensing applications. In
+Conference on Robotics and Automation, pages 1977–1982, 2009.
+[14] L. Kobbelt and M. Botsch. A survey of point-based techniques in
+computer graphics. Journal of Computer and Graphics, 28(6):801–
+814, 2004.
+[15] http://www.velodyne.com/lidar/products/manual/hdl-64e, 2011.
+[16] Z. C. Marton, . B. Rusu, and M. Beetz. On fast surface reconstruction
+methods for large and noisy point clouds. In International Conference
+on Robotics and Automation, pages 2829–2834, 2009.
+[17] M. J. McDonnell. Box-ﬁltering techniques. Computer Graphics and
+Image Processing, 17(1):65–70, September 1981.
+[18] N. J. Mitra, A. Nguyen, and L. Guibas. Estimating surface normals
+in noisy point cloud data.
+International Journal of Computational
+Geometry & Applications, 14(4 & 5):261–276, 2004.
+[19] F. Moosmann, O. Pink, and C. Stiller. Segmentation of 3D lidar data
+in non-ﬂat urban environments using a local convexity criterion. In
+Intelligent Vehicles Symposium, June 2009.
+[20] D. OuYang and H. Y. Feng. On the normal vector estimation for point
+cloud data from smooth surfaces.
+Computed Aided Design, pages
+1071–1079, 2005.
+[21] K. Pathak, N. Vaskevicius, and A. Birk.
+Uncertainty analysis for
+optimum plane extraction from noisy 3D range-sensor point-clouds.
+Intelligent Service Robotics, 3(1):37–48, 2009.
+[22] R. B. Rusu, N. Blodow, Z. C. M., and M. Beetz. Aligning point cloud
+views using persistent feature histograms. In International Conference
+on Intelligent Robots and Systems, 2008.
+[23] O. Schall, A. Belyaev, and H.-P. Seidel.
+Robust ﬁltering of
+noisy scattered point data.
+In M. Pauly and M. Zwicker, editors,
+IEEE/Eurographics Symposium on Point-Based Graphics, pages 71–
+77, Stony Brook, New York, USA, 2005.
+[24] A. Segal, D. Haehnel, and S. Thrun. Generalized ICP. In Robotics:
+Science and Systems, Seattle, USA, June 2009.
+[25] H. Sekkati and S. Negahdaripour. 3-D motion estimation for position-
+ing from 2-d acoustic video imagery. In Iberian conference on Pattern
+Recognition and Image Analysis, pages 80–88, 2007.
+[26] L. Spinello, R. Triebel, and R. Siegwart. Multimodal detection and
+tracking of pedestrians in urban environments with explicit ground
+plane extraction. In International Conference on Intelligent Robots
+and Systems, pages 1823–1829, 2008.
+[27] C. Wang, H. Tanahashi, H. Hirayu, Y. Niwa, and K. Yamamoto.
+Comparison of local plane ﬁtting methods for range data. Conference
+on Computer Vision and Pattern Recognition, 1:663–669, 2001.
+[28] J. W. Weingarten, G. Gruener, and A. Dorf.
+Probabilistic plane
+ﬁtting in 3D and an application to robotic mapping. In International
+Conference on Robotics and Automation, pages 927–932, 2004.

@@ -1,0 +1,735 @@
+# Deep learning for robust normal estimation in unstructured point clouds.pdf
+# Converted: 2025-07-18 12:59:05
+# Method: pdfplumber
+# Domain: pixel2physics
+# Source: /home/user/vekt/papers/pixel2physics/pdfs/layer2/Deep learning for robust normal estimation in unstructured point clouds.pdf
+# Output: /home/user/vekt/papers/pixel2physics/dot_txt/layer2/Deep learning for robust normal estimation in unstructured point clouds.txt
+
+
+--- Page 1 ---
+
+DOI: 10.1111/cgf.12983
+EurographicsSymposiumonGeometryProcessing2016 Volume35(2016),Number5
+MaksOvsjanikovandDanielePanozzo
+(GuestEditors)
+Deep Learning for Robust Normal Estimation
+in Unstructured Point Clouds
+AlexandreBoulch1 RenaudMarlet2
+1ONERA-TheFrenchAerospaceLab,F-91761Palaiseau,France 2LIGM,UMR8049,EcoledesPonts,UPE,Champs-sur-Marne,France
+Abstract
+Normalestimationinpointcloudsisacrucialfirststepfornumerousalgorithms,fromsurfacereconstructionandsceneun-
+derstandingtorendering.Arecurrentissuewhenestimatingnormalsistomakeappropriatedecisionsclosetosharpfeatures,
+nottosmoothedges,orwhenthesamplingdensityisnotuniform,topreventbias.Ratherthanresortingtomanually-designed
+geometricpriors,weproposetolearnhowtomakethesedecisions,usingground-truthdatamadefromsyntheticscenes.For
+this, we project a discretized Hough space representing normal directions onto a structure amenable to deep learning. The
+resultingnormalestimationmethodoutperformsmostofthetimethestateoftheartregardingrobustnesstooutliers,tonoise
+andtopointdensityvariation,inthepresenceofsharpedges,whileremainingfast,scalinguptomillionsofpoints.
+1. Introduction [CP05] have also been used to better adapt to the neighborhood
+andtotheshapeoftheunderlyingsurface.Optimalneighborhood
+Numerousalgorithmshavebeendevelopedtoprocesspointclouds,
+sizescanbecomputed,w.r.t.curvature,samplingdensityandnoise,
+such as geometric primitive extraction [SWK07], surface recon-
+to minimize the estimation error [MNG04]. However, while be-
+struction [BDLGM14,CLP10], 3D navigation [FGMP14], and
+ing robust to noise, these methods remain sensitive to outliers.
+point-basedrendering[RL00,ZPVBG01,ABCO∗03],justtoname
+Improvements have been proposed to address robustness to out-
+afew.Formanyofthem,theperformancesignificantlydependson liersandnon-uniformity,usingadaptiveweights[HLZ∗09].Yet,all
+thequalityofnormalsestimatedateachpoint.
+regression-basedmethodstendtosmooththenormalsatsharpfea-
+Normalestimationisawell-studiedtopic.Theproblemistoin- tures.Moreover,ahigherrobustnesstooutliersisusuallyobtained
+ferthelocalorientationoftheunknownsurfaceunderlyingapoint using a larger neighborhood, which makes sharp features even
+cloud.Agoodestimatorshouldnotbesensitivetooutliers,tonoise smoother. Minimizing the (cid:96) 1 [ASGCO10] or (cid:96) 0 norm [SSW15]
+and to variations of point density, which are common due to the is robust to sharp features but quite slow. Moving least squares
+waypointcloudsarecaptured,e.g.,asmergedlaserscans,fusion [ABCO∗03,PKKG03] and local kernel regression [ÖGG09] es-
+ofdepthimages,orstructure-from-motion.Non-uniformsampling, timate normals as the gradient of an implicit surface, preserving
+withpossibleanisotropicbias,occursordinarilyduetovaryingin- sharpfeatures,butrequiringreliablenormalpriorsasinput.
+cidencesonscannedsurfaces.Moreover,asmanycapturedscenes
+DeyandGoswami[DG04]proposeanoriginalapproachbased
+includeman-madeobjects,theygenerallyfeaturesharpedgesand
+ontheVoronoïcellsofthepointcloud.Thenormalischosenasthe
+corners,thathavetobepreservedandnotsmoothed.Last,estima-
+cell direction with the largest extension. It is robust to sharp fea-
+tionshouldbefast,typicallytoscaletomillionsofpoints.
+tures,butsensitivetonoise.Toaddressit,Alliezetal.[ACSTD07]
+Weproposehereanovelmethodfornormalestimationinunor- treatcelldistortionduetonoiseusingaPCA-Voronoïapproachto
+ganizedpointclouds,thatisrobusttonoise,tooutliersandtoden- createelongatedcellsetsgroupingadjacentVoronoïcells.
+sityvariation,inthepresenceofsharpedges.Itisbasedonarobust Lietal.[LSK∗10]usesampleconsensus(SAC),efficientlytreat-
+randomized Hough transform [BM12], but rather than designing ingnoisydataandsharpfeatures.Themaindrawbacksarealack
+explicitcriteriatoselectanormalfromtheaccumulator,welearna ofadaptationtopointdensityvariationsandahighcomputational
+functionfordoingitusingaconvolutionalneuralnetwork(CNN). time.Anotherlineofworkisbasedonthedeterminationofcon-
+Toourknowledge,thisisthefirstapplicationofdeeplearningtech- sistentpointclustersinaneighborhoodtobetterestimatenormals
+niquestothiskindoftask,forunstructured3Ddata.Itoutperforms nearedgesandcorners.Zhangetal.[ZCL∗13]extractsuchclusters
+mostofthetimethestate-of-the-artofnormalestimation. using low-rank subspace clustering with prior knowledge. Their
+methodyieldsaccuratenormals,butisveryslow.Usingthesame
+idea, Liu et al. [LZC∗15] overcome this issue by using a differ-
+2. Relatedwork
+ent representation for subspaces, and clustering only a subset of
+Hoppeetal.[HDD∗92]computethetangentplaneatagivenpoint the points before propagating the results to adjacent points. The
+byregressiononneighboringpoints.Spheres[GG07]andquadrics methodismuchfasterwhilebeingasaccurateas[ZCL∗13].
+(cid:13)c 2016TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2016TheEurographicsAssociationandJohn
+Wiley&SonsLtd.PublishedbyJohnWiley&SonsLtd.
+
+--- Page 2 ---
+
+282 AlexandreBoulch&RenaudMarlet/DeepLearningforRobustNormalEstimationinUnstructuredPointClouds
+Houghtransform isapopulartoolforshapeextraction[Hou62]. andassociatedfilledaccumulatorap,selectingabinbˆ p,andthusa
+Itisbasedonachangeofspacewherethedesiredshapeisrepre- normaln .Theproblembecomesadiscreteversionof(1):
+bp
+sented by a point. Shape hypotheses populate the bins of an ac-
+cumulator mapped onto this space, and the most densely popu- {bˆ p} p∈P = argmin ∑ φ(n bp ,n∗ p ) (2)
+latedbinsidentifytheshapestoextract[DH72,IK88].Originally
+{bp}p∈Pp∈P
+designed for simple 2D primitive extraction in images [TM78, Inpractice,n∗ pisunknownandbˆ pisestimatedateachpointwitha
+Dav88,SW02], it has since then been used for various purposes classifierovertheaccumulatorap.
+from3Dprimitiveextraction[BELN11],recognitionandclassifi-
+cation[KPW∗10,PWP∗11],togeneralmodelselection[Bal81].To [BM12] uses a very simple classifier: the most probable bin
+w.r.t. the empirical probability distribution of normals in Hough
+improve speed and scalability, Kiryati et al. [KEB91] propose a
+space.Aspointedoutinthepaperitself,thisselectionprocessis
+probabilisticversionoftheHoughtransformwhereonlyasubsetof
+subjecttospacediscretization.Toovercomethiseffect,theauthors
+theinputpointsvoteintheaccumulator.Ahighcomputationaleffi-
+estimateanormalseveraltimesat p,randomlyrotatingtheaccu-
+ciencyisreachedwiththeRandomizedHoughTransform[XO93],
+mulatortochangediscretizationboundaries.Thefinalnormalisa
+wherethepointsdonotvoteforallthepossibleshapes.Shapehy-
+functionofthesefewestimatednormals,e.g.,theaveragenormal
+pothesesaremadebydrawingtheminimalnumberofpointstopa-
+ofthemostvotedclusterofnormals.Whilethistrickreducesdis-
+rameterizetheshape,andeachsuchdrawnhypothesiscorresponds
+cretization effects, it significantly increases the computation time
+toonevoteintheaccumulator.Itresultsinasharperaccumulator
+andintroducesadditionalparameters.Inthispaper,wedirectlyad-
+distributionandafastermodelselection.However,itmaybedif-
+dressEq.(1)asacontinuousproblem.Wewanttoconstructafunc-
+ficulttotunethenumberofhypothesestodrawbeforeamodelis
+estimatedfromthevotes.TheRobustRandomizedHoughTrans-
+tionψsuchthat,givenafilledaccumulatorap,weproduce:
+form(RRHT)addressesit[BM12]. ψ(ap)=nˆp (3)
+Thisregressionproblemismoredifficultthanclassificationinthat
+Convolutionalneuralnetworks,startingwithLeNet5[LBD∗89],
+theregressorresponsecoversacontinuousspace,notjustasetof
+arearchitecturedasasequenceofconvolutionalandpoolinglay-
+discretevalues.Weactuallywanttolearnfunctionψ,usingaCNN.
+ers,followedbyfully-connectedlayers.Theyweremostlyusedin
+imageclassification,outperformingothermethodsbyalargemar-
+CNNsforestimatingnormalsinpointclouds. Deeplearningis
+gin[KSH12].Increasinglayernumber[SLJ∗14]andsize[ZF14],
+good at making decisions in complex settings, especially when a
+and using dropout to treat overfitting [HSK∗12], they have been
+large number of unknown factors have a nonlinear influence. In
+successfully applied, e.g., to object detection [GDDM14], seg-
+particular,CNNsareveryefficientontaskssuchasobjectclassifi-
+mentation [LSD15b] and localization [SEZ∗14]. Work on nor-
+cationanddetection,includingwhenobjectsareseverelyoccluded.
+mal estimation with CNNs focus on using as input RGB images
+CNNs can also address regression problems such as object pose
+[LSD∗15a,WFG15],orpossiblyRGB-D[BRG16],butnotsparse
+estimation[PCFG12].Thesesamepropertiesseemappropriateas
+datasuchasunstructured3Dpointclouds.CNN-basedtechniques
+well for the task of learning how to estimate normals, including
+havebeenappliedto3Ddatathough,butwithavoxel-basedper-
+in the presence of noise and when several normal candidates are
+spective[WSK∗15],whichisnotaccurateenoughfornormales-
+possiblenearsharpfeaturesoftheunderlyingsurface.
+timation. Techniques to efficiently apply CNN-based methods to
+sparsedatahavebeenproposedtoo[Gra15],buttheymostlyfocus The question, however, is how to interpret the local neighbor-
+on efficiency issues, to exploit sparsity; applications are 3D ob- hoodofa3Dpointasanimage-likeinputthatcanbefedtoaCNN.
+ject recognition, again with voxel-based granularity, and analysis Ifthepointcloudisstructured,asgivenbyadepthsensor,thedepth
+ofspace-timeobjects.Anolder,neuron-inspiredapproach[JIS03] mapisanaturalchoiceasCNNinput.Butifthepointcloudisun-
+ismorerelevanttonormalestimationin3Dpointcloudsbutitactu- structured, it is not clear what to do. In this case, we propose to
+allyaddressesthemoredifficulttaskofmeshing.Itusesastochas- associateanimage-likerepresentationtothelocalneighborhoodof
+tic regularization based on neighbors, but the so-called “learning a3DpointviaaHoughtransform.Inthisimage(cf.Section4),a
+process”actuallyisjustalocaliterativeoptimization. pixelcorrespondstoanormaldirection,anditsintensitymeasures
+thenumberofvotesforthatdirection;besides,pixeladjacencyre-
+lates to closeness of directions. It is a planar map of the empiri-
+3. Motivationandoverviewofourapproach
+calprobabilityofthedifferentpossibledirections.Then,justasa
+Learningnormalestimation. Normalestimationcanbeformu- CNNforordinaryimagescanexploitthelocalcorrelationofpixels
+latedasadiscreteclassificationprobleminHoughspace.Letnˆpbe to denoise the underlying information, a CNN for these Hough-
+anormalestimatedatpoint pofpointcloudP,andn∗ ptheground baseddirectionmaps(cf.Section5)mightalsobeabletohandle
+truthnormal.Theproblemistofindasetofnormals{nˆp}
+p∈P
+s.t.: noise,identifyingaflatpeakaroundonedirection.Similarly,justas
+aCNNforimagescanlearnarobustrecognizer,aCNNfordirec-
+tionmapsmightbeabletomakeuncompromisingdecisionsnear
+{nˆp} p∈P = argmin ∑ φ(np,n∗ p ) (1) sharpfeatures,whendifferentnormalsarecandidate,optingforone
+{np}p∈Pp∈P
+specificdirectionratherthantradingoffforanaverage,smoothed
+whereφ(.,.)isadistancefunction,suchasthe(cid:96) distance.Thetra- normal.Moreover,outlierscanbeignoredinasimplewaybylim-
+2
+ditionalHough-basedapproachconsistsinfirstassociatinganor- itingthesizeoftheneighborhood,thusreducingorpreventingthe
+maln toeachbinbofanaccumulatorandthen,foreachpoint p influenceofpointslyingfarfromamoredenselysampledsurface.
+b
+(cid:13)c 2016TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2016TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 3 ---
+
+AlexandreBoulch&RenaudMarlet/DeepLearningforRobustNormalEstimationinUnstructuredPointClouds 283
+Hough space
+Hough
+CNN
+transform
+Point Filled Selected normal Point and
+accumulator 2 coordinates normal
+Figure2:Distortionofbinswhen
+Figure1:OurCNN-basednormalestimationframework. projectedonthesphere.
+RRHT. ApplyingaHoughtransformtoestimatethenormalata
+given3Dpointp,[BM12]proposeathree-stepalgorithm: PCA
+Normal hypotheses
+3D rotation
+2D projection in
+1. Hypothesisgeneration.Hypothesesaregeneratedbyrandomly (local 3D coordinates)
+Hough space
+selectingthreepointsintheneighborhoodof p,whichdefinesa 3D space
+planeandthusapossiblenormaldirection.
+2. VoteinHoughspace.Eachhypothesisvotesina2Dspherical
+accumulator,parameterizedbysphericalcoordinatesθandφ.
+3. Electionofanormal.Finally,theestimatednormalistheaver- Accumulation PCA
+ageofdirectionsinthemostvotedbinoftheaccumulator. 2D rotation
+Acontributionof[BM12]regardingrunningtimeisarobuststa-
+Hough space
+tisticalcriteriontosafelystoppickingnewhypotheses,after
+(cid:24) (cid:18) (cid:19)(cid:25)
+T∗= 1 ln 2M (4) Figure3:Rotationstoensurestabilityoftheaccumulatorpattern.
+2ε2 1−α
+aredrawn,whereMisthenumberofbinsoftheaccumulator,α∈
+shape extraction. The more adapted to the shape (with little bias
+]0,1[istheconfidencelevel,andε∈]0,1[isthemaximumdistance
+when voting), the better. To this end, [BM12] exploit a spherical
+betweentheempiricaldistributionandthetheoreticaldistribution.
+accumulator,proposedearlierforplaneextraction[BELN11].
+Theresultingmethodisrobusttonoise,outliersandsharpfeatures
+but,asmentionedabove,itissensitivetobindiscretization. Inourcase,wewanttheaccumulatortobemappedtotheinput
+ofaCNN.Wechoseasimplesquareimage-accumulator:a2Dreg-
+OurCNN-basedmethod,picturedonFigure1,keepsthesamehy- ulargridofsizeM=m×m.Givenanormaln=(nx,ny,nz),the
+pothesisgenerationschemeas[BM12],asdescribedabove(step1), coordinatesofthevotex,yintheaccumulatoraregivenby:
+including the robust stopping criterion of Eq. (4). However, we
+nx+1 ny+1
+change the accumulator and voting (step 2) to create an image (x,y)=( ∗m, ∗m) (5)
+2 2
+structure amenable to deep learning. Besides, the estimation of a
+Notethat,whenback-projectedonthesphere,thesizesofthebins
+normalfromafilledaccumulator(step3)isnowtheapplicationof
+arenotsimilar,asillustratedonFigure2.Thisaccumulatordesign
+alearnedfunctionthatdirectlyyieldstwocoordinatesrepresenting
+thus leads to distortions that could affect vote count and bin se-
+the estimated direction. It significantly reduces the discretization
+lection.However,correctingthecontributionofeachbinisjusta
+effectandimprovesnormalselectionwhileremainingfast.
+constantfactor,thatthenetworkcaneasilylearn.(Wecheckedthat
+reweightingvotesexplicitlydoesnotleadtosignificantchanges.)
+Ourcontributionsareasfollows:
+Withthissimplescheme,theimage-accumulatorcanbefilledvery
+• WeshowhowtoreliablymapaHoughaccumulatorfornormal
+efficiently,notevenrequiringtrigonometriccomputations.
+estimationintoanimagethatcanbeusedasinputofaCNN.
+• WedemonstratethataCNNcanlearnhowtoestimateanormal Inourexperiments,thesizeofthisimage-accumulatorissetM=
+fromsuchanimage-accumulator. 33×33=1089bins.However,givenitisfilledasifprojectedfrom
+• We define an efficient way to take point density variation into an accumulator sphere, only a circular area is used, i.e., roughly
+account(whichcouldactuallybeusedin[BM12]aswell). 1089×π/4bins.Thisis5timesmorethan[BM12],whereM=
+• Weshowhowthesensitivitytothesizeoftheneighborhoodcan 171.Asaresult,thebindiscretizationeffectisgreatlyreducedwith
+beaddressedinourframework. ourapproach.Besides,noaccumulatorrotationorshiftisrequired.
+• Weprovideexperimentsshowingthatourmethodoutperforms
+mostofthetimethestate-of-the-artofnormalestimation. Accumulatornormalization. Toreducepatternvariationsandfa-
+cilitatelearning,wenormalizetheimage-accumulator,aspictured
+on Figure 3. The 3D coordinate system is first rotated according
+4. AnaccumulatorforCNNinput
+toaPrincipalComponentAnalysis(PCA)ofNp,thepointsinthe
+Accumulator design. The form of a Hough accumulator is well neighborhood of p: the rotation aligns the z-axis on the smallest
+known to have a strong impact on the efficiency and quality of eigenvector. To further improve stability, we perform an in-plane
+(cid:13)c 2016TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2016TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 4 ---
+
+AlexandreBoulch&RenaudMarlet/DeepLearningforRobustNormalEstimationinUnstructuredPointClouds
+Input
+(33x33)
+(a) (b) (c)
+Figure4:Examplesofaccumulators.Graylevelsreflectthenumber
+of votes (negative images for readability: darker for more votes).
+Theredpointmarksthetruenormal,thegreenpoint,themostvoted
+bin.Fromlefttoright:(a)pointonaroughbutfeaturelesssurface,
+(b)pointclosetoanedge,(c)pointclosetoa3-planecorner.
+rotationafter3Dpointsareprojectedontotheaccumulatorplane:
+usingasecond,2DPCA,wealignthelargesteigenvectoralongthe
+x-axis.Asimilareffectcouldbeachievedbydirectlyperforminga
+single3Drotationaligningthesecondlargest3Deigenvaluealong
+thex-axis.However,itisnotequivalentbecauseoftheprojection
+fromapointonthespheretoaplane,anditislessstablethandoing
+itafterprojectionontheaccumulatorplane.Examplesofprojected
+androtatedaccumulatorsareshowninFigure4.
+TheseusesofPCAdonotalwaysguaranteeconsistentaccumu-
+latornormalization.Still,whenthePCA-inducedrotationsarenot
+stable, their instability is irrelevant or potentially manageable by
+thenetwork.Indeed,whenonasmoothbutpossiblynoisysurface,
+themassofvotesfocusesaroundonemain3Ddirection.Thisre-
+sultsinacenteredblobafter3DPCAand2Dprojection(cf.Fig-
+ure4a).Itsorientationafter2DPCAandrotationcanbeunstable,
+butitislittlerelevantbecausewhatreallymattersisthepresenceof
+apeaktowardsthecenteroftheimage,whichanetworkcaneas-
+ilylearninallorientations.Whenthepointisclosetoanedge,the
+votesfocusononearcofthesphereofdirections.Themainaxisof
+the3DPCAalignswiththearccenterandthemainaxisofthe2D
+PCAalignswiththearcspanning(cf.Figure4b).Last,whenthe
+pointisclosetoacorner,thereareasmanyfocalizationdirections
+asmainfeaturelesssurfacessupportingthecorner(cf.Figure4c).
+Inthiscase,themainaxisofthe3DPCAalignsmoreorlesswith
+thegeneraldirectionofthecorner,butthe2DPCAcanbeunsta-
+ble.Ifthereisaprominentsurface,theeigenvaluesofthe2DPCA
+might be different enough to rotate its normal near the x-axis. If
+thereisnosuchprominentsurface,therotationhaslittlemeaning.
+ItisthemostdifficultsituationtheCNNhastolearn.However,the
+non-localityandnonlinearityofthenetworkhavethepotentialto
+copewiththevarietyofsituations,learningenoughelementsofin-
+formationtogeneralizewell,justasaCNNfordetectioncancope
+withoccludedobjects.Wealsoleverageontheabilitytogeneratea
+largeamountoftrainingdataforvariousconfigurations.
+5. ACNNfornormalestimation
+CNNarchitecture. Ourtaskdoesnotrequireafancynetworkar-
+chitecture. We chose a small-sized network for a low processing
+time.ItisbasedonLeNet[LBD∗89],asimplenetworkyetproven
+tobeadaptabletovariousestimationproblemsinimageprocessing.
+It is illustrated on Figure 5. It is composed of four convolutional
+layers,twomaxpoolingsandfourfullyconnectedlayers.Mostof
+theparametersareinthefully-connected(FC)layers.
+ULeR+3x3vnoC
+05=pn
+ULeR+3x3vnoC
+05=pn
+2x2 gnilooP
+xaM
+ULeR+3x3vnoC
+05=pn
+2x2 gnilooP
+xaM
+ULeR+3x3vnoC
+69=pn
+ot 6 8 5 4 4 0 3 2
+ULeR+CF
+ot 8 4 4 2 0 0 2 1
+ULeR+CF
+ot 42 2 0 1 1 5
+ULeR+CF
+ot 215 2
+CF
+tuptuO )setanidrooc
+2(
+284
+Figure5:OurCNNarchitecturefornormalestimation.
+Figure6:Illustrationoftrainingdata(minandmaxangles).
+Theconvolutionalnatureofthisnetworkcontributestotheca-
+pacity of handling noise by potentially smoothing out accidental
+peaks.Nonlinearity,providedbymaxpoolingsandReLUs,gives
+risetotheabilitytochoosebetweendifferentpeaksbasedontheir
+localshape.Andtheglobalchoiceamongpossiblenormalsorigi-
+natesfromanonpurelylocalanalysisofthedirectionmapgiven
+bothbythemaxpoolingsandthefully-connectedlayers.Wedonot
+pretenditisthebestarchitectureforthistask,yetthatitismeaning-
+ful.(Wealsoexperimentedwithanarchitecturemadefromfully-
+connectedlayers;itdoesnotperformaswell,cf.Section8.) We
+trainthisnetworkusingmeansquareerror((cid:96) penalization): 2
+{nˆp}=argmin ∑ (np−n∗ p )2 (6)
+{np} p∈P
+Training data. To train this network, we generate synthetic
+ground-truthexamples.Wecreateuniformlysampledpointclouds
+overcornerswithdifferentangles.Anglesareuniformlydrawnbe-
+tween 80◦ and 160◦. Examples of such point clouds are shown
+onFigure6.Wegeneratepointsetswith5000pointsandrandomly
+pick1000pointsineachset,forwhichwecomputethecorrespond-
+ingaccumulator.Thetrainingdatacontain100,000suchfilledac-
+cumulators. Theselearningsamples(cornerswithvaryingangles)
+represent themostcommonsituationsofsharpfeaturesinrealdata.
+Theyareusedtolearnproperdecisionsnearbothedgesandcor-
+ners.Wethenrelyontheabilityofthenetworktogeneralizeand
+treat partial data, as is the case for occlusion in object detection.
+Itallowsthenetworktotreatmorecomplexsituationsthanjust3-
+sidecorners.Regressionfornoisydata,whichisthegeneralcase,
+islearnedfrompointsfarenoughfromtheedgesandthecorner.
+Tobemorerealisticandproviderobustness,wealsoaddnoiseto
+thetrainingdata.Inourexperiments,weuseaGaussiannoisefor
+learning the network. However, it is not intrinsic to the method,
+as in [LSK∗10]; other noise models could have been used too.
+We also use a Gaussian noise for testing on synthetic data, as
+[LSK∗10,BM12,LZC∗15].However, littlebiasisto beexpected
+becausethenoiselevelvariesforeachtrainingsample,withastan-
+darddeviationrandomlydrawnin[0%,200%]ofthemeandistance
+betweenthepointsinthecloud,whilethenoiselevelisfixedfor
+evaluation.Fortestsonrealdata,thenoiseisaspresentinthedata.
+(cid:13)c 2016TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2016TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 5 ---
+
+AlexandreBoulch&RenaudMarlet/DeepLearningforRobustNormalEstimationinUnstructuredPointClouds 285
+VariantofCNN3s Not Robust
+Robust
+w.r.t.densityvariation robust discretized
+Runningtime (s) 51.5 57.3 52.2
+Table1:RunningtimeonaDFC2015tiledetail(185kpoints).
+However,pickingrandomneighboringpointsaccordingtothis
+localscaleisquiteslow.Itrequirescomputinganarrayofthecu-
+(a)Notrobust (b)Robustdiscretized mulativesumsoflocalscales,sortingit,andgivenarandomnum-
+ber, searching the corresponding point in the array. To overcome
+Figure7:DetailofaDFC2015aeriallidartilewithnormalesti-
+thisissue,wediscretizethesearchspace:wecomputetheminand
+mation. Roofs are more densely sampled than facade walls. The
+cross-sectionillustratesthehandling(ornot)ofdensityvariation.
+maxlocalscalesanddividethisrangeintoks equalintervals.(In
+ourexperiments,ks=5performswell.)Wethencomputethescore
+of each interval (the sum of all local scales of points in the seg-
+90°
+... ment),andrandomlypickasegmentaccordingtothisscore.Last,
+10°
+wepickapointinthisintervalwithauniformprobability.Robust
+7.5° discretized normal estimation with this optimization is illustrated
+on Figures 7b and 8c. The quality is almost as good as with the
+5°
+non-discretizedversion(RMSerror5.5◦vs5.6◦inFigures8b-8c),
+2.5°
+whilebeingsignificantlyfaster,ascanbeseenonTable1.
+(a)Notrobust (b)Robust (c)Robustdiscretized 0°
+This way to deal with non-uniform densities is much more ef-
+Figure8:Differentsamplingdensityoneachface,andmethodvari- ficientthanwhatwasproposedin[BM12]where,tosamplea3D
+antswithdifferentlevelsofrobustnesstothisdensityvariation. point,aballisfirstuniformlysampledinwhichthepointisthen
+sampled.Whileitprovidesgoodrobustnesstodensityvariation,it
+considerablyslowsdownnormalestimation.Notethatourwayof
+Trainingprocess. Foreachpointpinthetrainingset,weconsider
+handlingdensityvariationcouldalsobeusedtospeedup[BM12].
+afixedneighborhoodsize(K=100neighborsinourexperiments)
+inwhich wesampletriplets ofpoints, filling p’saccumulator ac-
+cordingly(cf.Section4).Itcreatesagray-levelimage,inwhichwe 7. Multiscaleapproach
+scalethepixelvaluessothatthepixelofthemostvotedbiniswhite
+Manynormalestimationmethodsrelyonascaleparameter.Itusu-
+(highestintensity).Asthecorrespondingground-truthnormalat p
+allycorrespondstothesizeoftheneighborhoodtoconsider.Itcan
+isknown, it providesinput-output examplesto trainthe network.
+beinterpretedasthescaleatwhichthesceneshouldbeobserved,
+Whenlearning,werandomlychoose75%ofthesedataforactual
+or the distance under which regularization is allowed. However
+training.Therestisusedtocheckthatlearningdoesnotoverfit.
+it is often difficult to tune this parameter, in particular for points
+clouds with high density variation where different neighborhood
+6. Dealingwithdensityvariation sizes would be necessary for a robust and accurate estimation. A
+solutionistousenon-parametricmethodssuchasproposedbyDey
+Densityvariation,withpossibleanisotropicbias,isacommonphe-
+andGoswami[DG04],butaccuracydropswhennoiseishigh.
+nomenoninreal-worldpointclouds.Forexample,alidaracquires
+datafromasingleviewpoint,typicallywithregularangularsteps To improve robustness near sharp edges, we propose a simple
+for azimuth and elevation, sampling more densely surfaces with variantofourmethodusingamultiscaleapproach.Thefactisthe
+lowincidence.Figure7illustratesthissituationwithadetailofan input of the CNN can be easily modified to create a multicanal
+aerialacquisitionoftheDataFusionContest(DFC)2015[DFC15]. tensorinput,likeRGBchannelsforprocessingcolorimages.Here
+Another,syntheticexampleisshownonFigure8.Pointsintheless ourchannelsaretheaccumulatorscomputedfordifferentneighbor-
+dense regions and next to edges with denser regions are wrongly hoodsizes,whichthePCA-basednormalizationcanroughlyalign
+giventhenormaloftheothersideoftheedges(cf.Fig.7aand8a). forconsistency.Inourexperiments,weexploretwomultiscaleap-
+proaches, with 3 and 5 scales. Given a neighborhood size of K
+Robustness to density variation can be efficiently obtained at
+neighbors, the neighborhood sizes are K/2, K and 2K for the 3-
+planehypothesisgenerationtime,intheHoughtransform.Forthis,
+scaleschemeandK/4,K/2,K,2Kand4Kforthe5-scalescheme.
+weassociateadifferentweighttoeachpointdependingonthelo-
+caldensity.Wethenpicktripletsfrompointshavingaprobability NotethatwithamonoscaleHoughaccumulator,aswiththeone
+proportionaltotheseweights.Apointinasparseareawillbegiven in[BM12],asampleof3Dpointsvotesforonedirectionregard-
+ahigherweight;itwillthusbepickedmoreoftenthanapointina less of its location, whether it is close or far from the point con-
+denserregion.Theweightcorrespondstoakindoflocal(surfacic) sideredfornormalestimation.Butusingsimultaneouslydifferent
+scale.Weuseaslocalscalethesquaredistanceoftheconsidered scales provides a form of distance sensitivity: a 3D point sample
+pointtoitskth nearestneighbor.Thissquaredistancerepresents may contribute to a direction at a given scale, but not at another
+dens
+the influence area of the point on the underlying surface. (In our scalebecausethecorrespondingneighborhoodsizeissmaller.As
+experiment,weusek =5.)Thislocalscalenormalizationcom- illustratedintheexperimentsection,thisdistancesensitivityseems
+dens
+pensatesforthelowdensity,ascanbeseenonFigure8b. tobeenough(w.r.t.alocationsensitivity)toreachahighaccuracy.
+(cid:13)c 2016TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2016TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 6 ---
+
+AlexandreBoulch&RenaudMarlet/DeepLearningforRobustNormalEstimationinUnstructuredPointClouds
+stniopk02,ebuC
+stniopk02,rednilyC
+stniopk02,nordehasocI
+286
+Figure9:ComparisonofvariousmethodsonsimplegeometricmodelswithvaryingGaussiannoise(standarddeviationexpresseda%of
+the mean distance between points) and no density variation. NN 3FC: network with 3 fully-connected layers on the same Hough image-
+accumulatorasours;CNNns:ourmethodwithnscales.
+8. Evaluation However, this measure does not favor sharp behaviors. Indeed,
+smoothing the normals of points close to an edge results in a
+Ourmethodhas4mainparameters,whicharesetasfollows:
+smaller RMS than choosing the normal of the wrong side of the
+• theaccumulatorsizeM=33×33, edge.Alesscompromisingerrormeasure,bettersuitedw.r.t.“vi-
+• thenumberofhypothesistopickT =1000, sual”applicationssuchasrendering,istocounttheproportionof
+• theneighborhoodsizeK=|Np|=100 (fortraining&testing), goodpoints(PGP),i.e.,whoseerrorisunderagiventhreshold;as
+• theneighborhoodsizeforestimatingalocalscalek
+dens
+=5. in[LZC∗15],westudy5◦and10◦maximumdeviation.
+T =1000correspondstoanalloweddeviationfromthetheoretical
+accumulatordistributionofε=0.073forα=0.95.K istheonly
+Experimentsonsyntheticdata. Figure9showstheimpactofan
+practicalparameter.Forcomparisonpurposes,wesetK=100for
+increasing Gaussian noise on RMS and PGP for various simple
+allmethods,except[DG04]whichdoesnottakeanyneighborhood
+geometric models. We tested our method and its variants against
+sizeasparameter.Forafaircomparison,testswith[BM12]useex- five methods from the literature: [DG04], [LSK∗10], [BM12],
+actlythesameparametersasours(i.e.,T,K).FormultiscaleCNN, [HDD∗92]and[CP05].AllthesemethodsareavailableontheIn-
+we use: for 3 scales (CNN 3s), K=50, 100, 200, and for 5 scales
+ternet,orthecodeweregrantedtousbytheauthors.Wealsoadded
+(CNN5s),K=32,64,128,256,512.
+as baseline a simpler neural network made of 3 fully connected
+Weconsidertwodifferentscoresforquantitativeevaluation:the layers with interleaved ReLUs (NN 3FC). For very low levels of
+root mean square (RMS) deviation and the number of points for noise,thebestmethodis[DG04],butitrapidlydegradesasnoise
+whichthedeviationislessthanagivenangle.TheRMSisastan-
+increases.Theregressionmethods[HDD∗92,CP05]performbet-
+darderrormeasure.Itprovidesagoodideaoftheoverallperfor- terathighnoise,whenthesurfacedetailsarelostinthenoiseand
+manceofanalgorithm.Itisdefinedby: very difficult to retrieve. Between those two extreme cases, our
+(cid:115) multiscaleapproachesperformbest.Largerneighborhoodsprovide
+RMS= 1 ∑ (n (cid:92) ˆpn∗ p)2 (7) betterrobustnessforhighnoise,whilesmallscalesgivemaintain
+|P| p∈P goodresultsforlownoise.ThecomparisontotheNN3FCbaseline
+(cid:13)c 2016TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2016TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 7 ---
+
+AlexandreBoulch&RenaudMarlet/DeepLearningforRobustNormalEstimationinUnstructuredPointClouds
+stniopk02,ebuC
+stniopk02,rednilyC
+stniopk02,nordehasocI
+287
+Figure10:Comparisonofourmethod(CNN)andasimilarCNNestimationbasedondepthmapinput(DM)withmultiscale(ns).
+showsthatourgoodresultscannotbeattributedtotheHoughrep- gression[HDD∗92]andwearemorerobusttonoisethansample
+resentationonly.Whereasasimpleneuralnetworkregressortends consensus[LSK∗10]andordinaryHoughtransform[BM12].
+toproducesmootherpredictions(closertotheplanarregression),
+ourCNNapproachismorediscriminative.
+ToevaluatethegainsoftheHoughtransformfornormalestima-
+tionusingaCNN,weimplementedanotherbaselinemethod.Once
+the point neighborhood has been oriented via 3D PCA, we com-
+pute a depth map. The depth direction is the axis of the smallest
+eigenvalue. This depth map has the same dimension as the accu- 90°
+mulator in our method. We build a corresponding learning set as
+...
+10°
+forourmethod,andtrainthesamenetworkarchitecture.Figure10
+7.5°
+showsthecomparisonbetweenourHough-basedmethodandthis
+depth-map-basedbaseline.Ourmethodperformssignificantlybet- 5°
+terregardingPGP,whilehavingaslightlyhigherRMS.Thedepth 2.5°
+mapisnotasregularastheHoughaccumulatorforlearning.
+0°
+Wecouldnotcompareto[ZCL∗13]and[LZC∗15]astheircode
+isnotavailable.Still,weexperimentedona100k-pointoctahedron
+(seeFigure11),whichisoneofthesyntheticmodeltheseauthors
+usedforvalidation.With50%noise,theyobtainslightlybetterre- [HDD∗92] [LSK∗10] [BM12] CNN1s
+sults than ours (please refer to [LZC∗15]), but at high computa-
+tional cost; their parallel version is still more than twice slower Figure11:Visualresultsoffourestimationalgorithmsonanocta-
+than our implementation. Moreover, our method degrades better hedron(100kpoints)with50%noise(topline),150%noise(mid-
+forhighnoise,notrequiringtotuneparameters.Comparedtoother dle)and200%noise(bottom).Colorscale,givenontheright,maps
+baselinemethods,weestimatesharpfeaturesbetterthanusingre- adeviationangletoacolor(redisadeviationgreaterthan10◦).
+(cid:13)c 2016TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2016TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 8 ---
+
+288 AlexandreBoulch&RenaudMarlet/DeepLearningforRobustNormalEstimationinUnstructuredPointClouds
+0%noise 100%noise 200%noise
+Figure12:Proportionofnormalswitherrorlessthanagivenangle,on250k-pointdragonwithnoise0%(left),100%(middle),200%(right).
+(outliers) (outliers) (nooutliers)
+truenormals CNN1snormals CNN1snormals
+Figure13:Robustnesstooutlierson250k-pointdragonwith100%noiseand1M-pointoutliersaddedinboundingbox.
+Experiments on real data. We first consider the scan data of a
+dragon sculpture, for which an accurate mesh is available (3.6M
+[HDD*92] 69.8%
+vertices,7.2Mtriangles).Thedragonfeaturessharpattributessuch [DG04] 64.6%
+[CP05] 70.2%
+asfangs,hornsandscales.Werandomlydraw250kpointsonmesh [LSK*10] 70.3%
+[BM12] 72.5%
+faces; these faces determine reference normals. We use this sub- CNN 1s 72.4%
+CNN 1s da 72.7%
+sampledpointcloudtocomparewith[BM12]andtostudythesen-
+sitivity to the neighborhood size K, for different levels of noise. [HDD*92] 49.1%
+[DG04] 42.4%
+Unsurprisingly,whennonoiseisadded(besidestherandompick- [CP05] 49.3%
+ingofpointsonthemesh),asmallneighborhoodprovidesabetter [ [ L B S M K 1 * 2 1 ] 0 ] 5 5 1 2 . . 6 5 % %
+sensitivitytosharpfeatures.Inthiscase,weonlyperformslightly CNN 1s 52.5%
+CNN 1s da 52.7%
+better than [BM12]. But when noise increases, information level
+dropsinsmallneighborhoodsandlargeronesprovideabetterro- Figure14:Officeroom,proportionofnormalswitherrorlessthan
+bustness.Inthismorecomplicatedsetting,weperformsignificantly agivenangle.CNN1sda:ourrobustdensity-adaptivevariant.
+betterthan[BM12].Toevaluaterobustnesstooutliers,wedraw1M
+randompointsinthedragonboundingbox.With100%noise,RMS
+erroris21.1◦,vs20.5◦withnooutliers(seeFigure13).
+Wethenconsideralaserscanofanofficeroom.Thepointcloud
+naturallyfeaturesedges,corners,aswellasdensityvariationswith
+anisotropic bias. An exact ground truth is not known, but can be
+approximatedfromtheimplicitmeshstructureofthedepthmap:
+weconsiderasreferenceateachpointthemeannormalofthesur- Figure15:Officeroomdetail.Fromlefttoright:planarregression,
+roundingfaces.Althoughthesesnormalscanbenoisyinverydense ourplainmethod,andourrobustdensity-adaptivemethod.
+areas,theyareenoughforalgorithmcomparison.Giventhispseudo
+groundtruth,Figure14showstheproportionofestimatednormals
+withangularerrorbelowagiventhreshold.Duetothesmallnum-
+berofpointsnearedges,comparedtopointsonwideplanarareas,
+thedifferencebetweenthemethodsissmallonaverage.However,
+normalscanbelocallywrong,ascanbeseenonFigure15,which
+illustratesadetailofthescenewithdensityvariations.
+Finally,weshowqualitativeresultonoutdoorscenes.Figures7
+displaysadetailoftheDFC2015aeriallidartileinFigure16,with
+robustnesstodensityvariations.Figure17illustratesshadingwith
+normalsestimatedonasparsestructure-from-motionpointcloud. Figure16:DFC2015lidartilewithnormals(decimated2.3M).
+(cid:13)c 2016TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2016TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 9 ---
+
+AlexandreBoulch&RenaudMarlet/DeepLearningforRobustNormalEstimationinUnstructuredPointClouds 289
+Pointcloud(textured) Detail1(untextured,shaded) Detail2(untextured,shaded) Detail3(untextured,shaded)
+Figure17:OurCNN-basednormalestimationonastructure-from-motionpointcloudoftheChâteaudeSceaux(France),400kpoints.
+Model Cube Armadillo DFCdetail Omotondo DFCtile approachwhichautomaticallyadaptstodifferentsizesofneighbor-
+Size 20k 173k 185k 997k 2.3M hoods,requiringbasicallynochangeintheCNNframework.Asa
+[HDD∗92] 0.3 2.1 1.9 12 25 result,wearemorerobustandmoreaccuratemostofthetimeon
+[DG04] 3.2 55 41 441 1243 bothsyntheticandrealdata,althoughjustafewtimesslower.We
+[CP05] 5.8 50 54 304 711 actuallymostoftenalsooutperformotherstate-of-the-artmethods,
+[BM12] 1.9 13 11 44 147 even[ZCL∗13,LZC∗15]forhighnoisewhichanywayareslower.
+[LSK∗10] 8.8 64 75 392 902
+Perspectives include the study of geometric transformations in
+CNN1s 4.5 33 34 183 423
+Houghspacetofacilitatethelearningandimproveaccuracy.The
+CNN3s 5.9 48 52 273 639
+CNNarchitectureandtrainingdatacancertainlyalsobeimproved,
+CNN5s 7.9 69 73 382 897
+asthespaceofpossibilitiesisquitelarge.Actually,futureadvances
+Table2:Computationtimes(inseconds)fordifferentmodelsand inresearchonCNNsshouldalsobenefittothisframework.
+differentmethods.CNNvariantsarewithoutdensity-adaptivity.
+Thismethodparticipatestoanewtrendingeometryprocessing
+wheregeometricdecisionsarelearntfromground-truthdata,pos-
+Computation timesare given in Table 2. We tested a cube with siblybiasedtowardsaspecifickindofscenes,ratherthantheresult
+50%noiseandrealpointclouds:Armadillo,Omotondo,DFCdetail ofexplicit,manually-designedgeometriccomputations.
+of Figure 7, whole DFC tile of Figure 16. Our running times are
+competitive w.r.t. compared methods, except [HDD∗92] which is Implementation details. The Hough transform is coded with
+much faster. As weshare thefirst stepof [BM12] (cf.Section 3) Eigen(eigen.tuxfamily.org).Neighborsearchinapointcloud
+andasaccumulatorfillingisfast,thedifferenceresidesmainlyin uses nanoflann kd-tree (https://github.com/jlblancoc/
+theCNNcomputations.Usingmorescalesincreasescomputation nanoflann). Our CNN framework relies on Torch-nn (https:
+time, due to the more expensive search for neighborhoods larger //github.com/torch/nn). For experiments, we used a laptop
+thanK=100(uptoK=512),despitetheuseofakd-tree. withInteli7quadcoreandGPUNVidiaGTX970m.
+Limitations. Contrarytootherapproacheswhereitisinexpensive Acknowledgements. We would like to thank all the authors of
+tochangethevalueofaparameter,wehavetoretrainthenetwork the different papers for providing their code or executable. Ar-
+ifweneedtoadaptspecificallytotheinputdata.Itmainlyconcerns madillo and Omotondo come from the Aim@Shape repository.
+theneighborhoodsizeK,whichcontrolsthesensitivitytodetails. AsianDragoncomesfromtheStanford3Dscanningrepository.
+However,themultiscaleapproachreducestheinfluenceofthispa-
+rameterbyanalyzingdifferentscalessimultaneously.
+References
+[ABCO∗03] ALEXA M., BEHR J., COHEN-OR D., FLEISHMAN S.,
+9. Conclusion
+LEVIND.,SILVAC.T.: Computingandrenderingpointsetsurfaces.
+IEEETr.onVisualizationandComputerGraphics9,1(2003),3–15.1
+Wehaveproposedanovelmethodfornormalestimationinunorga-
+nizedpointcloudsusingaconvolutionalneuralnetwork.Although [ACSTD07] ALLIEZP.,COHEN-STEINERD.,TONGY.,DESBRUNM.:
+Voronoi-based variational reconstruction of unoriented point sets. In
+wereusedtheideaoftheHoughtransformof[BM12]aswellasits
+SGP(2007),pp.39–48.1
+robustandefficientsamplingstrategy,weintroducedawholerange
+of new features. We use a different accumulator, which is planar
+[ASGCO10] AVRON H., SHARF A., GREIF C., COHEN-OR D.: L1-
+sparsereconstructionofsharppointsetsurfaces. TOG)29,5(2010),
+rather than spherical and which is less discretized. Moreover, we
+135:1–135:12.1
+defineatotallydifferent,CNN-baseddecisionproceduretoselect
+[Bal81] BALLARD D. H.: GeneralizingtheHoughtransformtodetect
+anormalfromtheaccumulator.Besides,todealwithdensityvari- arbitraryshapes.PatternRecognition13,2(1981),111–122.2
+ation, we introduce a fast approach to pick points according to a
+[BDLGM14] BOULCHA.,DELAGORCEM.,MARLETR.:Piecewise-
+distributionbasedonalocaldensityestimation.Finally,toimprove planar3Dreconstructionwithedgeandcornerregularization. CGF33,
+robustness and reduce parameter tuning, we present a multiscale 5(2014),55–64.1
+(cid:13)c 2016TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2016TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 10 ---
+
+290 AlexandreBoulch&RenaudMarlet/DeepLearningforRobustNormalEstimationinUnstructuredPointClouds
+[BELN11] BORRMANND.,ELSEBERGJ.,LINGEMANNK.,NÜCHTER [LBD∗89] LECUN Y., BOSER B., DENKER J. S., HENDERSON D.,
+A.: The3DHoughTransformforplanedetectioninpointclouds:A HOWARDR.E.,HUBBARDW.,JACKELL.D.: Backpropagationap-
+reviewandanewaccumulatordesign.3DResearch2,2(2011).2,3 plied to handwritten zip code recognition. Neural computation 1, 4
+(1989),541–551.2,4
+[BM12] BOULCH A., MARLET R.: Fastandrobustnormalestimation
+forpointcloudswithsharpfeatures. CGF31,5(2012),1765–1774. 1, [LSD∗15a] LI B., SHEN C., DAI Y., VAN DEN HENGEL A., HE M.:
+2,3,4,5,6,7,8,9 Depthandsurfacenormalestimationfrommonocularimagesusingre-
+gression on deep features and hierarchical CRFs. In CVPR (2015),
+[BRG16] BANSALA.,RUSSELLB.,GUPTAA.: Marrrevisited:2D-3D
+pp.1119–1127.2
+alignmentviasurfacenormalprediction.InCVPR(2016).2
+[LSD15b] LONGJ.,SHELHAMERE.,DARRELLT.:Fullyconvolutional
+[CLP10] CHAUVEA.-L.,LABATUTP.,PONSJ.-P.: Robustpiecewise- networksforsemanticsegmentation.InCVPR(2015).2
+planar3Dreconstructionandcompletionfromlarge-scaleunstructured
+pointdata.InCVPR(2010),pp.1261–1268.1
+[LSK∗10] LIB.,SCHNABELR.,KLEINR.,CHENGZ.,DANGG.,JIN
+S.:Robustnormalestimationforpointcloudswithsharpfeatures.Com-
+[CP05] CAZALSF.,POUGETM.:Estimatingdifferentialquantitiesusing puters&Graphics34,2(2010),94–106.1,4,6,7,9
+polynomialfittingofosculatingjets.ComputerAidedGeometricDesign
+22,2(2005),121–146.1,6,9
+[LZC∗15] LIU X., ZHANG J., CAO J., LI B., LIU L.: Qualitypoint
+cloudnormalestimationbyguidedleastsquaresrepresentation. Com-
+[Dav88] DAVIESE.R.: ApplicationofthegeneralisedHoughtransform puters&Graphics51,C(2015),106–116.1,4,6,7,9
+tocornerdetection.ComputersandDigitalTechniques,IEEProceedings
+[MNG04] MITRAN.J.,NGUYENA.,GUIBASL.: Estimatingsurface
+E135,1(1988),49–54.2
+normalsinnoisypointclouddata. InternationalJournalofComputa-
+[DFC15] IEEEGRSSDataFusionContest,2015.URL:http://www. tionalGeometry&Applications14,04n05(2004),261–276.1
+grss-ieee.org/community/technical-committees/ [ÖGG09] ÖZTIRELIA.C.,GUENNEBAUDG.,GROSSM.H.: Feature
+data-fusion.5 preservingpointsetsurfacesbasedonnon-linearkernelregression.CGF
+[DG04] DEYT.K.,GOSWAMIS.:Provablesurfacereconstructionfrom 28,2(2009),493–501.1
+noisysamples.InSoCG(2004),pp.330–339.1,5,6,9 [PCFG12] PENEDONESH.,COLLOBERTR.,FLEURETF.,GRANGIER
+D.: ImprovingObjectClassificationusingPoseInformation. Research
+[DH72] DUDAR.O.,HARTP.E.: UseoftheHoughtransformationto
+reportIdiap-RR-30-2012,IdiapResearchInstitute,2012.2
+detectlinesandcurvesinpictures.Comm.ACM15,1(1972),11–15.2
+[PKKG03] PAULYM.,KEISERR.,KOBBELTL.P.,GROSSM.: Shape
+[FGMP14] FERRI F., GIANNI M., MENNA M., PIRRI F.: Pointcloud
+modelingwithpoint-sampledgeometry.TOG)22,3(2003),641–650.1
+segmentationand3Dpathplanningfortrackedvehiclesinclutteredand
+dynamicenvironments. In3rdIROSWorkshoponRobotsinClutter: [PWP∗11] PHAM M.-T., WOODFORD O. J., PERBET F., MAKI A.,
+PerceptionandInteractioninClutter(2014).1 STENGERB.,CIPOLLAR.:Anewdistanceforscale-invariant3Dshape
+recognitionandregistration.InICCV(2011),pp.145–152.2
+[GDDM14] GIRSHICKR.,DONAHUEJ.,DARRELLT.,MALIKJ.:Rich
+featurehierarchiesforaccurateobjectdetectionandsemanticsegmenta- [RL00] RUSINKIEWICZS.,LEVOYM.: QSplat:amultiresolutionpoint
+tion.InCVPR(2014),pp.580–587.2 renderingsystemforlargemeshes.InSIGGRAPH(NewYork,NY,USA,
+2000),pp.343–352.1
+[GG07] GUENNEBAUD G., GROSS M.: Algebraic point set surfaces.
+TOG)26,3(2007),23.1 [SEZ∗14] SERMANETP.,EIGEND.,ZHANGX.,MATHIEUM.,FER-
+GUSR.,LECUNY.: Overfeat:Integratedrecognition,localizationand
+[Gra15] GRAHAM B.: Sparse 3D convolutional neural networks. In detectionusingconvolutionalnetworks.InICLR(2014).2
+BMVC(2015).2
+[SLJ∗14] SZEGEDY C., LIU W., JIA Y., SERMANET P., REED S.,
+[HDD∗92] HOPPE H., DEROSE T., DUCHAMP T., MCDONALD J., ANGUELOVD.,ERHAND.,VANHOUCKEV.,RABINOVICHA.:Going
+STUETZLEW.: Surfacereconstructionfromunorganizedpoints. ACM deeperwithconvolutions.InCVPR(2014).2
+SIGGRAPHComputerGraphics26,2(1992),71–78.1,6,7,9
+[SSW15] SUNY.,SCHAEFERS.,WANGW.:Denoisingpointsetsvial0
+[HLZ∗09] HUANGH.,LID.,ZHANGH.,ASCHERU.,COHEN-ORD.: minimization.CAGD35-36(2015),2–15.1
+Consolidation of unorganized point clouds for surface reconstruction. [SW02] SHENF.,WANGH.:CornerdetectionbasedonmodifiedHough
+TOG)28,5(2009),176.1 transform.PatternRecognitionLetters23,8(2002),1039–1049.2
+[Hou62] HOUGHP.V.C.: Methodandmeansforrecognizingcomplex [SWK07] SCHNABELR.,WAHLR.,KLEINR.: EfficientRANSACfor
+patterns.U.S.Patent3.069.654(1962).2 point-cloudshapedetection.CGF26,2(2007),214–226.1
+[HSK∗12] HINTON G. E., SRIVASTAVA N., KRIZHEVSKY A., [TM78] TSUJIS.,MATSUMOTOF.: Detectionofellipsesbyamodified
+SUTSKEVER I., SALAKHUTDINOV R. R.: Improving neural net- Houghtransformation.IEEETrans.onComputers27,8(1978).2
+works by preventing co-adaptation of feature detectors. preprint
+[WFG15] WANGX.,FOUHEYD.F.,GUPTAA.: Designingdeepnet-
+arXiv:1207.0580(2012).2
+worksforsurfacenormalestimation.InCVPR(2015),pp.539–547.2
+[IK88] ILLINGWORTHJ.,KITTLERJ.:AsurveyoftheHoughtransform. [WSK∗15] WU Z., SONG S., KHOSLA A., YU F., ZHANG L., TANG
+CVGIP44,1(1988),87–116.2
+X.,XIAOJ.:3DShapeNets:Adeeprepresentationforvolumetricshape
+[JIS03] JEONG W. K., IVRISSIMTZIS I. P., SEIDEL H. P.: Neural modeling.InCVPR(2015).2
+meshes:statisticallearningbasedonnormals. InPacificConferenceon [XO93] XU L., OJA E.: Randomized Hough transform (RHT): basic
+ComputerGraphics&Applications(CGA)(2003),pp.404–408.2 mechanisms,algorithms,andcomputationalcomplexities. CVGIP:Im-
+[KEB91] KIRYATIN.,ELDARY.,BRUCKSTEINA.M.: Aprobabilistic ageunderstanding57,2(1993),131–154.2
+Houghtransform.PatternRecognition24,4(1991),303–316.2 [ZCL∗13] ZHANGJ.,CAOJ.,LIUX.,WANGJ.,LIUJ.,SHIX.: Point
+[KPW∗10] KNOPP J., PRASAD M., WILLEMS G., TIMOFTE R., cloudnormalestimationvialow-ranksubspaceclustering.Computers&
+Graphics37,6(2013),697–706.1,7,9
+VAN GOOL L.: Hough transform and 3D SURF for robust three di-
+mensionalclassification.InECCV(2010),pp.589–602.2 [ZF14] ZEILERM.D.,FERGUSR.:Visualizingandunderstandingcon-
+volutionalnetworks.InECCV(2014),pp.818–833.2
+[KSH12] KRIZHEVSKYA.,SUTSKEVERI.,HINTONG.E.: Imagenet
+classificationwithdeepconvolutionalneuralnetworks. InNIPS(2012). [ZPVBG01] ZWICKERM.,PFISTERH.,VANBAARJ.,GROSSM.:Sur-
+2 facesplatting.InSIGGRAPH(2001),ACM,pp.371–378.1
+(cid:13)c 2016TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2016TheEurographicsAssociationandJohnWiley&SonsLtd.

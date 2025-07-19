@@ -1,0 +1,793 @@
+# PCPNet-Learning local shape properties from raw point clouds.pdf
+# Converted: 2025-07-18 12:58:59
+# Method: pdfplumber
+# Domain: pixel2physics
+# Source: /home/user/vekt/papers/pixel2physics/pdfs/layer2/PCPNet-Learning local shape properties from raw point clouds.pdf
+# Output: /home/user/vekt/papers/pixel2physics/dot_txt/layer2/PCPNet-Learning local shape properties from raw point clouds.txt
+
+
+--- Page 1 ---
+
+EUROGRAPHICS2018/D.GutierrezandA.Sheffer Volume37(2018),Number2
+(GuestEditors)
+PCPNET
+Learning Local Shape Properties from Raw Point Clouds
+PaulGuerrero1 YanirKleiman2 MaksOvsjanikov2 NiloyJ.Mitra1
+1UniversityCollegeLondon 2LIX,ÉcolePolytechnique,CNRS
+Abstract
+Inthispaper,weproposePCPNET,adeep-learningbasedapproachforestimatinglocal3Dshapepropertiesinpointclouds.
+Incontrasttothemajorityofpriortechniquesthatconcentrateonglobalormid-levelattributes,e.g.,forshapeclassificationor
+semanticlabeling,wesuggestapatch-basedlearningmethod,inwhichaseriesoflocalpatchesatmultiplescalesaroundeach
+pointisencodedinastructuredmanner.Ourapproachisespeciallywell-adaptedforestimatinglocalshapepropertiessuchas
+normals(bothunorientedandoriented)andcurvaturefromrawpointcloudsinthepresenceofstrongnoiseandmulti-scale
+features.Ourmaincontributionsincludebothanovelmulti-scalevariantoftherecentlyproposedPointNetarchitecturewith
+emphasisonlocalshapeinformation,andaseriesofnovelapplicationsinwhichwedemonstratehowlearningfromtraining
+dataarisingfromwell-structuredtrianglemeshes,andapplyingthetrainedmodeltonoisypointcloudscanproducesuperior
+resultscomparedtospecializedstate-of-the-arttechniques.Finally,wedemonstratetheutilityofourapproachinthecontextof
+shapereconstruction,byshowinghowitcanbeusedtoextractnormalorientationinformationfrompointclouds.
+CCSConcepts
+•Computingmethodologies → Point-basedmodels;Shapeanalysis;•Computersystemsorganization → Neuralnetworks;
+1. Introduction
+A fundamental problem in shape analysis is to robustly estimate
+localshapepropertiesdirectlyfromrawpointclouds.Althoughthe
+problemhasbeenextensivelyresearched,aunifiedmethodthatis
+robustundervariousdataimperfections(e.g.,varyingnoiselevel,
+samplingdensity,levelofdetails,missingdata)remainselusive.
+In the context of continuous surfaces, local surface properties
+suchasnormalsandcurvatureareclassicaldifferentialgeometric
+notions [dC76] and are known to uniquely characterize local ge-
+ometryuptorigidtransformations.Inthecontextofdiscretesur-
+faces(e.g.,polygonalmeshes),theestimationmethodsfallbroadly
+intwogroups:evaluatenormal/curvaturesusingdiscretedifferen-
+tialgeometryoperators,oruselocalprimitivefittingand‘readoff’
+normal/curvaturesusingattributesfromthefittedprimitives.
+Inthecaseofpointclouds,afirstchallengeisthelackofconnec-
+tivityinformation.Further,inrealacquisitionsetups(e.g.,usinga
+depthcamera),thedataisoftennoisy,incomplete,andtypicallyex-
+hibitvaryingsamplingdensity(basedonscanningdirection).Fig-
+ure1showsatypicalrawpointcloudscan.Theusualapproachis
+tofirstlocallydefineaneigborhoodaroundeachpointusingar-
+radiusball,andthenfitalocalprimitive(e.g.,planeorquadricsur-
+face)totheneighboringpoints.Althoughthemethodissimpleand
+regularly used, in practice, the challenge is to appropriately pick
+thevariousparameters.Forexample,whileitisdesirabletopick
+egamI
+DBGR
+slamron
+duolc
+tniop
+tupni
+erutavruc
+naem
+DOI: 10.1111/cgf.13343
+Figure1:Ourmethodcanjointlyestimatevarioussurfaceproper-
+tieslikenormalsandcurvaturefromnoisypointsets.Thissceneis
+fromtheNYUdataset[NSF12]withaddedGaussiannoiseandthe
+bottom row shows properties estimated with PCPNET. Note that
+ourmethodwasnotspecificallytrainedonanyRGBDdataset.
+asmallvalueofrtoavoidsmoothingoutsharpfeatures,thesame
+parametercanleadtounstableresultsinthepresenceofnoise.Sim-
+(cid:13)c 2018TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2018TheEurographicsAssociationandJohn
+Wiley&SonsLtd.PublishedbyJohnWiley&SonsLtd.
+
+--- Page 2 ---
+
+76 P.Guerrero,Y.Kleiman,M.Ovsjanikov&N.J.Mitra/ PCPNET:LearningLocalShapePropertiesfromRawPointClouds
+ilarly,alargevalueofr canover-smoothlocalfeatures,although thedirectionofminimalvarianceasthenormal.Itisextremelyef-
+theestimatedvaluestendtobemorestableundernoise.Thekey ficient,hasbeenanalyzedextensively,anditsbehaviorinthepres-
+challengeforsuchfitting-basedmethodsistomanuallysetthevar- ence of noise and curvature is well-understood [MNG04]. At the
+iousparametersdependingonthe(unknown)featuredistributionin sametime,itsuffersfromseveralkeylimitations:firstitdepends
+shapesand(unknown)noisemarginsintherawscans. heavilyonthechoiceoftheneighborhoodsize,whichcanleadto
+oversmoothing for large regions or sensitivity to noise for small
+Inthiswork,weproposeadata-drivenapproachforestimating
+ones.Second,itisnotwell-adaptedtodealwithstructurednoise,
+localshapepropertiesdirectlyfromrawpointclouds.Inabsenceof
+andeventhetheoreticalanalysisdoesnotapplyinthecasemulti-
+localconnectivityinformation,onecouldtrytovoxelizetheoccu-
+ple,interacting,noisyshaperegions,whichcanleadtonon-local
+piedspace,orestablishlocalconnectivityusingknearestneighbor
+effects.Finally,itdoesnotoutputthenormalorientationsincethe
+graph.However,suchdiscretizationsintroduceadditionalquantiza-
+eigenvectorsofthecovariancematrixaredefinedonlyuptosign.
+tionerrorsleadingtopoor-qualitylocalestimates.Inaninteresting
+recentworkonnormalestimation,Boulchetal.[BM16]generate Severalmethodshavebeenproposedtoaddresstheselimitations
+asetoflocalapproximatingplanes,andthenproposeadata-driven by both designing more robust estimation procedures, capable of
+denoisingapproachintheresultantHough-spacetoestimatenor- handlingmorechallengingdata,andbyproposingtechniquesfor
+mals. In Section 5, we demonstrate that even such a specialized estimating normal orientation. The first category includes more
+approachleadstoerrorsonrawpointcloudsduetoadditionalam- robust distance-weighted approaches [PKKG03], methods such
+biguitiesintroducedbythechoiceoftherepresentation(RANSAC- as osculating jets [CP03] based on fitting higher-order primitives
+likeHoughspacevoting). robustly, the algebraic point set surface approach based on fit-
+ting algebraic spheres [GG07], approaches based on analyzing
+Inspired by the recently introduced PointNet architec-
+the distribution of Voronoi cells in the neighborhood of a point
+ture [QSMG17] for shape classification and semantic seg-
+[AB99,ACSTD07,MOG11], and those based on edge-aware re-
+mentation,weproposeanovelmulti-scalearchitectureforrobust
+sampling [HWG∗13] among many others. Many of these tech-
+estimation of local shape properties under a range of typical im-
+niquescomewithstrongtheoreticalapproximationandrobustness
+perfectionsfoundinrawpointclouds.Ourkeyinsightisthatlocal
+guarantees(seee.g.,Theorem5.1in[MOG11]).However,inprac-
+shapepropertiescanberobustlyestimatedbysuitablyaccounting
+ticetheyrequireacarefulsettingofparameters,andoftendepend
+forshapefeatures,noisemargin,andsamplingdistributions.How-
+onspecialtreatmentinthepresenceofstrongorstructurednoise.
+ever,sucharelationiscomplex,anddifficulttomanuallyaccount
+Unfortunately,thereisnouniversalparametersetthatwouldwork
+for. Hence, we propose a data-driven approach based on local
+forallsettingsandshapetypes.
+pointneighborhoods,whereinwetrainaneuralnetworkPCPNET
+to directly learn local properties (normals and curvatures) using
+Normal orientation. These challenges are arguably even more
+groundtruthreferenceresultsunderdifferentinputperturbations.
+pronounced when trying to estimate oriented normals, since they
+WeevaluatedPCPNETonvariousinputpointcloudsandcom- depends on both local (for direction) and global (for orientation)
+paredagainstarangeofalternatespecailizedapproaches.Ourex- shapeproperties.Earlymethodshavereliedonsimplegreedyori-
+tensivetestsindicatethatPCPNETconsistentlyproducessuperior entation propagation, as done, for example in the seminal work
+normal/curvatureestimatesonrawpointcloudsinchallengingsce- on shape reconstruction [HDD∗92]. However, these approaches
+narios.Specifically,themethodisgeneral(i.e.,thesamearchitec- can easily fail in the presence of noisy normal estimates or high
+ture simultaneously produces normal and curvature estimates), is complexity shapes. As a result, they have has been extended
+robusttoarangeofnoisemarginsandsamplingvariations,andpre- significantly in recent years both through more robust estimates
+servesfeaturesaroundhigh-curvatureregions.Finally,inaslightly [HLZ∗09],whichhavealsobeenadaptedtohandlelargemissing
+surprisingresult,wedemonstratethatacascadeofsuchlocalanal- regionsthroughpointskeletonestimation[WHG∗15],andglobal
+ysis(viathenetworkdepth)canlearntorobustlyextractoriented techniques based on signed distance computations [MDGD∗10],
+normals,whichisaglobalproperty(similarpatchesmayhaveop- among others. Nevertheless, reliably estimating oriented normals
+positeinside/outsidedirectionsindifferentshapes).CodeforPCP- remains challenging especially across different noise levels and
+NET isavailableatgeometry.cs.ucl.ac.uk/projects/ shapestructures.
+2018/pcpnet/.
+Curvatureestimation. Similarlytosurfacenormals,alargenum-
+berofapproacheshasalsobeenproposedforestimatingprincipal
+2. RelatedWorks curvatures.Severalsuchtechniquesrelyonestimatingthenormals
+first and then robustly fitting oriented curvatures [HM02,LP05],
+2.1. Estimatinglocalattributes
+whichinturnleadtoestimatesofprincipalcurvaturevalues.Ina
+Normal estimation. Estimating local differential information similarspirit,curvaturescanbecomputedbyconsideringnormal
+such as normals and curvature has a very long history in geome- variation in a local neighborhood [BC94,KNSS09]. While accu-
+tryprocessing,motivatedinlargepartbyitsdirectutilityinshape rateinthepresenceofcleandata,thesetechniquesrelyonsurface
+reconstruction. Perhaps the simplest and best-known method for normals,andanyerrorisonlybeexacerbatedbythefurtherpro-
+normal estimation is based on the classical Principal Component cessing.Onepossiblewaytoestimatethenormalandthesecond
+Analysis(PCA).Thismethod,usedasearlyas[HDD∗92],isbased fundamentalformjointlyisbydirectlyfittinghigherorderpolyno-
+onanalyzingthevarianceinapatcharoundapointandreporting mialasisdoneforexampleinthelocaljetfittingapproach[CP03].
+(cid:13)c 2018TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2018TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 3 ---
+
+P.Guerrero,Y.Kleiman,M.Ovsjanikov&N.J.Mitra/ PCPNET:LearningLocalShapePropertiesfromRawPointClouds
+points ... points ...
+FNN FNN FNN
+3 64 64 64 64 128
+...
+H
+H
+H
+... ...
+STN STN
+1 2 output
+single h (p ) properties input l j
+patch pj∈ Pr i
+1 2 3
+per-point 512 256
+feature vector per-point per-patch
+feature vector feature vector
+points
+FNN ...
+points ...
+...
+H
+H
+H
+...
+...
+...
+77
+Single
+scale
+r ... ... ... ... ... ...
+P
+i
+Multi-scale
+STN
+patches with 1
+multiple radii ...
+h (p ) output
+around the l j
+same p
+r
+oint
+... ...
+pj∈ Pr
+i
+properties
+P 1
+i
+P r 2 ... ... (same as above) H 3
+i 512 256
+per-point per-patch
+feature vector H feature vector
+Figure2:Weproposetwoarchitecturesforournetwork,asingle-andamulti-scalearchitecture.Inbotharchitectures,thenetworklearnsasetofpoint
+functionshinthelocalspaceofapointsetpatch.Similartoadensityestimator,pointfunctionvaluesateachpointinthepatcharesummedup.Theresulting
+per-patchfeaturevectorHcanbeusedtoregresspatchproperties.STNsarespatialtransformernetworksthatapplyeitheraquaternionrotation(STN1)ora
+fulllineartransformation(STN2).FNNsarefullyconnectednetworks.Inthemulti-scalearchitecturepatchesofdifferentscalearetreatedasasinglelarger
+patchbythepointfunctions.Thefinalsumisperformedseparatelyforeachpatch.
+Thisapproachisfastandreliableforwell-structuredpointsets,but network for learning normal directions from a large ground-truth
+alsorequiressettingascaleparameterwhichischallengingtofind corpus. While not projection based, this method still relies on a
+foralltypesofnoiseorshapetypes.InSection5,wecompareour 2D-based representation for learning and moreover loses orienta-
+PCPNET tojetfittinginawidevarietyofsettingsandshowthat tioninformation,whichcanbecrucialinpractice.Morerecently,
+ourdata-drivenmethodcanproducesuperiorresultswithoutman- the PointNet architecture [QSMG17] has been designed to oper-
+ualintervention,attheexpenseofextensiveoff-linelearning. ateon3Dpointcloudsdirectly.Thisapproachisveryversatileas
+it allows to estimate properties of 3D shapes without relying on
+2D projections or volumetric approximations. The original archi-
+2.2. DeepLearningforGeometricData
+tectureispurelyglobal,takingtheentirepointcloudintoaccount,
+Intherecentyears,severalmethodshavebeenproposedforana- primarilytargetingshapeclassificationandsemanticlabeling,and
+lyzingandprocessing3Dshapesbybuildingonthesuccessofma- hassincethenbeenextendedtoahierarchicalapproachinavery
+chinelearningmethods,andespeciallythosebasedondeeplearn- recentPointNet++[QYSG17],whichisdesignedtobettercapture
+ing (see, for example, recent overviews in [MRB∗16,BBL∗17]). localstructuresinpointclouds.
+Thesemethodsarebasedonthenotionthatthesolutionstomany
+OurapproachisbasedontheoriginalPointNetarchitecture,but
+problems in geometric data analysis can benefit from large data
+ratherthanusingitforestimatingglobalshapepropertiesforshape
+repositories. Many learning-based approaches are aimed at esti-
+classification or semantic labeling, as has also been the focus of
+matingglobalpropertiesfortaskssuchasshapeclassificationand
+PointNet++[QYSG17],weadaptitexplicitlyforestimatinglocal
+often are based either on 2D projections (views) of 3D shapes
+differentialpropertiesincludingorientednormalsandcurvature.
+or on volumetric representations (see, e.g., [QSN∗16] for a com-
+parison). However, several methods have also been proposed for
+shapesegmentation[GZC15,MGA∗17]andevenshapecorrespon- 3. Overview
+dence[MBBV15,WHC∗16,BMRB16],amongmanyothers.
+Estimatinglocalsurfaceproperties,suchasnormalsorcurvature,
+Although most deep learning-based techniques for 3D shapes fromnoisypointcloudsisadifficultproblemthatistraditionally
+heavilyexploitthemeshstructureespeciallyfordefiningconvolu- solvedbyextractingthesepropertiesfromsmoothsurfacesfittedto
+tionoperations,fewapproacheshavealsobeenproposedtodirectly localpatchesofthepointcloud.Howeverthesemethodsaresen-
+operateonpointclouds.Perhapsthemostcloselyrelatedtooursare sitive to parameter settings such as the neighborhood size, or the
+recentapproachesofBoulchetal.[BM16]andQietal.[QSMG17]. degreeofthefittedsurface,thatneedtobecarefullysetinpractice.
+Theformerproposeanarchitectureforestimatingunorientednor- Instead,weproposeanalternativeapproachthatisrobusttoawide
+malsonpointcloudsbycreatingaHoughtransform-basedrepre- range of conditions with the same parameter settings, based on a
+sentationof localshapepatchesand usingaconvolutional neural deepneuralnetworktrainedonarelativelysmallsetofshapes.
+(cid:13)c 2018TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2018TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 4 ---
+
+P.Guerrero,Y.Kleiman,M.Ovsjanikov&N.J.Mitra/ PCPNET:LearningLocalShapePropertiesfromRawPointClouds
+RMS angle error ours jet pca Boulch et al. PointNet
+absolute (deg.) relative ss ms ss+cms+c smallmedlarge smallmedlarge ss ms-3ms-5 train test
+35 2 9.66 9.62 11.98 10.10 12.18 12.35 17.35 12.78 12.29 16.77 10.23 10.02 10.22 24.08 57.98
+11.46 11.37 12.94 11.66 16.79 12.84 17.42 16.33 12.87 16.87 11.62 11.51 11.80 24.30 58.08
+18.26 18.87 19.11 18.94 44.53 18.33 18.85 43.67 18.38 18.94 22.66 23.36 24.44 25.93 58.18
+22.80 23.28 23.67 23.48 53.77 27.68 23.41 53.23 27.52 23.50 33.39 36.70 38.17 29.79 58.28
+13.42 11.70 14.83 12.82 14.36 13.13 17.80 14.85 12.81 17.26 11.02 10.67 10.95 30.64 60.62
+5 1 11.74 11.18 14.38 12.07 14.66 13.39 19.29 15.33 13.66 19.87 12.47 11.95 12.08 24.42 60.45
+0 14.56 14.34 16.15 14.85 26.05 16.29 19.02 26.03 16.26 18.87 16.90 17.37 17.94 26.53 58.93
+0 noise strength 0.1 0 noise strength 0.1
+mrofinu-non
+0
+esion
++
+gnilpmas
+.gva
+78
+pca & jet, small
+pca & jet, medium
+pca & jet, large
+Boulch et al.
+m1m3m5
+ours, single-scale
+ours, multi-scale
+ours, s.s. joint with curv.
+ours, m.s. joint with curv.
+Figure3:ComparisonoftheRMSnormalangleerrorofourmethod(ss:singlescale,ms:mult-scale,+c:jointnormalsandcurvature)togeometricmethods
+(jetfittingandPCA)withthreepatchsizesandtwodeeplearningmethods(Boulchetal.[BM16]andPointNet[QSMG17]).Notethatgeometricmethods
+requirecorrectparametersettings,suchasthepatchsize,toachievegoodresults.Ourmethodgivesgoodresultswithouttheneedtoadjustparameters.
+Given a point cloud P={p 1,...,p N }, our PCPNET network vectorsarebasedonthepositionofasinglepointonly,anddonot
+(see Figure 2 for an overview) is applied to local patches of this includeanyneighborhoodinformation.Thisrelianceononlyeither
+pointcloudP r
+i
+∈P,centeredatpoints p iwithafixedradiusrpro- fullylocalorfullyglobalfeaturevectorsmakesithardtoestimate
+portional to the point cloud’s bounding box extent. We then esti- propertiesthatdependonlocalneighborhoodinformation.
+matelocalshapepropertiesatthecentralpointsofthesepatches.
+Instead, we propose computing local feature vectors that de-
+The architecture of our network is inspired by the recent Point-
+scribe the local neighborhood around a point. These features are
+Net [QSMG17], adapted to local r-neighborhood patches instead
+better suited to estimate local surface properties. In this section,
+oftheentirepointcloud.Thenetworklearnsasetofknon-linear
+weprovideanalternativeanalysisofthePointNetarchitectureand
+functions in the local patch neighborhoods, which can intuitively
+showavariationofthemethodthatcanbeappliedtolocalpatches
+beunderstoodasasetofdensityestimatorsfordifferentregionsof
+insteadofgloballyontheentirepointcloudtogetastrongperfor-
+thepatch.Thesegiveak-dimensionalfeaturevectorperpatchthat
+manceincreaseforlocalsurfacepropertyestimation,outperform-
+canthenbeusedtoregressvariouslocalfeatures.
+ingthecurrentstate-of-theart.
+4. Algorithm
+4.1. Pre-processing
+O fro u m r g a oa p l oi i n n t t c h l i o s u w d o th rk at i a s p t p o ro r x e i c m on at s e tr ly uc s t a l m oc p a le l s su an rfa u c n e kn p o ro w p n er s t u ie r s - GivenapointcloudP={p 1,...,p N },alocalpatchP r i iscentered
+face. In real-world settings, these point clouds typically originate
+atpointp iandcontainsallpointswithindistancerfromthecenter.
+Ourtargetforthispatcharelocalsurfacepropertiessuchasnormal
+fromscansorstereoreconstructionsandsufferfromawiderange
+of deteriorating conditions, such as noise and varying sampling n i andprincipalcurvaturevaluesκ1 i andκ2 i atthecenterpoint p i.
+Toremoveunnecessarydegreesoffreedomfromtheinputspace,
+densities.Traditionalgeometricapproachesforrecoveringsurface
+wetranslatethepatchtotheoriginandnormalizeitsradiusmul-
+propertiesusuallyperformreasonablywellwiththecorrectparam-
+tiplyingwith1/r.Sincethecurvaturevaluesdependonscale,we
+etersettings,butfindingthesesettingsisadata-dependentandoften
+transformoutputcurvaturestotheoriginalscaleofthepointcloud
+difficulttask.Thesuccessofdeep-learningmethods,ontheother
+bymultiplyingwithr.Ournetworktakesafixednumberofpoints
+hand, is in part due to the fact that they can be made robust to
+as input. Patches that have too few points are padded with zeros
+awiderangeofconditionswithasinglehyper-parametersetting,
+(thepatchcenter),andwepickarandomsubsetforpatcheswith
+seemingly a natural fit to this problem. The current lack of deep
+toomanypoints.
+learning solutions may be due to the difficulty of applying deep
+networkstounstructuredinputlikepointclouds.Simplyinputting
+pointsasalistwouldmakethesubsequentcomputationsdependent 4.2. Architecture
+ontheinputordering.
+Our single-scale network follows the PointNet architecture, with
+Apossiblesolutiontothisproblemwasrecentlyproposedunder two changes: we constrain the first spatial transformer to the do-
+thenameofPointNetbyQietal.[QSMG17],whoproposecom- main of rotations and we exchange the max symmetric operation
+bining input points with a symmetric operation to achieve order- withasum.AnoverviewofthearchitectureisshowninFigure2.
+independence.However,PointNetisappliedgloballytotheentire Wewillnowprovideintuitionforthischoiceofarchitecture.
+pointcloud,andwhiletheauthorsdodemonstrateestimationoflo-
+calsurfacepropertiesaswell,theseresultssufferfromtheglobal Quaternionspatialtransformer. Thefirststepofthearchitecture
+natureofthemethod.PointNetcomputestwotypesoffeaturesina transforms the input points to a canonical pose. This transforma-
+pointcloud:asingleglobalfeaturevectorfortheentirepointcloud tion is optimized for during training, using a spatial transformer
+andasetoflocalfeaturesvectorsforeachpoint.Thelocalfeature network [JSZK15]. We constrain this transformation to rotations
+(cid:13)c 2018TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2018TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 5 ---
+
+P.Guerrero,Y.Kleiman,M.Ovsjanikov&N.J.Mitra/ PCPNET:LearningLocalShapePropertiesfromRawPointClouds
+ours jet pca
+small med large small med large
+33.41 26.61 44.62 55.58 40.80 41.79 41.94
+34.12 42.22 36.87 61.51 42.47 41.56 41.60
+40.39 70.59 47.26 50.00 65.52 47.13 55.51
+44.63 90.68 50.23 52.82 87.37 46.86 49.52
+35.47 34.20 66.40 45.70 46.32 52.09 68.99
+37.97 31.29 34.31 57.62 30.84 34.16 55.96
+37.67 49.27 46.61 53.87 52.22 43.93 52.25
+mrofinu-non
+0
+esion
++
+gnilpmas
+.gva
+79
+RMS angle error mean fraction
+of flipped normals ms
+absolute (deg.) relative relative
+90 2 2
+ours, multi-scale
+pca & jet, small
+pca & jet, medium
+pca & jet, large 1 1
+10 Boulch et al.
+0 0.8 0.8
+0 noise strength 0.1 0 noise strength 0.1 0 noise strength 0.1
+Figure4:Comparisonofourapproachfororientednormalestimationwiththebaselinejet-fittingandPCAcoupledwithMST-basednormalorientation
+propagationinapost-processingstep.WeshowtheRMSangleerror,therelativeerrorcomparedtoourperformance,aswellasrelativefractionofflipped
+normalsinothermethodsacrossdifferentlevelsofnoise.Notethattheerrorsinorientednormalestimationarehighlycorrelatedwiththenumberoforientation
+flips,suggestingthepost-processingstepasthemainsourceoferror.
+byoutputtingaquaternioninsteadofa3×3matrix.Thisisdone patch.Thisintroducesglobalinformationintothepointfunctions,
+fortworeasons:First,unlikeinsemanticclassification,ouroutputs increasingtheperformanceofthenetwork.
+aregeometricpropertiesthataresensitivetotransformationsofthe
+patch.Thiscausedunstableconvergencebehaviorinearlyexperi- Output regression. In a trained model, the patch feature vector
+mentswherescalingwouldtakeonextremevalues.Rotation-only Hj=(H 1(P r i ),...,H k(P r i ))providesarichdescriptionofthepatch.
+constraints stabilized convergence. Second, we have to apply the Varioussurfacepropertiescanberegressedfromthisfeaturevec-
+inverse of this transformation to the final surface properties and tor.Weuseathree-layerfullyconnectednetworktoperformthis
+computingtheinverseofarotationistrivial. regression.
+Pointfunctionsandsymmetricoperation. Oneimportantprop- 4.3. Multi-scale
+ertyofthenetworkisthatitshouldbeinvarianttotheinputpoint
+Wewillshowintheresults,thatthearchitecturepresentedaboveis
+ordering. Qi et al. [QSMG17] show that this can be achieved by
+veryrobusttochangesinnoisestrengthandsampledensity.Forad-
+applyingasetoffunctions{h 1,...,h
+k
+}withsharedparametersto
+ditionalrobustness,weexperimentedwithamulti-scaleversionof
+each point separately and then combine the resulting values for
+thearchitecture.Insteadofusingasinglepatchasinput,weinput
+eachpointusingasymmetricoperation:
+H l(P r i)= ∑ h l(p j). t n h o r r e m e a p l a iz tc a h ti e o s n P o r i f 1, o P ur r I 2 p a a n tc d he P s r I , 1 th w e i s th e d ar if e fe s r c e a n le t d ra t d o ii t . h D e u sa e m to e t s h i e ze s , c b a u le t
+pj∈ Pr i containdifferentlysizedregionsofthepointcloud.Thisallowsall
+H l(P r i )isthenafeatureofthepatchandh l arecalledpointfunc- pointfunctionstofocusonthesameregion.Wealsotriplethenum-
+tions; they are scalar-valued functions, defined in the in the local berofpointfunctions,butapplyeachfunctiontoallthreepatches.
+coordinateframeofthepatch.ThefunctionsH canintuitivelybe Thesumhowever,iscomputedovereachpatchseparately.Thisre-
+l
+understoodasdensityestimatorsforaregiongivenbyh.Theirre- sultsinnine-foldincreaseinpatchfeaturesH,whicharethenused
+l
+sponseisstrongerthemorepointsareinthenon-zeroregionofh. toregresstheoutputproperties.Figure2illustratesasimpleversion
+l
+Comparedtousingthemaximumassymmetricoperation,aspro- ofthisarchitecturewithtwopatches.
+posedbyQietal.,oursumdidnothaveasignificantperformance
+difference; however we decided to use the sum to give our point 5. EvaluationandDiscussion
+functionsasimpleconceptualinterpretationasdensityestimators.
+Inthissection,weevaluateourmethodinvarioussettingsandcom-
+Thepointfunctionsh arecomputedas:
+l
+pare it to current state of the art methods. In particular, we com-
+(cid:0) (cid:1)
+h l(p j)=(FNN 2 ◦STN 2) g 1(p j),...,g 64(p j) , pareourcurvatureestimationtotheosculatingjetsmethod[CP03]
+and a baseline PCA method, and the normal estimation addition-
+whereFNN isathree-layerfully-connectednetworkandSTN is
+2 2
+ally to PointNet [QSMG17] and the normal estimation method
+thesecondspatialtransformer.Thefunctionsgcanbeunderstood
+ofBoulchetal.[BM16].Wetesttheperformanceofthesemeth-
+asalesscomplexsetofpointfunctions,sincetheyareatashallower
+odsonshapeswithvariousnoiselevelsandsamplingrates,asde-
+depthinthenetwork.Theyarecomputedanalogoustoh.
+scribedbelow.ForthemethodofBoulchetal.,weusethecodeand
+trainednetworksprovidedbytheauthors.PointNethascode,butno
+Secondspatialtransformer. Thesecondspatialtransformerop-
+(cid:0) (cid:1) pre-trainednetworkfornormalestimationavailable,sowere-train
+erates on the feature vector gj = g 1(p j),...,g 64(p j) , giving a
+onourdataset.Fortheothermethodsweusetheimplementation
+64×64transformationmatrix.Someinsightcanbegainedbyinter-
+withinCGAL[CGA].
+pretingthetransformationasafullyconnectedlayerwithweights
+that are computed from the feature vectors g of all points in the Bytrainingfordifferentoutputvalues,PCPNetcanbetrainedto
+(cid:13)c 2018TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2018TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 6 ---
+
+P.Guerrero,Y.Kleiman,M.Ovsjanikov&N.J.Mitra/ PCPNET:LearningLocalShapePropertiesfromRawPointClouds
+tes
+gniniart
+tes
+tset
+80
+Figure5:Ourshapedataset.Wetrainandtestonamixofsimpleshapes
+likethesphereortheboxes,andmoredetailedshapeslikestatuesorfig-
+ures.Thetestsetadditionallycontainsthreeanalyticshapesnotshownhere
+(sphere,cylinderandathinsheetshowninFigure8).
+Figure 6: Afewpointcloudsfromourdatasetwiththeirvariants.The
+baseshapeisshownintheleftcolumn,followedbyvariantswiththreenoise
+output3Dnormals,curvatures,orbothatthesametime.Weeval- levels(0.0025,0.012and0.024),andtwonon-uniformsamplingschemes.
+uate the performance of the network when trained separately for Shapesarecoloredaccordingtotheirunorientednormals.
+normalsandcurvaturesorjointlyusingasinglenetworkforboth
+outputs. We also compare the performance of a network trained
+point clouds with added gaussian with a standard deviation of
+withbothcurvaturevaluesagainstnetworkstrainedforindividual
+0.0025, 0.012, and 0.024 of the length of the bounding box di-
+curvaturevalues.
+agonal of the shape. Examples are shown in Figure 6. The noise
+is added to the point position but no change is made to ground
+5.1. Dataset truthnormalsandcurvatures,asthegoalistorecovertheoriginal
+One of the advantages of training the network on point cloud normals and curvatures of the mesh. In total, our training dataset
+patchesratherthanpointcloudsofcompleteshapesisthatwecan contains4variantsofeachmesh,or32pointcloudsintotal.
+sample a large number of patches from each shape. Two patches Ourtestsetcontains18shapeswithamixoffigurinesandman-
+withnear-bycenterpointsmaystillbesignificantlydifferentfrom made objects. We also include 3 shapes that are constructed and
+each other in terms of the type of structure they contain, such as sampledanalyticallyfromdifferentiablesurfaceswhichhavewell-
+edges,corners,etc.Thus,wecanusearelativelysmalldatasetof definednormalsandcurvatureseverywhere.Fortheseshapes,the
+labeledshapestotrainournetworkeffectively.Figure5showsthe normalsandcurvaturesarecomputedinanexactmannerforeach
+shapesinourdataset. sampled point, rather than being approximated by the faces and
+Our training dataset contains 8 shapes, half of which are man verticesofamesh.
+madeobjectsorgeometricconstructswithflatfacesandsharpcor-
+In addition to the three noise variants we described above, we
+ners, and the other half are scans of figurines (bunny, armadillo,
+generate two point clouds for each mesh that are sampled with
+dragonandturtle).Allshapesaregivenastriangularmeshes.We
+varyingdensity,suchthatcertainregionsoftheshapearesparsely
+sample the faces of each mesh uniformly with 100000 points to
+sampledcomparedtootherregions(seeFigure6).Thisgivesusa
+generateapointcloud.Eachofthese100000pointscanbeusedas
+totalof90pointcloudsinthetestset.
+apatchcenter.Welabeleachpointwiththenormalofthefaceit
+wassampledfrom.Wealsoestimatetheκ1 andκ2 curvatureval-
+ues at the vertices and interpolate them for each sampled points. 5.2. EvaluationMetrics
+Thecurvatureestimationisperformedusingthemethodsuggested
+As loss function during training, and to evaluate our results, we
+by Rusinkiewicz in [Rus04] (the code was provided by authors
+computethedeviationofthepredictednormalsand/orcurvatures
+of[SF15]).
+from the ground truth data of the shape. For normals, we experi-
+For each mesh we generate a noise-free point cloud and three mentedwithboththeEuclideandistanceandtheangledifference
+(cid:13)c 2018TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2018TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 7 ---
+
+P.Guerrero,Y.Kleiman,M.Ovsjanikov&N.J.Mitra/ PCPNET:LearningLocalShapePropertiesfromRawPointClouds
+k1: ours k1: jet k2: ours k2: jet
+ms ms+nsmallmedlarge ms+nsmallmedlarge
+mrofinu-non
+0
+esion
++
+gnilpmas
+.gva
+mrofinu-non
+0
+esion
++
+gnilpmas
+.gva
+81
+Principal Curvature k1 Principal Curvature k2
+RMS normalized error RMS normalized error
+102 1.35 1.36 2.19 6.55 2.97 102 0.54 1.61 2.91 1.59
+ours, multi-scale 1.53 1.48 57.35 6.68 2.90 ours, m.s. joint with normals 0.53 25.83 2.98 1.53
+ours, m.s. joint with normals jet, small
+jet, small 1.49 1.46 60.91 9.86 3.30 101 jet, medium 0.51 22.27 4.88 1.73
+jet, medium
+jet, large
+jet, large 1.41 1.59 49.40 10.78 3.58 0.53 18.17 5.22 1.84
+101
+1.37 1.32 2.07 1.40 1.53 0.61 2.04 0.79 0.83
+100
+1.09 1.09 2.04 1.54 1.89 0.55 1.92 0.89 1.09
+0 1.37 1.38 28.99 6.13 2.69 0 0.54 11.97 2.94 1.43
+0 noise strength 0.1 0 noise strength 0.1
+Figure7:Estimationofbothprincipalcurvaturevaluescomparedtojetfitting.Thelowperformanceofjetfittingshowsthatcurvatureestimationonpoint
+cloudsisachallengingproblem.Ourmethodachievessignificantlybetterperformance,oftenmorethanoneorderofmagnitude.PleaseseeSection5.2fora
+descriptionoftheerrormetric.
+betweentheestimatednormalandgroundtruthnormal.Themean TitanXPascal.Afullrandomizationofthedataset,mixingpatches
+squareEuclideandistanceoverabatchgaveslightlybetterperfor- ofdifferentshapesineachbatch,wasvitaltoachievestablecon-
+mance during training, but for better interpretability, we use the vergence. All our training was performed in PyTorch [pyt] using
+RMSangledifferencetoevaluateourresultsonthetestset. stochastic gradient descent with batch size 64, a learning rate of
+For curvatures, we compute the mean-square of the following
+10− 4and0.9momentum.
+rectifiederrorfortrainingandtheRMSforevaluation.Therectified Forevaluation,weselectarandomsubsetof5000pointsfrom
+errorL(κ˜)isdefinedas: eachshapeinthetestset,andoutputtheerrorofourmethodandthe
+(cid:12) (cid:12) baseline methods over this subset. For the CGAL baseline meth-
+(cid:12) κ˜−κ (cid:12)
+L(κ˜)=(cid:12) (cid:12), ods [CGA], we use different patch sizes, where the size is deter-
+(cid:12)max(|κ|,1)(cid:12)
+mined by the number of nearest neighbors in the patch. For the
+whereκ˜ istheestimatedcurvatureandκisthegroundtruthcur- small patch size we use the recommended setting of 18 nearest
+vature.Thiserrorisrelativetothemagnitudeofthegroundtruth neighbors,andweincreasethenumberofnearestneighborsbythe
+curvature,sinceerrorsaroundhighcurvatureareasareexpectedto same ratio as the area covered by our patches. This amounts to
+belarger. 112and450nearestneighborsforthemediumandlargepatches,
+respectively.ForBoulchetal.[BM16],weusethesingle-scale,3-
+5.3. TrainingandEvaluationSetup scaleand5-scalenetworksprovidedbytheauthors.
+Ournetworkcanbetrainedseparatelyfornormalsandcurvatures,
+orjointlytooutputbothatthesametime.Inthejointnetwork,the 5.4. Results
+lossfunctioniscombinedduringtraining.Weexperimentwithboth
+Figure 3 shows the comparison of unoriented normal estimation
+variants to test whether the information about the curvatures can
+usingthemethodsdiscussedabove.Inthisexperiment,weconsider
+helpnormalestimationandviceversa,sincethetwoarerelated.We
+eithertheoutputnormalortheflippednormal,whicheverhasthe
+train single-scale and multi-scale networks for each variant, each
+lowesterror.Inthetopsectionofthetable,weshowtheresultsfor
+with1024pointfunctionsh.
+varyinglevelsofnoise,fromzeronoisetohighnoise.Thetworows
+Thevariantsofournetworkaretrainedbyselectingpatchescen- inthemiddleshowtheresultsforpointcloudswithnon-uniform
+teredrandomlyatoneofthe100Kpointsineachpointcloud.The samplingrate.Ineachofthecategoriesweshowtheaverageforall
+radius of a patch is relative to the length of the bounding box of 20shapesinthecategory.Thelastrowshowstheglobalaverage
+thepointcloud.Thesingle-scalenetworksaretrainedwithapatch erroroverallshapes.Ontheleft,weshowtheleveloferrorofeach
+size of 0.05, and the multi-scale networks are trained with patch methodinrelationtothenoiseleveloftheinput.Thegraphonthe
+sizesof0.01,0.03,and0.07.Weuseafixednumberof500points right shows the error of each method relative to the error of our
+perpatch.Iftherearefewerpointwithinthepatchradius,wepad singlescalemethod(markedssinthetable).
+withzeros(thepatchcenter).Thenetworkcaneasilylearntoignore
+We can observe the following general trends in these results:
+thesepaddedpoints.Iftherearemorepointswithintheradius,we
+first,notethatallofourmethodsconsistentlyoutperformcompet-
+selectarandomsubset.Amoresophisticatedsubsamplingmethod
+ingtechniquesacrossallnoiselevels.Inparticular,observethatthe
+canbeimplementedinfuturework,whichmaybeparticularlyben-
+methodsbasedonjetfittingperformwellunderaspecificintensity
+eficialforhandlingvaryingsamplingdensities.
+ofnoise,dependingonthesizeoftheneighborhood.Forexample,
+Ineachepoch,weiteratethrough1000patchesfromeachpoint whilejetsmallworkswellundersmallnoise,itproduceslargeer-
+cloud in the training set. We train for up to 2000 epochs on our rorsstrongnoiselevels.Conversely,jetlargeisfairlystableunder
+dataset,oruntilconvergence.Typicallytrainingconvergedbefore strongnoisebutover-smoothsforsmallnoiselevels,whichleadsto
+reachingthisthreshold,takingbetween8hoursforsingle-scalear- alargeerrorforcleanpointclouds.Onesourceoferrorofourcur-
+chitectures and 30 hours for multi-scale architectures on a single rentnetworkcompared,e.g.totheresultsofBoulchetal.[BM16]
+(cid:13)c 2018TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2018TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 8 ---
+
+P.Guerrero,Y.Kleiman,M.Ovsjanikov&N.J.Mitra/ PCPNET:LearningLocalShapePropertiesfromRawPointClouds
+input point cloud jet pca ours
+90
+0
+).ged(
+rorre
+elgna
+82
+Figure8:PoissonreconstructionfromorientednormalsestimatedbyPCPNETcomparedtobaselinemethods.Ourmethodcanreconstructorientednormals
+withsufficientqualitytosuccessfullyperformPoissonreconstruction,evenincasesthatarehardtohandlebytraditionalmethods.Althoughourmethod
+performsbetteronaverage,therearealsofailurecases,asdemonstratedinthebottomrow.
+isthatourmethoddoesnotperformaswellinthecaseofchangesin wholepointcloud,thereislessresolutionavailableforlocaldetails.
+samplingdensity.Thisisbecauseournetworkwastrainedonlyon Thisresultsalargeperformancegaptoothermethodsondetailed
+uniformlysampledpointsetsandthereforeisnotasrobusttosuch shapes,agapthatgetssmallerwithstrongernoise,wheretheother
+changes.Nevertheless,itachievescomparableresultsacrossmost methodsstarttomissdetailsaswell.Notealsothatourmulti-scale
+levelsofnon-uniformsamplingandshowssignificantimprovement architecture produces slightly better results than the single scale
+overall.ForPointNet,weprovidetheperformanceonthetraining one for normal estimation. At the same time, the multi-scale ar-
+setinadditiontothetestset.PointNetoverfitsourtrainingset,and chitecturewhichcombinesbothnormalsandcurvatureestimation
+the training set performance gives and approximate lower bound (ms+c)producesslightlyinferiorresultsbuthastheadvantageof
+fortheachievableerror.SincePointNet’spointfunctionscoverthe outputtingbothnormalsandcurvatureatthesametime.
+(cid:13)c 2018TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2018TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 9 ---
+
+P.Guerrero,Y.Kleiman,M.Ovsjanikov&N.J.Mitra/ PCPNET:LearningLocalShapePropertiesfromRawPointClouds
+ours jet small jet medium jet large Boulch et al.
+60
+0
+).ged(
+rorre
+elgna
+83
+14.31 59.02 18.57 25.03 15.88
+11.56 39.21 16.81 17.07 20.13
+18.71 53.53 19.16 16.33 31.27
+24.58 26.75 26.52 45.57 27.87
+Figure9:Qualitativecomparisonofthenormalsestimatedbyourmethodtothenormalsestimatedbybaselinemethods.Shapesarecoloredaccordingto
+normalangleerror,whereblueisnoerrorandyellowishigherror,numbersshowtheRMSerroroftheshape.
+InFigure4weshowtheresultsoftheevaluationofourapproach tohandlefortheMST-basedpropagation.Thebottom-mostshape
+comparedtobaselinesfororientednormalestimation.Namely,we showsafailurecaseofourmethod.Wesuspectthataconfiguration
+useourpipelinedirectlyforestimatingorientednormals,andcom- liketheinsideofthispipewasnotencounteredduringtraining.In-
+parethemtothejetfittingandPCAtogetherwithMST-basedori- creasingordiversifyingthetrainingsetshouldsolvethisproblem.
+entationpropagationasimplementedinCGAL[CGA].Wedonot Notethatonaverage,weexpecttheperformanceofourmethodfor
+includethemethodofBoulchetal.[BM16]inthiscomparison,asit Poissonreconstructiontobeproportionaltothefractionofflipped
+isnotdesignedtoproduceorientednormals.InFigure4weplotthe normals,asshowninFigure4.
+RMSangleerrorwhilepenalizingchangesinorientationaswellas
+Figure 7 shows the comparison of our curvature estimation to
+theerrorrelativetoourperformance.Finally,wealsoreporttherel-
+jetfitting.Duetothesensitivityofcurvaturetonoise,noisypoint
+ativefractionofnormalsthatareflippedwithrespecttotheground
+clouds are a challenging domain for curvature estimation. Even
+truthorientation,forothermethodsacrossdifferentlevelsofnoise.
+thoughourmethoddoesnotachieveaveryhighlevelofaccuracy
+Notethattheerrorsinorientednormalestimationarehighlycorre-
+(recallthattheerrorisnormalizedbythemagnitudeoftheground
+latedwiththenumberoforientationflips,suggestingthattheori-
+truthcurvature),ourperformanceisconsistentlysuperiortojetfit-
+entation propagation done during the post-processing is the main
+tingonbothprincipalcurvaturevalues,byasignificantmargin.
+sourceoferror.Alsonotethatorientationpropagationonlyworks
+wellforextremelysmallnoiselevelsandveryquicklydeteriorates Qualitative comparisons of the normal error on four shapes of
+leadingtolargeerrors.Givenasetoforientednormals,wecanalso our dataset are shown in Figure 9. Note that for classical surface
+performPoissonreconstruction.Figure8showsafewexamplesof fitting(jetintheseexamples),smallpatchsizesworkwellonde-
+objectsreconstructedwithourorientednormals.Notethatthetop- tailed structures like in the bottom row, but fail on noisy point
+mostpointcloudsamplestwosidesofathinsheet,makingithard clouds,whilelargepatchesaremoretoleranttonoise,butsmooth
+to determine which side of the sheet a point originated from. In outsurfacedetail.Boulchetal.[BM16]performwellinalow-noise
+themiddlerow,thepointcloudexhibitssharpedgesthatarehard setting,buttheperformancequicklydegradeswithstrongernoise.
+(cid:13)c 2018TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2018TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 10 ---
+
+P.Guerrero,Y.Kleiman,M.Ovsjanikov&N.J.Mitra/ PCPNET:LearningLocalShapePropertiesfromRawPointClouds
+ours jet small jet medium jet large
+3
+0
+rorre
+.vruc
+.mron
+84
+0.58 4.80 0.90 0.78
+1.92 48.15 3.38 3.80
+0.87 38.5 6.30 2.74
+0.93 8.20 2.26 1.45
+Figure10:Qualitativecomparisonofcurvaturevaluesestimatedbyourmethodtothecurvaturevaluesestimatedbyabaselinemethodwiththreedifferent
+patchsizes.Shapesarecoloredaccordingtothecurvatureestimationerror,whereblueisnoerrorandyellowishigherror,numbersshowtheRMSerrorof
+theshape.
+Eventhoughourmethoddoesnotalwaysperformbestincasesthat work on point clouds arising from triangle meshes corrupted by
+areoptimalfortheparametersettingofaanothermethod(e.g.ver- variouslevelsofnoiseandshowthroughextensiveevaluationthat
+susjetfittingwithlargepatchsizeinthethirdrow,wheretheshape our approach achieves state-of-the-art results across a wide vari-
+isverysmoothandnoisy),itperformsbetterinmostcasesandon ety of challenging scenarios. In particular, our method allows to
+average. replacethedifficultanderror-pronemanualtuningofparameters,
+present in the majority of existing techniques with a data-driven
+InFigure10,weshowqualitativeresultsofcurvatureestimation
+training.Moreover,weshowimprovementwithrespecttootherre-
+forselectedshapes.Thecolorofthepointsmarkstheerrorincur-
+centlyproposedlearning-basedmethods.
+vature,whereblueisnoerrorandyellowishigherror.Errorsare
+computedinthesamemannerasdescribedinSection5.2,andare While producing promising results in a variety of challenging
+clampedbetween0and3.Theerrorofourcurvatureestimationis scenarios,ourmethodcanstillfailinsomesettings,suchasinthe
+typicallybelow1,whileforpreviousmethodtheestimationisoften presence of large flat areas, in which patch-based information is
+ordersofmagnitudehigherthanthegroundtruthcurvature. notenoughtodeterminethenormalorientation.Forexample,our
+orientednormalestimationprocedurecanproduceinconsistentre-
+sults,e.g.,inthecentersoffacesalargecube.Amorein-depthanal-
+6. Conclusion,Limitations,andFutureWork ysisandabetter-adaptedmulti-resolutionschememightbeneces-
+sarytoalleviatesuchissues.
+Wepresentedaunifiedmethodforestimatingorientednormalsand
+principal curvature values in noisy point clouds. Our approach is In the future, we also plan to extend our technique to estimate
+basedonamodificationofarecentlyproposedPointNetarchitec- other differential quantities such as principal curvature directions
+ture,inwhichweplacespecialemphasisonextractinglocalprop- or even the full first and second fundamental forms, as well as
+erties of a patch around a given central point. We train the net- othermid-levelfeaturessuchastheShapeDiameterFunctionfrom
+(cid:13)c 2018TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2018TheEurographicsAssociationandJohnWiley&SonsLtd.
+
+--- Page 11 ---
+
+P.Guerrero,Y.Kleiman,M.Ovsjanikov&N.J.Mitra/ PCPNET:LearningLocalShapePropertiesfromRawPointClouds 85
+anoisyincompletepointcloud.Finally,itwouldalsobeinteresting [HM02] HUANGJ.,MENQC.-H.:Combinatorialmanifoldmeshrecon-
+to study the relation of our approach to graph-based neural net- structionandoptimizationfromunorganizedpointswitharbitrarytopol-
+ogy.Computer-AidedDesign34,2(2002),149–165.2
+works[DBV16,HBL15]ongraphsbuiltfromlocalneighborhoods
+ofthepointcloud. [HWG∗13] HUANG H., WU S., GONG M., COHEN-OR D., ASCHER
+U.,ZHANGH.R.:Edge-awarepointsetresampling.ACMTransactions
+onGraphics(TOG)32,1(2013),9.2
+Acknowledgement [JSZK15] JADERBERG M., SIMONYAN K., ZISSERMAN A.,
+KAVUKCUOGLU K.: Spatial transformer networks. In Proc. NIPS.
+This work was supported by the ERC Starting Grants Smart- 2015,pp.2017–2025.4
+Geometry (StG-2013-335373) and EXPROTEA (StG-2017- [KNSS09] KALOGERAKIS E., NOWROUZEZAHRAI D., SIMARI P.,
+758800), the Open3D Project (EPSRC Grant EP/M013685/1), SINGH K.: Extracting lines of curvature from noisy point clouds.
+the Chateaubriand Fellowship, chaire Jean Marjoulet from Ecole Computer-AidedDesign41,4(2009),282–292.2
+Polytechnique, FUI project TANDEM 2, and a Google Focused [LP05] LANGEC.,POLTHIERK.: Anisotropicsmoothingofpointsets.
+ResearchAward. ComputerAidedGeometricDesign22,7(2005),680–692.2
+[MBBV15] MASCI J., BOSCAINI D., BRONSTEIN M. M., VAN-
+DERGHEYNSTP.: Geodesicconvolutionalneuralnetworksonrieman-
+References nianmanifolds.InProc.ICCVWorkshops(December2015).3
+[AB99] AMENTAN.,BERNM.: Surfacereconstructionbyvoronoifil-
+[MDGD∗10] MULLEN P., DE GOES F., DESBRUN M., COHEN-
+tering.Discrete&ComputationalGeometry22,4(1999),481–504.2
+STEINER D., ALLIEZ P.: Signing the unsigned: Robust surface re-
+constructionfromrawpointsets. InComputerGraphicsForum(2010),
+[ACSTD07] ALLIEZP.,COHEN-STEINERD.,TONGY.,DESBRUNM.: vol.29,WileyOnlineLibrary,pp.1733–1741.2
+Voronoi-based variational reconstruction of unoriented point sets. In
+Proc.SGP(2007),pp.39–48.2
+[MGA∗17] MARONH.,GALUNM.,AIGERMANN.,TROPEM.,DYM
+N.,YUMERE.,KIMV.G.,LIPMANY.:Convolutionalneuralnetworks
+[BBL∗17] BRONSTEIN M. M., BRUNA J., LECUN Y., SZLAM A., onsurfacesviaseamlesstoriccovers. ACMTrans.Graph.36,4(2017),
+VANDERGHEYNST P.: Geometric deep learning: going beyond eu- 71:1–71:10.3
+clideandata. IEEESignalProcessingMagazine34,4(2017),18–42.
+[MNG04] MITRAN.J.,NGUYENA.,GUIBASL.: Estimatingsurface
+3
+normals in noisy point cloud data. In special issue of International
+[BC94] BERKMANN J., CAELLI T.: Computationofsurfacegeometry JournalofComputationalGeometryandApplications(2004),vol.14,
+andsegmentationusingcovariancetechniques. IEEETransactionson pp.261–276.2
+PatternAnalysisandMachineIntelligence16,11(1994),1114–1116.2 [MOG11] MERIGOT Q., OVSJANIKOV M., GUIBAS L. J.: Voronoi-
+[BM16] BOULCHA.,MARLETR.: Deeplearningforrobustnormales- basedcurvatureandfeatureestimationfrompointclouds. IEEETVCG
+timationinunstructuredpointclouds. ComputerGraphicsForum35,5 17,6(2011),743–756.2
+(2016),281–290.doi:10.1111/cgf.12983.2,3,4,5,7,9 [MRB∗16] MASCIJ.,RODOLÀE.,BOSCAINID.,BRONSTEINM.M.,
+[BMRB16] BOSCAINI D., MASCI J., RODOLÀ E., BRONSTEIN M.: LIH.: Geometricdeeplearning. InSIGGRAPHASIACourses(2016).
+Learning shape correspondence with anisotropic convolutional neural 3
+networks. In Advances in Neural Information Processing Systems [NSF12] NATHANSILBERMANDEREKHOIEMP.K.,FERGUSR.: In-
+(2016),pp.3189–3197.3 doorsegmentationandsupportinferencefromrgbdimages. InECCV
+[CGA] Cgal4.11-pointsetprocessing. https://doc.cgal.org/ (2012).1
+latest/Point_set_processing_3/index.html. Accessed: [PKKG03] PAULYM.,KEISERR.,KOBBELTL.P.,GROSSM.: Shape
+2017-10-10.5,7,9 modelingwithpoint-sampledgeometry.ACMTransactionsonGraphics
+(TOG)22,3(2003),641–650.2
+[CP03] CAZALSF.,POUGETM.:Estimatingdifferentialquantitiesusing
+polynomialfittingofosculatingjets.InProc.SGP(2003),pp.177–187. [pyt] PyTorchtensorsanddynamicneuralnetworksinpythonwithstrong
+2,5 gpuacceleration. http://pytorch.org/. Accessed:2017-10-10.
+7
+[DBV16] DEFFERRARDM.,BRESSONX.,VANDERGHEYNSTP.:Con-
+volutionalneuralnetworksongraphswithfastlocalizedspectralfilter- [QSMG17] QI C. R., SU H., MO K., GUIBAS L. J.: Pointnet:Deep
+ing. In Advances in Neural Information Processing Systems (2016), learningonpointsetsfor3dclassificationandsegmentation. InProc.
+pp.3844–3852.11 CVPR(2017).2,3,4,5
+[dC76] DECARMOM.: DifferentialGeometryofCurvesandSurfaces.
+[QSN∗16] QIC.R.,SUH.,NIESSNERM.,DAIA.,YANM.,GUIBAS
+L. J.: Volumetricandmulti-viewcnnsforobjectclassificationon3d
+PrenticeHall,EnglewoodCliffs,NJ,1976.1
+data.InProc.CVPR(2016),pp.5648–5656.3
+[GG07] GUENNEBAUD G., GROSS M.: Algebraic point set surfaces.
+[QYSG17] QIC.R.,YIL.,SUH.,GUIBASL.J.:Pointnet++:Deephi-
+ACMTransactionsonGraphics(Siggraph)26,3(2007),23–9.2
+erarchicalfeaturelearningonpointsetsinametricspace.arXivpreprint
+[GZC15] GUOK.,ZOUD.,CHENX.: 3dmeshlabelingviadeepcon- arXiv:1706.02413(2017).3
+volutionalneuralnetworks. ACMTransactionsonGraphics(TOG)35,
+[Rus04] RUSINKIEWICZS.: Estimatingcurvaturesandtheirderivatives
+1(2015),3.3
+ontrianglemeshes.InProc.3DPVT(Sept.2004).6
+[HBL15] HENAFF M., BRUNA J., LECUN Y.: Deep convolutional [SF15] SHABATY.B.,FISCHERA.: Designofporousmicro-structures
+networks on graph-structured data. arXiv preprint arXiv:1506.05163 usingcurvatureanalysisforadditive-manufacturing. ProcediaCIRP36
+(2015).11 (2015),279–284.6
+[HDD∗92] HOPPE H., DEROSE T., DUCHAMP T., MCDONALD J., [WHC∗16] WEIL.,HUANGQ.,CEYLAND.,VOUGAE.,LIH.:Dense
+STUETZLEW.: Surfacereconstructionfromunorganizedpoints. Proc. humanbodycorrespondencesusingconvolutionalnetworks. InProc.
+SIGGRAPH26,2(1992),71–78.2 CVPR(2016),pp.1544–1553.3
+[HLZ∗09] HUANGH.,LID.,ZHANGH.,ASCHERU.,COHEN-ORD.: [WHG∗15] WUS.,HUANGH.,GONGM.,ZWICKERM.,COHEN-OR
+Consolidationofunorganizedpointcloudsforsurfacereconstruction.In D.: Deeppointsconsolidation. ACMTransactionsonGraphics(TOG)
+ACMtransactionsongraphics(TOG)(2009),vol.28,ACM,p.176.2 34,6(2015),176.2
+(cid:13)c 2018TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2018TheEurographicsAssociationandJohnWiley&SonsLtd.

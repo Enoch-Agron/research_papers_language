@@ -1,0 +1,1067 @@
+# Fast and robust normal estimation for point clouds with sharp features.pdf
+# Converted: 2025-07-18 12:59:01
+# Method: pdfplumber
+# Domain: pixel2physics
+# Source: /home/user/vekt/papers/pixel2physics/pdfs/layer2/Fast and robust normal estimation for point clouds with sharp features.pdf
+# Output: /home/user/vekt/papers/pixel2physics/dot_txt/layer2/Fast and robust normal estimation for point clouds with sharp features.txt
+
+
+--- Page 1 ---
+
+DOI: 10.1111/j.1467-8659.2012.03181.x
+EurographicsSymposiumonGeometryProcessing2012 Volume31(2012),Number5
+EitanGrinspunandNiloyMitra
+(GuestEditors)
+Fast and Robust Normal Estimation for Point Clouds
+with Sharp Features
+AlexandreBoulch1andRenaudMarlet1
+1UniversitéParis-Est,LIGM(UMRCNRS),CenterforVisualComputing,EcoledesPontsParisTech
+6-8av.BlaisePascal,77455Marne-la-Vallée,France
+Abstract
+Thispaperpresentsanewmethodforestimatingnormalsonunorganizedpointcloudsthatpreservessharpfea-
+tures.ItisbasedonarobustversionoftheRandomizedHoughTransform(RHT).WeconsiderthefilledHough
+transformaccumulatorasanimageofthediscreteprobabilitydistributionofpossiblenormals.Thenormalswe
+estimatecorrespondstothemaximumofthisdistribution.Weuseafixed-sizeaccumulatorforspeed,statisticalex-
+plorationboundsforrobustness,andrandomizedaccumulatorstopreventdiscretizationeffects.Wealsopropose
+varioussamplingstrategiestodealwithanisotropy,asproducedbylaserscansduetodifferencesofincidence.
+Ourexperimentsshowthatourapproachoffersanidealcompromisebetweenprecision,speed,androbustness:
+itisatleastaspreciseandnoise-resistantasstate-of-the-artmethodsthatpreservesharpfeatures,whilebeing
+almostanorderofmagnitudefaster.Besides,itcanhandleanisotropywithminorspeedandprecisionlosses.
+CategoriesandSubjectDescriptors(accordingtoACMCCS): I.3.5[ComputerGraphics]:ComputationalGeometry
+andObjectModeling—
+1. Introduction
+Numerousalgorithmsrelyonthequalityofnormalestima-
+tioninpointclouds,suchaspoint-basedrendering[RL00],
+surface reconstruction [ÖGG09], 3D piecewise-planar re-
+construction[CLP10]andprimitiveextraction[SWK07].
+Forthis,regressionmethodsarethemostcommon.Hoppe
+Figure 1: Reconstructed normals of a corner with Least
+etal.[HDD∗92]estimatenormalsapproximatingatangent
+SquareRegression(left)andourmethod(right).
+planewitharegressionthatiscomputedefficientlybyprin-
+cipalcomponentanalysis(PCA).Othersurfaceshavebeen
+usedtoo,e.g.,spheres[GG07]orjets(atruncatedTaylorex- Moving Least Squares (MLS) [ABCO∗01], adaptive ver-
+pansion of a surface expression) such as quadrics [CP03]. sions[PKKG03],orrobustLocalKernelRegression(LKR)
+Regression methods are robust to noise, although they can [ÖGG09]computeanimplicitsurfaceandestimatenormals
+be improved in that respect with adaptive neighborhood asthegradientofthesurface.Theycanretrievesharpfea-
+sizes[MNG04],buttheyaresensitivetooutliers.Morere- tures,buttheydependonareliablepriorestimationofinput
+centworkhandlesbothnoiseandoutliers[GG07,HLZ∗09, normals.Bilateralfiltering[JDZ04]alsopreservessharpfea-
+YLL∗07].However,allregression-basedtechniquestendto tureswhilesmoothingevenregions,butitcanbeslowand
+smooth sharp features, and thus fail to correctly estimate thequalityreliesonthatofinputnormalstoo.
+normals near edges (see Figure 1). The estimation quality
+Otherapproachesdirectlyestimatenormalswithamethod
+also depends a lot on the size of the neighborhood used
+thatdoesnotoversmoothedges.Dey’smethod[DG06]re-
+forregression:largerneighborhoodsareneededtodealwith
+liesontheconstructionofaVoronoïdiagramandthesearch
+noise,buttheymakesharpfeaturesevensmoother.
+ofthefurthestvertexoftheVoronoïcell.Thismethodpre-
+Anotherclassofmethodsisbasedonapreliminarynor- serves sharp features and can deal with density variation.
+mal estimation, which is improved. Algorithms such as But it is quite sensitive to noise (and does not handle sur-
+(cid:13)c 2012TheAuthor(s)
+ComputerGraphicsForum(cid:13)c 2012TheEurographicsAssociationandBlackwellPublish-
+ingLtd. PublishedbyBlackwellPublishing,9600GarsingtonRoad,OxfordOX42DQ,
+UKand350MainStreet,Malden,MA02148,USA.
+
+--- Page 2 ---
+
+1766 A.Boulch&R.Marlet/FastandRobustNormalEstimationforPointCloudswithSharpFeatures
+treatmentofanisotropy.ThisisillustratedinFigure3,where
+avariationofpointdensityintwoplanescreatesestimation
+errorsinthelow-densityareawheretheyintersect.
+Wepresentanewmethodforestimatingnormalsthatad-
+dresses the requirements of real data: sensitivity to sharp
+features, robustness to noise, to outliers, and to sampling
+anisotropy,aswellascomputationalspeedtoachievescala-
+bility.Thismethodisbasedonafastandrobustadaptation
+Figure 2: Laser scan of room, highlights of a corner with oftheRandomizedHoughTransform(RHT).
+densityanisotropyandabevelededge.
+The Hough transform [Hou62] has been originally in-
+troduced to detect lines and arcs in bubble chamber pic-
+tures. Duda and Hart [DH72] discretize the space and in-
+troduced accumulators. The main idea of this transform is
+tochangethedatarepresentationspacesuchthatthedesired
+shape accumulates in a way that is easy to detect [IK88].
+It has been successfully used in two dimensions to detect
+otherprimitivessuchasellipses[TM78]orcorners[Dav88].
+Figure 3: Reconstructed normals of a corner with sharp WiththegeneralizedHoughtransform(GHT)[Bal87],Bal-
+densityvariation:Lietal.’salgorithm(left)andours(right). lard shows that the method can also be applied to detect
+non analytic features in images. The Hough transform has
+beenappliedinmanywaysfordetectionandclassification
+faceboundaries).Alliezetal.[ACSTD07]addressthisissue
+[Low04,GL09,BLK10,Oka09].Itgeneralizestohigherdi-
+withaVoronoï-PCAmethodthatprovidessomecontrolover
+mensionsandhasbeenusedinparticularfor3Dsegmenta-
+smoothness. More recently, both noise and sharp features tion,recognitionandregistration[KPW∗10,PWP∗11].The
+have been treated explicitly by Li et al. [LSK∗10], com-
+generalalgorithmhasalsobeenmodifiedandimprovedfor
+biningarobustlocalnoiseestimationandaRANSAC-like
+speed, robustness and precision. As going through all the
+methodthatisparameterizedbytheestimatednoisescale.It
+datamaytaketoomuchtime,Kiryatietal.[KEB91]propose
+handleswellnoiseandoutliers.Butitisnotveryfast(typi-
+a probabilistic version, consisting in observing only sub-
+callyaroundhalfanhourfor1.5millionpoints).Besides,it
+sets.Xuetal.[XOK90,XO93]defineaRandomizedHough
+doesnotaddressvariationofdensityatedges.
+Transform,whereapointdoesnotvoteforalltheprimitives
+Yet, sampling anisotropy is common in laser data, es- towhichitbelongs;thevoteisassociatedtoaprimitivecom-
+pecially when scanning objects with access constraints or putedfromasubsetofpoints.Thecriteriontostoppicking
+abruptvariations,suchasbuildings.First,thescanningde- moreprimitivesisauser-defined,globalcondition.
+vicemaynotspacesamplesevenly.Forinstance,laserswith As our objective is the estimation of a single normal at
+arotatingheadthatareusedtoscantheirsurroundingssys- eachpoint,weadapttheRandomizedHoughTransformto
+tematically oversample the upper polar region (vertical di- search for only one primitive. One original aspect of our
+rection),comparedtotheequatorialband(horizontaldirec- methodisthatweuseastopcriterioninheritedfromrobust
+tions),typicallywithafactorofoneortwoordersofmag- statisticstoendexploringthespaceofprimitives.Thisen-
+nitude. (The lower pole is generally occluded by the tri- suresbothspeedandrobustnesstopartialsampling.Robust-
+podsupport.)Second,evenwhendevicesamplingismostly nesstodensityanisotropyisobtainedbyselectingprimitives
+uniformly spaced, e.g., locally when focusing only on a asuniformlyaspossibleintheneighborhoodoftheconsid-
+small area, the actual 3D spacing of the sampled data de- eredpoint.Wedonotaddresstheproblemoforientatingnor-
+pendsontheincidenceofthelaseronthesurface.Asman- mals,whichcanbedoneseparately[HDD∗92,MdGD∗10].
+made objects often present sharp features, a significant lo- Inthefollowing,wefirstgiveageneraloverviewofournor-
+calanisotropyfrequentlyappearsinareasaroundedges.But malestimator(cf.§2)anddescribeourRobustRandomized
+even a smooth object shows sampling variations when the HoughTransform(cf.§3).Thenweexplainhowtocompute
+laser beam is almost tangent to the surface. This is illus- thenormalsdespitediscretization(cf.§4)andanisotropy(cf.
+tratedinFigure2(left).Moreover,variationsofdensitycan §5),andfinallypresentourresults(cf.§6).
+alsoappearinpointcloudsoriginatingfromphotogramme-
+try,evenonsmoothsurfaces,becauseofreconstructioner-
+2. Algorithm
+rorsandimprecision,e.g.,duetospecularortexturelesssur-
+faces.(Inourexperimentswithlasersandphotogrammetry, Beforedescribingouralgorithm,letusconsiderthefollow-
+weobservedthatnoisewasnotisotropiceither;itdepends ingsimplesituation.LetPbeapointonapiecewiseplanar
+onthesurface,inparticularontheviewpointincidence.)Yet, surfaceandletNPbeaneighborhoodofPonthissurface(a
+most normal estimation methods do not have any specific subsurface).Therearetwobasiccases.
+(cid:13)c 2012TheAuthor(s)
+(cid:13)c 2012TheEurographicsAssociationandBlackwellPublishingLtd.
+
+--- Page 3 ---
+
+A.Boulch&R.Marlet/FastandRobustNormalEstimationforPointCloudswithSharpFeatures 1767
+• IfPliesfarfromanyedgeorsharpfeature,thenpicking 3. RobustRandomizedHoughTransform
+threepointsinNPdefinestheplanarpatchthatPlieson,
+Thenumberofpossibletriplestopickcanbehuge,onthe
+andthusthenormal(ifthepointsarenotcollinear). orderof|NP|3.Wethuswanttoconsideronlyasubset,and
+• IfPliesnearanedgepartitioningtheneighborhoodNP
+wewanttostopsamplingtriplesassoonasweareconfident
+intoN1,P∪N2,P withP∈N1,P ,thenpickingthreepoints
+enoughthatwecantakeadecisionbasedontheempirical
+inNPdoesnotnecessarilydeterminetherightnormal.It
+distributionintheaccumulator.Usingrobuststatisticstools,
+defineseitherthecorrectnormal(ifallpointslieinN1,P ),
+wedetermineageneralupperboundonthenumberoftriples
+or the normal associated with the plane on the opposite
+todraw,andpossiblyimproveitwhenenoughconcentration
+sideoftheedge(ifallpointslieinN2,P ),ora“random”
+inabincanbeguaranteed.ThisdefinesaRobustRandom-
+plane(ifthepointsarenotonthesamesideoftheedge).
+izedHoughTransform(RRHT)forestimatingnormals.
+Inthesecondcase,asN1,P islikelytobelargerthanN2,P
+In the following, we consider that the M bins of the ac-
+since P∈N1,P is not exactly on the edge, the probability
+cumulator follow a Bernoulli law with pm as parameter
+of picking the dominant plane and thus the correct normal
+(the theoretical mean). Let T be the number of planes to
+ishigherthantheprobabilityofpickingthenormalonthe
+oppositeedgeside.WhenPisveryclosetotheedge,drawn
+pick and let (Xm,t)
+m∈{1,...,M},t∈{1,...,T}
+be the independent
+andidenticallydistributedrandomvariablesassociatedwith
+triplesarelikelytolieonbothsidesoftheedge.However,as
+binmforplanet:Xm,t =1ifplanet votesforbinm,other-
+itleadstoa“random”normal,thecorrectnormalstillisthe
+wiseXm,t=0.Finally,wenotepˆmtheempiricalmeanofthe
+o
+ti
+n
+o
+e
+ns
+w
+w
+it
+h
+h
+er
+t
+e
+he
+P
+h
+i
+i
+s
+g
+c
+h
+l
+e
+o
+s
+s
+t
+e
+p
+t
+r
+o
+o
+s
+b
+e
+a
+v
+b
+e
+i
+r
+l
+a
+it
+l
+y
+e
+.
+d
+T
+g
+h
+e
+i
+s
+s
+,
+g
+in
+e
+c
+n
+l
+e
+u
+r
+d
+a
+i
+l
+n
+iz
+g
+e
+c
+s
+o
+t
+i
+o
+nc
+s
+i
+i
+d
+tu
+en
+a-
+t
+proportionofvotesforbinm:pˆm=
+T
+1∑
+t
+T
+=1
+Xm,t.
+edges.ThisideaappliesaswelltoapointcloudCinwhich Global upper bound. We want to stop drawing triples as
+neighboringpointsNParedefinedforanypointP∈C. soonasweareconfidentenoughthattheempiricaldistribu-
+Our method is a robust variant of this simple principle, tionisagoodapproximationoftheactualdistribution.For
+to handle noise and outliers. For this, we sample as many this,wewanttoboundthedifferencebetweentheactualdis-
+planesasnecessarytogainenoughconfidencethatwecan tributionpmandtheobserveddistributionpˆm.
+identify the actual maximum of the probability density. In Let α ∈]0,1[ be a probability threshold expressing the
+practice, we discretize the problem and fill a Hough accu- confidence when comparing pm to pˆm, and let δ∈]0,1[be
+mulatoruntilanormalcanbeconfidentlychosenbasedon adistance.Wewishtoestimatetheminimalnumberofsam-
+themostvotedbin,withthefollowingrefinements: plesT
+min
+suchthat,foreachbinm,theempiricalmeanpˆmis
+• In the presence of noise and outliers, the discrete prob- atmostatdistanceδfrompm,withprobabilityatleastα:
+ability distribution of possible normals is flatter, but the P( max |pˆm−pm|≤δ)≥α (1)
+principalnormalremainstheonewiththehighestnumber m∈{1,...,M}
+ofvotes.Toensureresistancetonoiseandoutliers,weuse
+AsXm,t arei.i.d.,Hoeffding’sinequality[Hoe63]applies:
+robuststatisticalboundsonthenumberoftriplestopick
+(
+b
+c
+e
+f
+c
+.
+a
+§
+u
+3
+s
+)
+e
+.
+i
+N
+ti
+o
+s
+t
+u
+e
+n
+t
+l
+h
+ik
+at
+el
+n
+y
+e
+a
+a
+n
+r
+d
+co
+w
+l
+o
+li
+u
+n
+l
+e
+d
+a
+g
+ri
+e
+ty
+ne
+n
+r
+e
+a
+e
+te
+d
+a
+n
+“
+o
+r
+t
+an
+b
+d
+e
+o
+c
+m
+he
+”
+c
+n
+k
+o
+e
+r
+d
+-
+∀m,P(|pˆm−pm|≥δ)≤2exp(−
+∑ t T =
+2
+1
+δ
+(
+2
+b
+T
+t
+m
+−
+2 in
+at)2
+) (2)
+malanyway.Onthecontrary,checkingcollinearityateach
+drawingwouldbeunnecessarilytimeconsuming.
+where[at,bt]istheintervalwhereXm,t lies,i.e.,[0,1].Thus:
+• Ifthesurfaceiscurvedratherthanpiecewiseplanar,the P(|pˆm−pm|≥δ)≤2exp(−2δ2T min) (3)
+discrete probability distribution of possible normals is
+Asthisistrueforallm,wehave:
+flatter too. However, as long as the surface can be lo-
+cally approximated with planes, the right normal stays P( max |pˆm−pm|≥δ)
+themostvotedone.Thesizeoftheneighborhoodimpacts m∈{1,...,M}
+normalestimation:itshouldbesmallenoughforthepla- = P(∃m∈{1,...,M},|pˆm−pm|≥δ) (4)
+nar approximation hypothesis to hold, and large enough M
+fornoisetobeaveraged.(Neighborhoodsarediscussedin ≤ ∑ P(|pˆm−pm|≥δ) ≤ 2Mexp(−2δ2T min) (5)
+Section5,togetherwithanisotropy.) m=1
+• UsingaHoughaccumulatorintroducesdiscretizationar- Hence:
+tifacts.First,asinglebincorrespondstoasmallrangeof P( max |pˆm−pm|<δ)≥1−2Mexp(−2δ2T min) (6)
+normals(acone).Ratherthanassociatingafixednormal m∈{1,...,M}
+toabin,weaveragethenormalsthatvoteforthebin.Sec- Now,consideringequation(1),T hastosatisfy:
+min
+ond,weactuallyestimatethenormalseveraltimesusing
+1 2M
+randomizedaccumulatorsandusethebestones(cf.§4). T min≥
+2δ2
+ln(
+1−α
+) (7)
+• To deal with density anisotropy, we propose a spatially-
+sensitivedrawingschemethatcomesintwoversions,con- We may thus choose T R = 2 1 δ2 ln( 1 2 − M α ) as an upper bound
+tinuousandprecise,ordiscreteandfast(cf.§5). onthenumberoftriplestobedrawn.
+(cid:13)c 2012TheAuthor(s)
+(cid:13)c 2012TheEurographicsAssociationandBlackwellPublishingLtd.
+
+--- Page 4 ---
+
+1768 A.Boulch&R.Marlet/FastandRobustNormalEstimationforPointCloudswithSharpFeatures
+Confidenceinterval. Ifwepickmostofthetimethesame n M
+φ
+bin,wewanttostoptheselectionoperation.Weuseacon-
+5 23
+fidenceintervaltoidentifyitastherightbintochoose.But
+10 82
+itisactuallyenoughtochooseabinthatgetssignificantly
+15 171
+morevotesthanothers,i.e.,morevotesthanthesecondmost
+20 290
+votedbin.Theabovecriteriononlyconcernstheaccuracyof
+25 441
+theglobaldistribution.Whatwewanttoestimatehereisthe
+confidence interval of each pm. If the intervals of the two Figure4:Accumulatorshape&sizeforvariousn
+φ
+values.
+mostvotedbinsdonotintersect,wearealmostsurethatthe
+mostvotedbinwillnotchangeandwecanstoppickingmore
+triples.
+WithreferencetoBorrmannetal.’spaper,wedefinen as
+φ
+AccordingtotheCentralLimitTheorem,therandomvari- thenumberofslicesofthesphereinthez-axisandn
+θ
+=2n
+φ
+abledefinedas thenumberofbinsattheequator.Asweonlyestimatehere
+pˆm−pm thenormaldirection,nottheorientation,weusehalfofthe
+binsintheaccumulator.Figure4showsthevalueofthetotal
+pm(pm−1)/T
+numberofusedbinsMforseveralvaluesofn :
+φ
+convergesindistributpiontoastandardnormalrandomvari-
+ableN(0,1).Letr∈]0,1[beaconfidencelevelandletz(r)
+besuchthattheintegraloftheGaussiandensitybetween−z 4. Discretizationissues
+andzisr.Theconfidenceintervalisthen:
+Afterplanesampling,thechosennormalisgivenbythemost
+pm(1−pm) pm(1−pm) votedbin.However,ratherthanproducingadiscretenormal
+pˆm−z(r)
+T
+≤pm≤pˆm+z(r)
+T (oneperbinintheaccumulator),weaverageallthenormals
+r r
+(8) thatvotedforthechosenbin.Fromtheimplementationpoint
+Aspm∈[0,1],wehavepm(1−pm)≤ 1
+4
+andthus: ofview,samplednormalsdonotactuallyhavetobememo-
+rized.Itisenoughtoonlyrecordincrementally,foreachbin,
+z(r) 1 z(r) 1
+pˆm− ≤pm≤pˆm+ (9) thesumofthenormalsthatvotedforthebin.Whenabinis
+2 r T 2 r T chosen,thesumofitscontributingnormalsisrenormalized
+Using,e.g.,theconfidencelevelr=95%,wehavez(r)≃2. tolieontheunitsphere,yieldingthefinalnormal.(Wehave
+In this context, if m is the most voted bin and m is the alsoexperimentedmemorizingforeachbinthevotingtriples
+1 2
+secondmostvoted,wecanstopsamplingplanesassoonas ofpoints,andcomputingthefinalnormalastheregression
+theconfidenceintervalsofthesetwobinsdonotintersect: planeofthepointsinthemostvotedbin:thenormalpreci-
+sionisslightlybetter,buttherunningtimeismuchlonger.)
+1
+pˆm1 −pˆm2 ≥2
+T
+(10)
+Usingadiscreteaccumulatorleadstootherissues.First,
+r
+thereisabinningeffect.Ifthemainpeakofthedistribution
+ThistestmaylowertheglobalboundT Rbutdoesnotreplace
+of normals lies near a bin boundary, votes will be almost
+it(cf.§6).E.g.,forapointlyingveryclosetoanedge,the
+equallydistributedbetweentwo(ormore)adjacentbins.Af-
+twobinscorrespondingtothenormaloneachedgesideare
+teralimitednumberofplanepickings,theactualpeakmay
+likelytohavesimilarprobabilities.Confidenceintervalsthen
+notbeinthemostvotedbin.Theeffectisstrongerfornoisy
+requirealargeT before(10)issatisfied.Inextremecases,
+data as the distribution is flatter and votes are distributed
+intervalsalwaysoverlapandtheconditionisneverfulfilled.
+into more bins, that receive less votes on average. Second,
+binsarenotisotropic.Theaccumulator ofBorrmannetal.
+Accumulator shape. As we only estimate the normal di-
+[BELN11]guaranteestheareaofallbinstobenearlyequal,
+rection,nottheorientation,pickingatripleofpointsdefines
+buttheirshapeisdifferent.Forinstance,polarbinsaredisks
+anormaldescribedbytwoangles(θ,φ),moduloπ.Itvotes
+(caps) whereas equatorial bins are squares. A classic solu-
+intoanaccumulatorthatpartitionshalftheunitsphereinto
+tiontobindiscretizationwouldbeforanormaltoshareparts
+similarbins.WeusethesphericalaccumulatorofBorrmann
+of its vote in neighboring bins, but it does not answer the
+etal.[BELN11]thatprovidesbinswithsimilarareaandal-
+secondproblem.Bothissuescanbeaddressedbyrandomly
+lowseasyandfastcomputationofbinindexes,giventhenor-
+rotatingtheaccumulatorandrunningthealgorithmseveral
+malangles.Thisaccumulatorfirstdividesthesphereaccord-
+times.Themorerotations,themoreprecisetheestimation.
+ing to the parallels, with same angle size. Then the slices
+Inpractice,asfewas5rotationsareenoughtocompensate
+(between two parallels) are divided into bins of nearly the
+formostdiscretizationeffects(cf.§6).Fromtheimplemen-
+samearea(cf.Fig.4).Wehavechosenthisaccumulatoraf-
+tationpointofview,itismoreefficienttorotatethepoints,
+teralsotestingageodesicsphereaccumulator,thatismore
+ratherthanrotatingtheaccumulatoritself.
+isotropicbutconsiderablyslowerforalimitedprecisionim-
+provement. Aswerunthealgorithmseveraltimes,wegetseveralnor-
+(cid:13)c 2012TheAuthor(s)
+(cid:13)c 2012TheEurographicsAssociationandBlackwellPublishingLtd.
+
+--- Page 5 ---
+
+A.Boulch&R.Marlet/FastandRobustNormalEstimationforPointCloudswithSharpFeatures 1769
+mals.Choosingtheappropriateonedependsofthesampled Letcbethecubediscretizationfactor:BP iscoveredbyc3
+surfaceandonapplications.Weproposethreealternatives: smallcubes.Thebiggerc,themoreuniformthepicking,but
+thehighertheprobabilitythatthesmallcubeisemptytoo.
+• RRHT_m:theproducednormalisthemeanofthenor-
+Inourexperimentswiththisstrategy,notedRRHT_Cubes,
+malsweightedbytheirnumberofvotes.Comparedtothe
+c=4providesagoodrobustnesstoanisotropywithoutslow-
+otheralternatives, itminimizes the rootmean squareer-
+ingdowntoomuchpointpicking.(Notethatthesemethods
+ror,butitfailstoestimateaplausiblenormalnearedges
+forpickingtriplesareactuallynotspecifictoournormales-
+becauseofthesmoothingeffectofthemean.
+timator.Theycouldbeappliedtoanyalgorithmusingaran-
+• RRHT_b: the produced normal is the best one, i.e., the
+domtripleselection,likeLietal.’sestimator.)
+most voted one. Sharp features are well estimated, but
+smoothsurfacesmayappeargrainy. We also consider a simple and fast version of our al-
+• RRHT_c:wefirstclusternormalsthatareclosedtoeach gorithm, noted RRHT_Points, without any support for
+other(withinananglethresholda )andthencompute anisotropicsampling.Itappliestopointcloudswithoutsig-
+cluster
+theaveragenormalofthemostvotedcluster.Althoughit nificant density variation: points are just picked randomly
+introduces an extra parameter, it is a good compromise inNP.Moreprecisely,weuseacostlesscombinatorialor-
+betweentheothertwoalternatives. dertomakesurethatwedonotpickseveraltimesthesame
+triple,whichcouldbelikelyforasmallNP.
+5. Dealingwithsamplinganisotropy
+6. Experiments
+Tripleselectionisthekeytorobustnesstodensityvariation.
+GivenapointPanditsneighborhoodNP,selectingrandom Theparametersofouralgorithmaresummarizedbelow:
+triplesintheneighborhoodwouldbesensitivetosampling
+• Korr:numberofneighborsorneighborhoodradius,
+density:tripleswouldbeselectedwithahigherprobability
+inregionsofhighdensity.Wedefinethreevariants.
+• T R:numberofprimitivestoexplore,
+• n φ :parameterdefiningthenumberofbins,
+Forrobustnesstodensityvariation,wedefineNP asthe • nrot:numberofaccumulatorrotations,
+pointsinaballBParoundPwithagivenradiusrandchoose • c:presamplingordiscretizationfactor(anisotropyonly),
+apresamplingfactorc.TopickapointinNP,werandomly • a cluster :toleranceangle(meanoverbestclusteronly).
+pickasmallballBofradiusr/cinBP,thenpickarandom
+ThechoiceofK orrdependsonthesurfacesamplingden-
+pointinB.IfBisempty(nointersectionwiththesampled
+surface), we just pick another small ball until we find one sityandnoise,w.r.t.thelevelofdetails.ParametersT R and
+which is not empty. As shown below, this strategy, noted
+nrot can be used to balance precision and execution time.
+Unlessotherwisementioned,inallourexperimentswetake
+RRHT_Unif,givesgoodresultsbutitisrelativelyslow.
+T R=700,n φ=15,nrot=5,c=4anda cluster= π
+4
+.Inthis
+Asweareinterestedinagoodcompromisebetweenpre- settings, confidence α=0.95 corresponds to δ=0.08 for
+cision and speed, we propose a discretized version of this theglobalupperboundonthenumberofdrawings.Finally,
+spatially-sensitivedrawingscheme.Wediscretizedtheball onsyntheticdatawealwaysuseK=500;onrealdatawe
+into small cubes and we randomly pick small cubes rather useeitherK=500oraneighborhooddefinedbyaball.
+thansmallballs.ThisonlyrequiresfastoperationsonCarte-
+We compare our algorithm with some of the existing
+siancoordinatesratherthanheaviertrigonometriccomputa-
+ones:leastsquareregressionwithplanes[HDD∗92]imple-
+tions.Yet,asallsmallcubesarenotfullyincludedintheBP
+mentedinthePointCloudLibrary[PCL],jetfitting[CP03]
+ball,weassignthemweightsaccordingtotheproportionof
+from CGAL [CGA], Tamal Dey’s NormFet implementa-
+theirintersectionwithBP(cf.Fig.5).Theseweightsareused
+tion[DG06]andLietal.’salgorithm[LSK∗10].Theseare
+to define the probability of picking any given small cube.
+“direct”normalestimators.Nopostprocessingisconsidered
+here.Inthefollowing,wealwaysusethesameparameters
+forthesemethods:K=80forregressionandjetfitting(as
+it is most sensitive to neighborhood size), K =500 for Li
+etal.’salgorithm.Allotherparameters,ifany,aresettode-
+fault.Weevaluateprecisionandspeedondatawithartificial
+noise:acenteredGaussiannoisewithdeviationdefinedasa
+percentageofthediagonaloftheaxis-alignedboundingbox.
+Computationtime. Allexperimentshavebeenperformed
+Discretizationofthesphereforc=4(left)andsmall onthesamecomputer,with2CPUsIntel(R)Xeon(R)X5472
+cubeprobabilities(right):darkerismoreprobable. 3.00GHz, 4 threads each. Our algorithms are parallelized.
+Figure5:Discretizationoftheneighborhoodball. Othershavebeenusedaswegotthem.OnlyLietal.’swas
+adaptedtouseourdatastructure,takenfromPCL[PCL].
+(cid:13)c 2012TheAuthor(s)
+(cid:13)c 2012TheEurographicsAssociationandBlackwellPublishingLtd.
+
+--- Page 6 ---
+
+1770 A.Boulch&R.Marlet/FastandRobustNormalEstimationforPointCloudswithSharpFeatures
+T R=700 T R=300
+nrot=5 nrot=2
+w/o with w/o with
+Model(#vertices) interv. interv. interv. interv.
+Armadillo(173k) 21s 20s 3s 3s
+Dragon(438k) 55s 51s 8s 7s
+Buddha(543k) 1.1 1 10s 10s
+Circ.Box(701k) 1.5 1.3 13s 12s
+Omotondo(998k) 2 1.2 18s 10s
+Statuette(5M) 11 10 1.5 1.4
+Room(6.6M) 14 8 2.3 1.6
+Lucy(14M) 28 17 4 2.5
+Computation time for a point cloud on sphere with RRHT_Points algorithm with K =100 points in the
+0.2%noiseasafunctionofthenumberofpoints. neighborhood,withandwithoutconfidenceintervals.
+Figure6:Computationtime(globalupperboundonly). Alltimesareinminutesunlesssecondsmentioned.
+Table1:Computationtimesonrealdata.
+Figure7showstheratiooftheexecutiontimeswithand
+withouttheconfidenceintervalcriterion(cf.§3),forvarious
+noiselevels.(Theratiocanbeslightlygreaterthan1because
+testingthecriterionaddsasmalloverheadthatisnotrepaid
+if not satisfied.) We can see that the criterion significantly
+reducescomputation.Asexpected,theimpactdecreasesas
+noise level grows because the peaks of the distribution are
+flatterandseparatingthehighestpeakfromthesecondhigh-
+esttakeslonger.Theimpactalsodependsonthemodel.For
+curvedandcomplexshapes,ittakemoretimeforapeakto
+confidentlyemergefromtherestofthedistribution.Table1
+shows computation times of RRHT_Points for several real
+Ratiooftheexecutiontimewithandwithoutthecon-
+models.Astheyrequirelessneighborsbecausetheyarenot
+fidenceintervalcriterionasafunctionofnoiselevel.
+noisy,weuseK=100.Formodelswithalotofplanarsub-
+Figure7:Impactoftheconfidenceintervalcriterion.
+surfaces (like the room scan, cf. Figure 2), the addition of
+theconfidenceintervalcriteriaisveryuseful.
+Toillustrateseparatelythedifferentcontributions,wefirst Precision. Wecomparethevariousalgorithmswithtwoer-
+display the computation time with the robust global upper rormeasures:
+boundonly(cf.§3),disablingtheconfidenceintervalcrite-
+• RootMeanSquare(RMS):
+rion.Figure6showsthecomputationtimeasafunctionof
+t s h a e m n p u le m d b o e n r a of sp p h o e in re ts , . w T e h a e d p d o e i d nt 0. c 2 l % oud no h is a e s . b A e s en w u e n c i a fo n rm se l e y , RMS= |C 1 | ∑ n P \ ,ref n P,est 2
+s P∈C
+even with five rotations, the two fast versions of our algo-
+rithm(RRHT_CubesandRRHT_Points)arecomparableto • RootMeanSquarewiththreshold(RMS_τ):
+jetfittingandtheVoronoï-basedmethod(NormFet),andare
+1
+fasterthanLietal.’salgorithm(withthesameneighborhood RMS_τ= ∑ v2
+|C| P
+size).RRHT_Unifismuchslowerthanexistingalgorithms, s P∈C
+butfullyhandlesanisotropy.Thecomplexityisbasicallythe
+where
+sameforourmethodsandforLietal.’s:itisO(nlogn)where
+n=|C|isthetotalnumberofpointsinthecloud.Bothusea v P= n
+π
+P \ ,ref n P,est
+o
+if
+th
+n
+e
+P
+r
+\ ,r
+w
+ef
+i
+n
+se
+P,est<τ
+Kd-treeforneighborhoodsearch(thelognfactor)andrepeat (cid:26) 2
+asimilaroperationforeveryvertex(thenfactor).However, n
+P,ref
+isthereference(theoretical)normalatPandn P,estthe
+complexityconstantsdiffermuchinpractice.Notethatour estimatedone.RMSisacommonmeasureforprecision,but
+parametersettinghereisverydemandingonprecisionasex- itisnotreallyarenderingmeasurebecauseitfavourssmooth
+plainedbelow.Figure6isthusakindofworstcasescenario reconstruction everywhere, including at edges: a smoothed
+for our method. Much faster computation results are given edge is better than having some points with a normal cor-
+laterwithonlyaslightlyreducedprecision. responding to the other side of the edge. That is why we
+(cid:13)c 2012TheAuthor(s)
+(cid:13)c 2012TheEurographicsAssociationandBlackwellPublishingLtd.
+
+--- Page 7 ---
+
+A.Boulch&R.Marlet/FastandRobustNormalEstimationforPointCloudswithSharpFeatures 1771
+Fromlefttoright:Jetfitting,Lietal.’snormalestimator,RRHT_Cubes_candRRHT_Unif_c.Colorscale:
+bluetogreenis0to10-degreeerror,redcorrespondstoanerrorgreaterthan10degrees.
+Figure8:Visualrenderingoftheprecisionforthreealgorithmsonacylinderof50000pointswith0.2%noise.
+DashedisRRHT_m(mean),dottedisRRHT_b(best), Solid curves represent a fixed nrot for a varying T R,
+solidisRRHT_c(meanoverbestcluster). dashedcurvesrepresentafixedT Randvaryingnrot.
+Figure9:RMSandRMS_10for50k-pointclosedcylinder. Figure10:Precisionvsspeedforacubewith50kpoints.
+introduce RMS_τ. This measure considers any angle error sures, unlike other methods. As expected, RRHT_m gives
+above threshold τ as very bad (as bad as π). This penal- better results for RMS, because of its tendency to smooth,
+2
+izesunwantedsmoothing,i.e.,equallydivergentestimations. butnotforRMS_10.RRHT_coffersthebettercompromise.
+Point clouds with normals are better rendered with lower NotethatDey’salgorithmisthemostefficientforverysmall
+RMS_τ than lower RMS. In our examples we take τ=10 noise.Fig.12illustratesanapplicationtodatawithrealistic
+degrees.Figure8isavisualrepresentationoftheRMS_10 noise.SeealsoFig.7fortheimpactofnoiseonrunningtime.
+error.Reddotsarethebadlyestimatedpoints.RRHTrecon-
+structssmoothsurfaceswithoutgrainyeffect,butitisnotas Parameter (in)sensitivity. Figure 10 represents precision
+discriminativeasLietal.’sclosetotheedge. versuscomputationtime,forafixednrotorafixedT R,anda
+noisycube.Inourexperiments,changingthemodelornoise
+Robustnesstonoise. Figure9displaysprecisionasafunc- does not affect the curve aspect. Two points are marked,
+tionofnoise.Ouralgorithmsarecompetitivewithbothmea- (T R =700,nrot =5) and (T R =300,nrot =2), which cor-
+(cid:13)c 2012TheAuthor(s)
+(cid:13)c 2012TheEurographicsAssociationandBlackwellPublishingLtd.
+
+--- Page 8 ---
+
+1772 A.Boulch&R.Marlet/FastandRobustNormalEstimationforPointCloudswithSharpFeatures
+Fromlefttoright:RRHT_Points_c,RRHT_Cubes_candRRHT_Unif_c.Colorscale:bluetogreenis0to
+10-degree error, red corresponds to an error greater than 10 degrees. Density is uniform on each face; if
+densityis1onrightface,thenitis5fortheleftfaceand10fortheupperface.
+Figure11:Visualrenderingoftheprecisiononacornerof20000pointswithdensityanisotropy.
+RRHT_Cubes_cwitharadiussearchcorrespondingto
+0.1%oftheboundingboxdiagonal. DashedisRRHT_m(mean),dottedisRRHT_b(best),
+solidisRRHT_c(meanoverbestcluster).
+Figure12:VisualrenderingoftheChâteaudeSceaux,point
+cloudobtainedbyphotogrammetry. Figure13:RMS_10foracornerwithdensityanisotropyof
+20000points(seeFigure11),functionofnoisepercentage.
+respondtovaluesusedintable1.Thefirstonefavorspre-
+thesameasafixedballofradiusr.Butvariationsofdensity
+cision;thesecondone,speed.Otherexperimentsshowthat
+inrealdatamakeneighborhoodswithafixedKinoperative.
+timevarieslittlewithc(2–2.5slowerwhencvariesfrom2
+E.g., the peak of density at the pole of a laser scan can be
+to10),norRMSor RMS_10(25–30%precisiongain). As
+suchthattheactualneighborhoodradiusrcorrespondingto
+forn ,itshouldbelargeforprecision,smallforrobustness.
+φ
+afixednumberofpointsKisonthesameorderasthenoise
+Experimentally,bestn valuesforbothRMSandRMS_10
+φ
+standard deviation. It is thus too small to cope with noise.
+areintherange5–25,withn φ=15atmost10%fromopti-
+Conversely, data sparsity may also lead to mistakes. E.g.,
+mum.Timelessthandoubleswhenn variesfrom5to25.
+φ
+the leg of a chair in the room (cf. Fig.2) may be sampled
+withjustafewpointsandafixednumberofpointsK will
+Robustness to density anisotropy. Figure 11 shows the
+easilyincludemanypointsonthefloororonsittingarea,as
+normals computed on a corner sampled with face-specific
+opposed to a fixed neighborhood radius r. For this reason,
+variationsofdensity.Asexpected,nosupportforanisotropy
+whenoperatingonrealdata,weuseaneighborhoodball.
+(RRHT_Points)isverybadwhereasuniformballsampling
+(RRHT_Unif)recoverswelltheedges.Thecubicdiscretiza- Figure 14 shows two dragons with estimated normals
+tion(RRHT_Cubes)compromiseswellprecisionvstime(cf. wheretheneighborhoodradiusvariesfromlefttoright.As
+Fig.6).Figure13showstheRMS_10errorfordifferental- wecanseeonthemodelwithoutnoise,iftheradiusisgreat
+gorithms.Asexpected,wehaveabetterprecisionthanthe wetendtoloosesmalldetails,butgeneralshape,withsharp
+othermethods,thatarenotdesignedtodealwithanisotropy. features,ismaintained.Thenoisydragonillustratesthefact
+iftheradiusissmallerthanthenoise,itcannotestimatenor-
+Intheaboveexperiments,neighborhoodsaredefinedwith
+mals,buttheresultsgoesbetterwiththeincreasingradius.
+a fixed number of points K. This allows comparison with
+otheralgorithmsbecausetheyusethesamenotionofneigh- Figure2displayspartsofalaserscanofameetingroom
+borhood.Also,thisdataisuniformlysampled(exceptforthe with a few computers. The density of the point cloud de-
+anisotropiccorner);afixednumberofpointsKisthusnearly pends a lot of the incidence. The original point cloud has
+(cid:13)c 2012TheAuthor(s)
+(cid:13)c 2012TheEurographicsAssociationandBlackwellPublishingLtd.
+
+--- Page 9 ---
+
+A.Boulch&R.Marlet/FastandRobustNormalEstimationforPointCloudswithSharpFeatures 1773
+Armadillowith0.2%noiseand+100%outliers(top),
++300% (bottom). Neighborhood radius r is 3% of
+boundingboxdiagonal.Outliersareuniformlydrawn
+atdistanceatmostr fromoriginalpointset.Outliers
+aredroppedinresultforvisualrending(right).
+Figure15:OutlierrobustnessofRRHTonArmadillo.
+RRHT_Cubes_c with a neighborhood radius ranging 7. Conclusion
+fromavaluecomparabletothenoisestandarddevia-
+Wehaveproposedanovelmethodforestimatingnormalsfor
+tion,ifany(left),togreaterradiusvalues(right).
+pointcloudsthatpreservessharpfeaturesandthatisrobust
+Figure14:Normalestimationforthedragonwithnoadded tonoiseandoutliers.Differentvariantsorparametersettings
+noise(top)vs0.2%addednoise(bottom). offergoodcompromisesbetweenprecisionandcomputation
+time.Wehaveshownthatourmethodisatleastasprecise
+andnoise-resistantasstate-of-the-artmethodsthatpreserve
+6.6millionsverticesandwitharadiusof0.05(5cmatthe sharp features, while being almost an order of magnitude
+modelscale),thecomputationtimeforRRHT_Cubesis41 faster. It can also handle anisotropy with minor speed and
+min with confidence intervals, as opposed to 48 min with- precisionlosses.Besides,itissimpleandeasytoprogram.
+out,i.e.,a15%improvement.Twodetailsareunderlined:a
+Asfuturework,itwouldbeinterestingtoimprovespeed
+cornerwithdensityanisotropyandabevelededge.Notethat
+withanadaptivechoiceofvariantsandparameters,andthe
+thereisasubstantialdifferencewiththetimefiguresinTa-
+time saved could in turn be traded against more precision.
+ble1.Thereasonisthatsearchingfor100neighborsismuch
+The idea would be to use cubic drawing by default but to
+fasterthansearchingwithinagivenradius,whichcancorre-
+locallyswitchtotheuniformdrawingschemewhereestima-
+spondtothousandsofneighbors(ormore)whenclosetothe
+tionisknowntobeinaccurate.Also,anadaptiveneighbor-
+pole.Also,Table1usesRRHT_Points,notRRHT_Cubes;
+hoodwouldhelpreducingthenumberofparameters.More-
+nothavingtopickinthecubeisfaster.
+over, some kinds of laser scans organize data; preliminary
+experimentsshowthatmakingagoodusethisorganization
+Robustnesstooutliers. Ourmethodisrobusttoalargeout- greatlyreducescomputationtime.
+lierratio.WeillustratethatontheArmadillowithbothadded
+noiseandoutliers(Figure15).TheRMSonthemodelwith
+Acknowledgments
+0.2% noise is 0.39; adding +100% outliers yields an extra
++0.04ontheRMS;adding+300%outliersyields+0.15on WearegratefultoPierreAlliezforhelpfuladvices.Thanks
+theRMS.Whenthecontaminationratioincreases,thefirst to Bao Li and Tamal Dey for providing the code used for
+points not well estimated are the sharp points, whose nor- comparison. Armadillo, Lucy, Dragon, Buddha, and Stat-
+mal distribution is flatter than the distribution on a regular uette point clouds come from the Stanford 3D Scanning
+surface:theyaremoresensitivetonoiseandoutliers. Repository;CircularBoxandOmotondofromAim@Shape.
+(cid:13)c 2012TheAuthor(s)
+(cid:13)c 2012TheEurographicsAssociationandBlackwellPublishingLtd.
+
+--- Page 10 ---
+
+1774 A.Boulch&R.Marlet/FastandRobustNormalEstimationforPointCloudswithSharpFeatures
+References [JDZ04] JONEST.R.,DURANDF.,ZWICKERM.: Normalim-
+provementforpointrendering. IEEEComputerGraphicsand
+[ABCO∗01] ALEXAM.,BEHRJ.,COHEN-ORD.,FLEISHMAN Applications24,4(2004),53–56.1
+S.,LEVIND.,SILVAC.T.: Pointsetsurfaces. InIEEEVisual-
+ization(October2001),IEEEComp.Soc.,pp.21–28.1 [KEB91] KIRYATI, ELDAR, BRUCKSTEIN: A probabilistic
+Hough transform. PATREC: Pattern Recognition, Pergamon
+[ACSTD07] ALLIEZ P., COHEN-STEINER D., TONG Y., DES- Press24(1991).2
+BRUN M.: Voronoi-based variational reconstruction of unori-
+entedpointsets.InProceedingsoftheFifthEurographicsSympo- [KPW∗10] KNOPPJ.,PRASADM.,WILLEMSG.,TIMOFTER.,
+siumonGeometryProcessing,Barcelona,Spain,July4-6,2007 GOOL L. J. V.: Hough transform and 3D SURF for robust
+(2007),BelyaevA.G.,GarlandM.,(Eds.),vol.257ofACMIn- threedimensionalclassification.In11thEuropeanConferenceon
+ternationalConferenceProceedingSeries,EurographicsAssoci- ComputerVision(ECCV2010),Proc.,PartVI(2010),vol.6316
+ation,pp.39–48.2 ofLNCS,Springer,pp.589–602.2
+[Bal87] BALLARD D. H.: Generalizingthehoughtransformto
+[Low04] LOWE D. G.: Distinctive image features from scale-
+detectarbitraryshapes.InRCV87(1987),pp.714–725.2 invariantkeypoints. InternationalJournalofComputerVision
+60,2(2004),91–110.2
+[BE
+N
+L
+Ü
+N
+C
+1
+H
+1
+T
+]
+ER
+B
+A
+O
+.
+R
+:
+R
+T
+M
+he
+AN
+3D
+N
+H
+D
+o
+.
+u
+,
+g
+E
+h
+L
+T
+S
+r
+E
+a
+B
+ns
+E
+f
+R
+o
+G
+rm
+J
+f
+.
+o
+,
+r
+L
+pl
+I
+a
+N
+n
+G
+e
+E
+d
+M
+et
+A
+e
+N
+ct
+N
+ion
+K
+i
+.
+n
+, [LSK∗10] LI B., SCHNABEL R., KLEIN R., CHENG Z.-Q.,
+pointclouds:Areviewandanewaccumulatordesign. 3DRes.
+DANG G., JIN S.: Robustnormalestimationforpointclouds
+withsharpfeatures. Computers&Graphics34,2(2010),94–
+2,2(Mar.2011),32:1–32:13.4
+106.2,5
+[BL
+te
+K
+ct
+1
+i
+0
+o
+]
+nof
+B
+m
+AR
+ul
+I
+t
+N
+ip
+O
+le
+VA
+ob
+O
+je
+.
+c
+,
+t
+L
+in
+E
+s
+M
+ta
+P
+n
+I
+c
+T
+e
+S
+s
+K
+u
+Y
+si
+V
+ng
+.S
+H
+.
+o
+,
+u
+K
+g
+O
+h
+H
+tr
+L
+a
+I
+n
+P
+sf
+.:
+or
+O
+m
+n
+s.
+d
+I
+e
+n
+- [MdGD∗10] MULLENP.,DEGOESF.,DESBRUNM.,COHEN-
+CVPR(2010),IEEE,pp.2233–2240.2
+STEINERD.,ALLIEZP.: Signingtheunsigned:Robustsurface
+reconstructionfromrawpointsets. Comput.Graph.Forum29,5
+[CGA] CGAL, Computational Geometry Algorithms Library. (2010),1733–1741.2
+http://www.cgal.org.5
+[MNG04] MITRA N. J., NGUYEN A., GUIBAS L.: Estimating
+[CLP10] CHAUVE A.-L., LABATUT P., PONS J.-P.: Robust surface normals in noisy point cloud data. In special issue of
+piecewise-planar3Dreconstructionandcompletionfromlarge- InternationalJournalofComputationalGeometryandApplica-
+scaleunstructuredpointdata. InCVPR(2010),IEEE,pp.1261– tions(2004),vol.14,pp.261–276.1
+1268.1
+[ÖGG09] ÖZTIRELI A. C., GUENNEBAUD G., GROSS M. H.:
+[CP03] CAZALSF.,POUGETM.: Estimatingdifferentialquanti- Featurepreservingpointsetsurfacesbasedonnon-linearkernel
+tiesusingpolynomialfittingofosculatingjets.InProceedingsof regression.Comput.Graph.Forum28,2(2009),493–501.1
+the2003Eurographics/ACMSIGGRAPHsymposiumonGeome-
+[Oka09] OKADA R.: Discriminative generalized Hough trans-
+tryprocessing(2003),SGP’03,pp.177–187.1,5
+formforobjectdectection. InICCV (2009),IEEE,pp.2000–
+[Dav88] DAVIES E. R.: ApplicationofthegeneralizedHough 2005.2
+transformationtocornerdetection.ComputersandDigitalTech- [PCL] PCL,PointCloudLibrary.http://pointclouds.org.5
+niques,IEEEproceedings15,1(1988),49–54.2
+[PKKG03] PAULYM.,KEISERR.,KOBBELTL.P.,GROSSM.:
+[DG06] DEYT.K.,GOSWAMIS.: Provablesurfacereconstruc- Shape modeling with point-sampled geometry. ACM Trans.
+tionfromnoisysamples. Comput.Geom.35,1-2(2006),124– Graph.22,3(July2003),641–650.1
+141.1,5
+[PWP∗11] PHAMM.-T.,WOODFORDO.J.,PERBETF.,MAKI
+[DH72] DUDAR.,HARTP.E.:UseoftheHoughtransformation A., STENGER B., CIPOLLA R.: A new distance for scale-
+todetectlinesandcurvesinpictures. CACM15(1972),11–15. invariant3Dshaperecognitionandregistration.InIEEEInterna-
+2 tionalConferenceonComputerVision,ICCV2011,Barcelona,
+[GG07] GUENNEBAUD G., GROSS M. H.: Algebraicpointset Spain,November6-13,2011(2011),IEEE,pp.145–152.2
+surfaces.ACMTrans.Graph26,3(2007),23.1 [RL00] RUSINKIEWICZ S., LEVOY M.: QSplat: A multireso-
+lution point rendering system for large meshes. In Proc. of
+[GL09] GALL J., LEMPITSKY V.: Class-specifichoughforests
+theComputerGraphicsConference(SIGGRAPH)(2000),ACM
+forobjectdetection.InCVPR(2009),pp.1022–1029.2
+Press,pp.343–352.1
+[HDD∗92] HOPPEH.,DEROSET.,DUCHAMPT.,MCDONALD
+J., STUETZLE W.: Surface reconstruction from unorganized
+[SWK07] SCHNABEL R., WAHL R., KLEIN R.: Efficient
+RANSACforpoint-cloudshapedetection. ComputerGraphics
+points. SIGGRAPHComput.Graph.26,2(July1992),71–78.
+Forum26,2(June2007),214–226.1
+1,2,5
+[HLZ∗09] HUANGH.,LID.,ZHANGH.,ASCHERU.,COHEN-
+[TM78] TSUJI S., MATSUMOTO F.: Detectionofellipsesbya
+modifiedHoughtransformation.IEEETransactionsonComput-
+OR D.: Consolidationofunorganizedpointcloudsforsurface
+ers27(1978),777–781.2
+reconstruction. ACMTrans.Graph.28,5(Dec.2009),176:1–
+176:7.1 [XO93] XUL.,OJAE.: RandomizedHoughTransform(RHT):
+Basicmechanisms,algorithms,andcomputationalcomplexities.
+[Hoe63] HOEFFDING W.: Probability inequalities for sums of
+CVGIP:ImageUnderstanding57,2(Mar.1993),131–154.2
+boundedrandomvariables. JournaloftheAmericanStatistical
+Association58,301(March1963),13–30.3 [XOK90] XUL.,OJAE.,KULTANENP.:Anewcurvedetection
+method:RandomizedHoughTransform(RHT). PatternRecog-
+[Hou62] HOUGH P. V. C.: Methodandmeansforrecognizing
+nitionLetters11,5(May1990),331–338.2
+complexpatterns.U.S.Patent3.069.654(1962).2
+[YLL∗07] YOONM.,LEEY.,LEES.,IVRISSIMTZISI.,SEIDEL
+[IK88] ILLINGWORTHJ.,KITTLERJ.V.:AsurveyoftheHough H.-P.:Surfaceandnormalensemblesforsurfacereconstruction.
+transform.CVGIP:ImageUnderstanding44,1(Oct.1988),87– Comput.AidedDes.39,5(May2007),408–420.1
+116.2
+(cid:13)c 2012TheAuthor(s)
+(cid:13)c 2012TheEurographicsAssociationandBlackwellPublishingLtd.

@@ -1,0 +1,1570 @@
+# Bootstrapping the O(N) Vector Models.pdf
+# Converted: 2025-07-19 12:45:29
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Bootstrapping the O(N) Vector Models.pdf
+# Output: ../layer2_completion/txt/Bootstrapping the O(N) Vector Models.txt
+
+
+--- Page 1 ---
+
+arXiv:1307.6856v2  [hep-th]  15 Oct 2015
+Bootstrapping the O(N) Vector Models
+Filip Kosa, David Polanda, David Simmons-Duﬃnb
+a Department of Physics, Yale University, New Haven, CT 06520
+b School of Natural Sciences, Institute for Advanced Study, Princeton, New Jersey 08540
+Abstract
+We study the conformal bootstrap for 3D CFTs with O(N) global symmetry. We
+obtain rigorous upper bounds on the scaling dimensions of the ﬁrst O(N) singlet and
+symmetric tensor operators appearing in the φi × φj OPE, where φi is a fundamental
+of O(N). Comparing these bounds to previous determinations of critical exponents
+in the O(N) vector models, we ﬁnd strong numerical evidence that the O(N) vector
+models saturate the bootstrap constraints at all values of N. We also compute general
+lower bounds on the central charge, giving numerical predictions for the values realized
+in the O(N) vector models. We compare our predictions to previous computations in
+the 1/N expansion, ﬁnding precise agreement at large values of N.
+
+
+--- Page 2 ---
+
+Contents
+1
+Introduction
+3
+2
+Conformal Bootstrap with O(N) Global Symmetry
+4
+2.1
+Statement of Crossing Symmetry
+. . . . . . . . . . . . . . . . . . . . . . . .
+4
+2.2
+Bounds from Convex Optimization
+. . . . . . . . . . . . . . . . . . . . . . .
+5
+2.3
+Formulation as a Semideﬁnite Program . . . . . . . . . . . . . . . . . . . . .
+6
+3
+Rational Representations for Conformal Blocks
+7
+3.1
+Why Rational Approximations Exist
+. . . . . . . . . . . . . . . . . . . . . .
+7
+3.2
+Poles in ∆and Recursion Relations for g∆,ℓ
+. . . . . . . . . . . . . . . . . .
+8
+4
+Results and Comparison to O(N) Vector Models
+10
+4.1
+Bounds on O(N) Singlets
+. . . . . . . . . . . . . . . . . . . . . . . . . . . .
+11
+4.2
+Bounds on O(N) Symmetric Tensors
+. . . . . . . . . . . . . . . . . . . . . .
+13
+4.3
+Bounds on the Central Charge . . . . . . . . . . . . . . . . . . . . . . . . . .
+13
+5
+Discussion
+16
+A Improving Rational Approximations
+19
+B Implementation in Mathematica and SDPA-GMP
+19
+2
+
+
+--- Page 3 ---
+
+1
+Introduction
+Conformal ﬁeld theories (CFTs) oﬀer delightful examples of quantum ﬁeld theories that are
+strongly coupled, yet contain enough symmetry and structure that they may turn out to
+be tractable if the right techniques are found. Until recently, the idea of exploiting this
+structure in order to ﬁnd complete non-perturbative solutions to theories was only carried
+out successfully in 2D, most notably in the seminal work of [1]. However, over the last
+several years great progress has been made at developing the conformal bootstrap [2, 3]
+approach to CFTs in D > 2, where a large number of nontrivial bounds have been found
+which follow very generally from the constraints of crossing symmetry and unitarity [4–16].
+The results obtained so far have been particularly striking in 3D, where it was found in [13]
+that the CFT described by the critical 3D Ising model occupies a special place in the space
+allowed by crossing symmetry and unitarity. Moreover it appears possible that a robust
+numerical solution to this theory can be obtained using bootstrap techniques [17].
+In this paper we will extend the work of [13] to study 3D CFTs with an O(N) global
+symmetry using the conformal bootstrap. We will focus on theories containing a scalar ﬁeld
+φi(x) in the vector representation of O(N). The most notable theories falling into this class
+are the critical O(N) vector models [18, 19], which describe second-order phase transitions
+in a variety of real-world systems at small values of N [20], and are also solvable in a 1/N
+expansion at large values of N (see [21] for a review). Moreover, the O(N)-singlet sector
+of this theory is thought to be holographically described by a higher-spin gauge theory in
+AdS4 [22]. Previously, bootstrap ideas have been applied to the O(N) vector models in the
+1/N expansion, for example in work by Lang and R¨uhl [23–28], Petkou [29, 30], and more
+recently Maldacena and Zhiboedov [31, 32]. Our approach allows bootstrap constraints to
+be studied (albeit numerically) at any value of N.
+Our primary goal, following previous numerical studies of the bootstrap [4–16], will
+be to place general upper bounds on the scaling dimensions of the ﬁrst nontrivial scalar
+operators (both O(N) singlets S and O(N) symmetric tensors Tij) in the φi × φj operator
+product expansion (OPE). We will also place general lower bounds on the central charge
+c, deﬁned as the coeﬃcient appearing in the two-point function of the stress-energy tensor.
+We will then compare these bounds to the best previous results based on Monte Carlo
+simulations, analytical estimates, and the 1/N expansion. In all cases where results are
+known (including small values of N), we ﬁnd that the O(N) vector models saturate our
+bounds, and moreover sit near special locations in the space allowed by crossing symmetry.
+Inputting the previously measured values of ∆φ, this allows us to give sharp predictions for
+∆S, ∆T, and c for diﬀerent values of N.
+In order to eﬃciently implement the bootstrap in the presence of a global symmetry,
+we will use techniques based on semideﬁnite programming, developed for 4D CFTs in [11].
+Here we will show how to adapt this technique for CFTs in an arbitrary number of space-
+time dimensions.
+This requires approximating conformal blocks as rational functions of
+the exchanged operator dimension ∆, and we will show that such a rational approximation
+follows directly from a recursion relation expressing a general conformal block as a sum
+over poles ∼1/(∆−∆∗) occurring at special (non-unitary) values of the dimension ∆∗
+3
+
+
+--- Page 4 ---
+
+where the conformal multiplet contains a null state. This conformal block representation
+generalizes an idea of Zamolodchikov, ﬁrst applied to Virasoro blocks in 2D [33, 34], to
+arbitrary space-time dimensions.
+This paper is organized as follows.
+In section 2 we review the formulation of the
+conformal bootstrap for CFTs containing an O(N) global symmetry, as well as convex
+optimization techniques for placing bounds on operator dimensions and OPE coeﬃcients.
+In section 3 we show how to ﬁnd rational representations for conformal blocks in arbitrary
+space-time dimensions, presenting a new recursion relation for conformal blocks as a sum
+over poles in ∆. In section 4 we present our bounds and a comparison with the O(N) vector
+models. We conclude in section 5.
+2
+Conformal Bootstrap with O(N) Global Symmetry
+2.1
+Statement of Crossing Symmetry
+Let us brieﬂy review the formulation of the conformal bootstrap for 3D CFTs with an O(N)
+global symmetry. Further details can be found in [9–11]. We focus on theories containing
+a scalar primary operator φi of dimension ∆φ, transforming as a fundamental under O(N).
+The operator product of φi with itself takes the schematic form
+φi × φj ∼
+X
+S+
+δijO +
+X
+T +
+O(ij) +
+X
+A−
+O[ij],
+(2.1)
+where S+ denotes O(N) singlets of even spin, T + denotes O(N) symmetric tensors of even
+spin, and A−denotes O(N) anti-symmetric tensors of odd spin.
+By pairing up φ’s and performing the OPE, a four-point function can be decomposed
+into conformal blocks as
+x
+2∆φ
+12 x
+2∆φ
+34 ⟨φi(x1)φj(x2)φk(x3)φl(x4)⟩
+=
+X
+S+
+λ2
+O(δijδkl)g∆,ℓ(u, v)
++
+X
+T +
+λ2
+O
+
+δilδjk + δikδjl −2
+N δijδkl
+
+g∆,ℓ(u, v)
++
+X
+A−
+λ2
+O(δilδjk −δikδjl)g∆,ℓ(u, v),
+(2.2)
+where each sum runs over primary operators O of dimension ∆and spin ℓappearing in
+φi × φj. Here, xij ≡xi −xj, λO is the OPE coeﬃcient of O, and the conformal blocks
+g∆,ℓ(u, v) are functions of conformal cross-ratios
+u = zz = x2
+12x2
+34
+x2
+13x2
+24
+,
+v = (1 −z)(1 −z) = x2
+14x2
+23
+x2
+13x2
+24
+.
+(2.3)
+The four-point function itself should be independent of how we perform the OPE.
+Swapping (1, i) ↔(3, k), we ﬁnd two diﬀerent conformal block expansions of a single four-
+point function which must agree with each other. Writing out this condition and isolating
+4
+
+
+--- Page 5 ---
+
+the coeﬃcient of each tensor structure that appears, we obtain three equations which can
+be grouped into a vector “sum rule”
+X
+S+
+λ2
+OVS,∆,ℓ+
+X
+T +
+λ2
+OVT,∆,ℓ+
+X
+A−
+λ2
+OVA,∆,ℓ
+=
+0,
+(2.4)
+where
+VS,∆,ℓ=
+
+
+0
+F −
+∆,ℓ
+F +
+∆,ℓ
+
+,
+VT,∆,ℓ=
+
+
+F −
+∆,ℓ
+(1 −2
+N )F −
+∆,ℓ
+−(1 + 2
+N )F +
+∆,ℓ
+
+,
+VA,∆,ℓ=
+
+
+−F −
+∆,ℓ
+F −
+∆,ℓ
+−F +
+∆,ℓ
+
+,
+(2.5)
+F ±
+∆,ℓ(u, v) ≡v∆φg∆,ℓ(u, v) ± u∆φg∆,ℓ(v, u).
+(2.6)
+The coeﬃcients λ2
+O appearing in (2.4) are unknown a-priori, with the exception of the unit
+operator which has λO = 1 if φi is canonically normalized. However, we do know that
+the OPE coeﬃcients λO must be real in unitary theories, which means that λ2
+O is positive.
+Further, in D-dimensional unitary theories the operator dimensions must satisfy the lower
+bounds [35–39]
+∆≥
+(
+D−2
+2
+if
+ℓ= 0,
+ℓ+ D −2
+if
+ℓ> 0,
+(2.7)
+where saturation occurs for free scalars (ℓ= 0) or conserved currents (ℓ> 0).
+2.2
+Bounds from Convex Optimization
+From here, we follow the general strategy of [4] for putting bounds on CFT data. Let us
+begin by isolating the unit operator in (2.4),
+0
+=
+Vunit +
+X
+λ2
+OVO.
+(2.8)
+The procedure is as follows:
+1. Make an assumption about the CFT spectrum, for instance that all singlet scalars
+have dimension above some ∆∗.
+2. Try to ﬁnd a linear functional α such that
+α(Vunit)
+>
+0,
+α(VO)
+≥
+0 for all O satisfying the assumption in (1).
+(2.9)
+3. If such a functional exists, the assumption (1) is ruled out, since applying α to Eq. (2.8)
+gives a contradiction. If not, we cannot conclude anything about our assumption.
+Step 2 requires us to solve a convex optimization problem: we must search over the
+vector space F of linear functionals, subject to linear constraints of the form α(V ) ≥0.
+5
+
+
+--- Page 6 ---
+
+Each linear constraint restricts us to a half-space of F, and together these half-spaces carve
+out a convex subset C ⊂F. We would like to determine whether this subset is non-empty.
+In the case at hand, we will take our functional α to be linear combinations of derivatives
+with respect to the cross-ratios z, z around the crossing symmetric point z = z = 1/2,
+α
+
+
+f1
+f2
+f3
+
+
+=
+3
+X
+i=1
+X
+0≤m+n<2k
+ai
+m,n∂m
+z ∂n
+z fi(z, z)
+
+z=z=1/2 .
+(2.10)
+The parameter k controls the dimension of the space of linear functionals that we search
+over. Note that truncating this search space leads to valid, though possibly suboptimal,
+bounds. As we increase k, our bounds get better and better, converging to an optimal
+bound as k →∞.
+2.3
+Formulation as a Semideﬁnite Program
+A key diﬃculty in our convex optimization problem is that we have an inﬁnite number
+of constraints on α — one for each O which could appear in the OPE. We must impose
+α(FR,∆,ℓ) ≥0 for all representations R, dimensions ∆, and spins ℓobeying our assumptions
+about the spectrum. An eﬃcient way to deal with this inﬁnity is to reformulate our problem
+as a semideﬁnite program, which can include constraints of the form:
+α(Pi(x)) for all x ≥0, where Pi(x) are polynomials in x.
+(2.11)
+Systems of these inequalities can be solved eﬃciently using interior point methods.
+To write our constraints α(V ) ≥0 in this form, it suﬃces to ﬁnd an approximation
+∂m
+z ∂n
+z g∆,ℓ(z, z)|z=z=1/2
+≈
+χℓ(∆)P (m,n)
+ℓ
+(∆),
+(2.12)
+where χℓ(∆) are positive functions, and P (m,n)
+ℓ
+(∆) are polynomials. (Crucially, χℓ(∆) is
+independent of m, n.) Indeed, assuming Eq. (2.12), and combining Eqs. (2.5) and (2.10),
+we see that
+α(VR,∆,ℓ) ≥0
+if and only if
+X
+m,n,i
+ai
+m,nP (m,n)
+R,ℓ,i (∆) ≥0,
+(2.13)
+for polynomials P (m,n)
+R,ℓ,i (∆). The dimensions ∆satisfy bounds ∆≥∆min,ℓ, so writing ∆=
+∆min,ℓ+ x yields a set of inequalities in the form (2.11).
+In [11], special analytic expressions for conformal blocks in even dimensions [40, 41]
+were used to derive approximations of the form (2.12), which proved suﬃcient for apply-
+ing semideﬁnite programming to even dimensional CFTs. These approximations worked
+surprisingly well, but it was unclear how to generalize the techniques to CFTs in odd (or
+fractional) space-time dimension.
+In the next section, we will show that the existence of approximations (2.12) in any
+space-time dimension follows naturally from representation theory of the conformal group.
+6
+
+
+--- Page 7 ---
+
+x1 = −ρ
+x2 = ρ
+x3 = 1
+x4 = −1
+Figure 1: Conﬁguration of points for radial quantization in the ρ-coordinate [42].
+This is suﬃcient for formulating our optimization problem as a semideﬁnite program, which
+can then be solved using one of the many freely available semideﬁnite program solvers. We
+give details of our implementation using the solver SDPA-GMP in Appendix B.
+3
+Rational Representations for Conformal Blocks
+3.1
+Why Rational Approximations Exist
+To compute CFT bounds using semideﬁnite programming, we need precise, systematic
+approximations for conformal blocks g∆,ℓin terms of positive functions times polynomials in
+∆, or equivalently positive functions times rational functions of ∆with positive denominator.
+The existence of such approximations follows from conformal representation theory. Recall
+that the conformal block g∆,ℓis a sum over states in radial quantization
+g∆,ℓ(u, v)
+x
+2∆φ
+12 x
+2∆φ
+34
+=
+X
+α=O, P O, P P O, ...
+⟨0|φ(x1)φ(x2)|α⟩⟨α|φ(x3)φ(x4)|0⟩
+⟨α|α⟩
+,
+(3.1)
+where O is a conformal primary of dimension ∆and spin ℓ, and α runs over O and all of
+its descendants. It will be convenient for our discussion to use the radial coordinates of
+[42], where the points xi are arranged as in Fig. 1, and the coordinate ρ is given in terms of
+cross-ratios by
+ρ =
+z
+(1 + √1 −z)2,
+ρ =
+z
+(1 + √1 −z)2.
+(3.2)
+The states P µ1 · · · P µn|O⟩have eigenvalue ∆+n under dilatation and can be decomposed
+into traceless symmetric tensor representations of the rotation group. It follows that the
+sum over states (3.1) can be written
+g∆,ℓ(r, η)
+=
+∞
+X
+n=0
+X
+j
+Bn,jr∆+n
+j!
+(2ν)j
+Cν
+j (η),
+(3.3)
+7
+
+
+--- Page 8 ---
+
+where r = |ρ|, η = cos θ = (ρ + ρ)/2|ρ|, ν = D/2 −1, and the Cν
+j (η) are Gegenbauer poly-
+nomials. The coeﬃcients Bn,j can be computed straightforwardly by solving the conformal
+Casimir equation
+Dg∆,ℓ= C∆,ℓg∆,ℓ,
+C∆,ℓ= ∆(∆−D) + ℓ(ℓ+ D −2),
+(3.4)
+term by term around r = 0. Here, D is a second-order diﬀerential operator in the cross-
+ratios u, v, representing the action of the quadratic Casimir of the conformal group on a
+four-point function,
+Dg(u, v)
+=
+1
+2(L(1)
+AB + L(2)
+AB)(L(1)AB + L(2)AB)g(u, v).
+(3.5)
+Further details can be found in [42].
+Solving the Casimir equation to second order in r, we ﬁnd [42]
+B2,ℓ−2 =
+ℓ(ℓ−1)(∆−ℓ−2ν)
+2(ℓ+ ν −1)(ℓ+ ν)(∆−ℓ−2ν + 1),
+B2,ℓ= ν ∆ν(ν −1) + (∆−1)ℓ(ℓ+ 2ν)
+(∆−ν)(ℓ+ ν + 1)(ℓ+ ν −1),
+B2ℓ+2 =
+(∆+ ℓ)(ℓ+ 2ν)(ℓ+ 2ν + 1)
+2(∆+ ℓ+ 1)(ℓ+ ν)(ℓ+ ν + 1).
+(3.6)
+Let us make some comments about these coeﬃcients. First, Bn,j is a rational function
+of ∆.
+This is a simple consequence of the Casimir equation (3.4), but it follows more
+directly from the expression for g∆,ℓas a sum over states. Each term in the numerator and
+denominator of (3.1) can be computed from the action of the conformal algebra on |O⟩.
+This action is polynomial in ∆, so Bn,j is rational in ∆.
+Secondly, the denominators of Bn,j are positive, as long as ∆obeys the unitarity
+bound (2.7). This is because poles in Bn,j occur when a state |α⟩becomes null. However,
+the absence of null or negative-norm states in a conformal multiplet is precisely what deﬁnes
+the unitarity bound.
+These facts are exactly what we need. We can obtain good approximations to conformal
+blocks by truncating the expansion (3.3) at some high order r∆+N. Each term in the resulting
+expression will be a rational function of ∆, times an overall factor of r∆. The error is na¨ıvely
+of order rN, which is quite small at the crossing-symmetric point r = 3−2
+√
+2 ≈0.17. Indeed,
+this na¨ıve estimate is correct, since it can be shown that the coeﬃcients Bn,j are uniformly
+bounded as a function of ∆for all n, j.
+The cost of keeping more terms in the series expansion (3.3) is that the degree of the
+resulting rational approximation grows. As we’ll see in the next subsection, this growth is
+slow and under control. Further, additional tricks can improve the rational approximation
+signiﬁcantly without increasing the degree. We discuss these in Appendix A.
+3.2
+Poles in ∆and Recursion Relations for g∆,ℓ
+We can be more precise about the structure of our rational approximations by exploiting
+an idea of Zamolodchikov, originally applied to Virasoro blocks in 2 dimensions [33, 34].
+8
+
+
+--- Page 9 ---
+
+Recall that poles in g∆,ℓas a function of ∆occur precisely at special values ∆= ∆∗
+where some state |α⟩= P n|O⟩in the conformal multiplet of |O⟩becomes null.
+When
+this happens, all the descendants of |α⟩become null as well, and together they form a
+nontrivial sub-representation of the (now reducible) multiplet of |O⟩. Since the pole in ∆
+gets contributions from all states in this sub-representation, its residue is proportional to a
+conformal block for a primary with the same dimension and spin as |α⟩:
+g∆,ℓ
+∼
+cα
+∆−∆∗
+g∆α,ℓα
+as
+∆→∆∗,
+(3.7)
+where ∆α = ∆∗+ n, and cα is a coeﬃcient which is independent of conformal cross-ratios.
+Poles in ∆determine g∆,ℓup to a function which is analytic on the entire complex plane.
+Thus, we can write
+g∆,ℓ(r, η)
+=
+g(∞)
+ℓ
+(∆, r, η) +
+X
+i
+ci
+∆−∆i
+g∆i+ni,ℓi(r, η),
+(3.8)
+where g(∞)
+ℓ
+(∆, r, η) is an entire function of ∆. The block g∆,ℓhas an essential singularity of
+the form r∆as ∆→∞. Stripping this oﬀ, we have
+h∆,ℓ(r, η)
+≡
+r−∆g∆,ℓ(r, η),
+(3.9)
+h∆,ℓ(r, η)
+=
+h(∞)
+ℓ
+(r, η) +
+X
+i
+cirni
+∆−∆i
+h∆i+ni,ℓi(r, η).
+(3.10)
+Note that the entire function h(∞)
+ℓ
+(r, η) = lim∆→∞h∆,ℓ(r, η) is now independent of ∆, since
+it has no singularities as ∆→∞.
+With the recursion relation (3.10), we can be more explicit about the form of our positive-
+times-polynomial approximation (2.12). Truncating (3.10) to a ﬁnite number of poles ∆i,
+it’s clear that
+∂m
+z ∂n
+z g∆,ℓ(z, z)|z=z=1/2 ≈χℓ(∆)P (m,n)
+ℓ
+(∆),
+where
+χℓ(∆) ≡
+r∆
+Q
+i(∆−∆i),
+(3.11)
+and r = 3 −2
+√
+2 is evaluated at the crossing-symmetric point.
+Let us now determine the data entering (3.10). The function h(∞)
+ℓ
+can be computed
+easily by solving the conformal Casimir equation to leading order in ∆,
+h(∞)
+ℓ
+(r, η)
+=
+ℓ!
+(2ν)ℓ
+Cν
+ℓ(η)
+(1 −r2)νp
+(1 + r2)2 −4r2η2.
+(3.12)
+In principle, the pole positions ∆i and coeﬃcients ci are determined by the conformal
+algebra. It would be interesting to compute them directly. In practice, by inspecting the
+solution to the conformal Casimir equation, we ﬁnd that there are three series of poles,
+described in Table 1, whose coeﬃcients are as follows:
+9
+
+
+--- Page 10 ---
+
+ni
+∆i
+ℓi
+ci
+2k
+1 −ℓ−2k
+ℓ+ 2k
+c1(k)
+k = 1, 2, . . .
+2k
+1 + ν −k
+ℓ
+c2(k)
+k = 1, 2, . . .
+2k
+1 + ℓ+ 2ν −2k
+ℓ−2k
+c3(k)
+k = 1, 2, . . . , ⌊ℓ/2⌋
+Table 1: The positions of poles of g∆,ℓin ∆and their associated data.
+There are three
+types of poles, corresponding to the three rows in the table. The ﬁrst two types exist for all
+positive integer k, while the third type exists for positive integer k ≤⌊ℓ/2⌋. The coeﬃcients
+c1(k), c2(k), c3(k) are given in Eqs. (3.13).
+c1(k)
+=
+−k(2k)!2
+24k−1k!4
+(ℓ+ 2ν)2k
+(ℓ+ ν)2k
+,
+c2(k)
+=
+−k(ν + ℓ−k)(ν)k(1 −ν)k
+ ν+ℓ+1−k
+2
+2
+k
+k!2(ν + ℓ+ k)
+  ν+ℓ−k
+2
+2
+k
+,
+c3(k)
+=
+−k(2k)!2
+24k−1k!4
+(1 + ℓ−2k)2k
+(1 + ν + ℓ−2k)2k
+.
+(3.13)
+The recursion relation Eq. (3.10), with poles listed in Table 1, reveals another fact that
+proves useful for our implementation: when we truncate the series expansion for h∆,ℓat
+order rN, the degree of the resulting rational approximation grows like N.
+Not only is
+each coeﬃcient Bn,j a rational function, but the number of new factors which enter the
+denominator as we increase N →N + 2 is either 2 or 3 (depending on whether N ≤ℓ).
+In practice, this means that we can compute the expansion (3.3) to extremely high order
+without incurring too much of a performance hit from dealing with large degree polynomials.
+Once we know the residues ci(k), our recursion relation (3.10) provides an extremely
+eﬃcient way to compute conformal blocks, either analytically in a series expansion, or
+numerically (for any number of derivatives around any point (r, η)).
+It would be very
+interesting to generalize these ideas to other four-point functions — for example, external
+scalars φi with diﬀerent dimensions ∆i, or external operators with spin. Although much
+progress has been made computing conformal blocks for these types of operators using series
+manipulations [40, 41, 43, 13, 42], derivative relations [44, 45], and conformal integrals [46],
+we believe the residues ci are the most convenient and directly useful data for numerical
+bootstrap applications.
+4
+Results and Comparison to O(N) Vector Models
+In this section we will present our results from the bootstrap.
+We focus our attention
+on computing bounds on the lowest singlet dimension ∆S, the lowest symmetric tensor
+dimension ∆T, and the central charge c, as a function of the external scalar dimension ∆φ.
+Let us begin by summarizing what is known about these quantities in the O(N) vector
+10
+
+
+--- Page 11 ---
+
+N
+∆φ = 1/2 + η/2
+∆S = 3 −1/ν
+∆T = 3 −φc/ν = 1 + ηc
+1
+0.51813(5) [47]
+1.41275(25) [47]
+–
+0.51819(7) [48]
+1.4130(4) [48]
+–
+2
+0.51905(10) [49]
+1.51124(22) [49]
+1.237(4) [50]
+3
+0.51875(25) [51]
+1.5939(10) [51]
+1.211(3) [50]
+4
+0.51825(50) [52]
+1.6649(35) [52]
+1.189(2) [50]
+5
+0.5155(15) [53]
+1.691(7) [53]
+1.170(2) [50]
+6
+0.5145(15) [53]
+1.733(8) [53]
+–
+Table 2: Previous determinations of operator dimensions in the O(N) vector models.
+models. In these theories, results are typically phrased in terms of critical exponents, rather
+than scaling dimensions. Concretely, ∆φ is related to the critical exponent η via ∆φ =
+1/2 + η/2. The dimension of the O(N) singlet operator S is related to the critical exponent
+ν via ∆S = 3 −1/ν. Finally, the dimension of the O(N) symmetric tensor operator T is
+related to the crossover exponents φc and ηc, through the relations ∆T = 3 −φc/ν = 1 + ηc.
+In Table 2 we show the most accurate determinations of these dimensions that we have
+found in the literature for N = 1, 2, 3, 4, 5, 6 (with N = 1 being the 3D Ising model).
+These quantities have also been computed in the large N limit. ∆φ is known to order
+1/N3 while ∆S has only been computed to order 1/N2 (see [21] and references therein). The
+crossover exponent connected to ∆T was also computed to order 1/N2 in [54]. The results
+are:
+∆φ
+=
+1
+2 +
+4
+3π2
+1
+N −256
+27π4
+1
+N2
++32 (−3188 + 3π2(−61 + 108 log(2)) −3402ζ(3))
+243π6
+1
+N3 + O
+ 1
+N4
+
+∆S
+=
+2 −32
+3π2
+1
+N + 32(16 −27π2)
+27π4
+1
+N2 + O
+ 1
+N3
+
+∆T
+=
+1 + 32
+3π2
+1
+N −512
+27π4
+1
+N2 + O
+ 1
+N3
+
+.
+(4.1)
+Finally, let us mention that the leading correction to the central charge c was computed
+in [29, 30] to be
+c
+Ncfree
+= 1 −40
+9π2
+1
+N + O
+ 1
+N2
+
+,
+(4.2)
+where cfree = D/(D −1) is the central charge of a free scalar ﬁeld.
+4.1
+Bounds on O(N) Singlets
+Now we determine a general bound on the O(N) singlet operator dimension ∆S following the
+procedure described in section 2.2. We assume there is a gap in the CFT spectrum so that all
+11
+
+
+--- Page 12 ---
+
+∆φ
+∆S
+Ising
+O(10)
+O(20)
+O(2)
+O(3)
+O(4)
+O(5)
+O(6)
+O(N) Singlet Bounds
+0.505
+0.515
+0.51
+0.525
+0.52
+0.535
+0.53
+0.5
+1
+1.2
+1.4
+1.6
+1.8
+2
+2.2
+Figure 2: Upper bounds on the dimension of the lowest dimension singlet S in the φ × φ
+OPE, where φ transforms as a vector under an O(N) global symmetry group.
+Here, we
+show N = 1, 2, 3, 4, 5, 6, 10, 20. The blue error bars represent the best available analytical and
+Monte Carlo determinations of the operator dimensions (∆φ, ∆S) in the O(N) vector models
+for N = 1, 2, 3, 4, 5, 6 (with N = 1 being the 3D Ising Model). The black crosses show the
+predictions in Eq. (4.1) from the large-N expansion for N = 10, 20, ..., 100. In this expansion,
+∆φ has been determined to three-loop order, while ∆S is at two-loop order. The dashed line
+interpolates the large-N prediction for N ∈(4, ∞).
+singlet scalar operators have dimension greater than ∆S, all symmetric tensor scalars have
+dimension greater than 1, and the dimensions of all the other operators are constrained
+only by the unitarity conditions. Note that due to the assumption on symmetric tensor
+scalars this is not the most general bound. However, we found that this mild assumption
+improves numerical stability while not signiﬁcantly aﬀecting the bound on ∆S – moreover
+the assumption is certainly satisﬁed for O(N) vector models, as can be seen from previous
+determinations of the operator dimensions (see Table 2).
+The boundaries for the allowed values of ∆S as a function of ∆φ are shown in Fig. 2.
+These bounds are determined by a bisection search in ∆S to within 10−3. The parameter
+k of section 2.3, controlling the number of derivatives in the functional α, is set to k = 10
+everywhere. For a given N, only the values of ∆S below the corresponding solid line are
+allowed.
+In Fig. 2 we see that the bounds on ∆S grow monotonically from ∆S = 1 at ∆φ = 0.5, the
+point corresponding to the non-interacting theory. At a certain value of ∆φ, each boundary
+line exhibits a change in the slope. This type of behavior was already discussed for the Ising
+12
+
+
+--- Page 13 ---
+
+model bound in Ref. [13], where it was found that the change in slope occurs at the values
+of ∆φ and ∆S corresponding to Ising model point. The changes in slopes are somewhat less
+sharp for the O(N) theories; however, they occur in the vicinity of the O(N) vector model
+points, shown as points with error bars in Fig. 2. These points always seem to lie very close
+to the boundary; in fact it is possible to rigorously reduce the previous error bars using the
+bound we obtained.
+For large values of N, we can also compare the bound with the results for ∆φ and ∆S
+obtained using the 1/N expansion, Eq. 4.1. The 1/N expansion results (shown as black
+crosses in Fig. 2) are consistent with our bound at large N. Moreover, the change in the
+slope of the boundary line is sharper for large N and it occurs very close to the O(N) vector
+model points.
+4.2
+Bounds on O(N) Symmetric Tensors
+Bounds on the dimension of the ﬁrst symmetric tensor scalar operator ∆T are obtained
+following a similar procedure as for the singlet bounds. We assume that all the symmetric
+tensor scalars have dimension greater than ∆T , all singlet scalars have dimension greater
+than 1, and all other operator dimensions satisfy unitarity conditions. The allowed values
+of ∆T as a function of ∆φ are shown in Fig. 3 — only the values of ∆T below the solid line
+are allowed. Just like in the case of the singlet operators, the boundary lines start at the
+free ﬁeld point, ∆φ = 0.5, ∆T = 1 and grow monotonically. The change of the slope is more
+gradual than for the singlet bound. The O(N) vector model points from Table 2 appear to
+be consistent with the bound to within error bars for N = 2, 3, 4, with some mild tension
+between the N = 5 bound and the quoted results from [53] and [50].
+At large N the symmetric tensor dimension ∆T approaches 1 in the O(N) model. This
+is reﬂected in the fact that our bounds become more and more constraining as N →∞.
+Moreover, we ﬁnd that the order 1/N2 computation of ∆T in Eq. 4.1 becomes very close
+to our bound (and occurs near changes of slope) at large but ﬁnite values of N, shown in
+black crosses at N = 10, 20, ... in Fig. 3.
+4.3
+Bounds on the Central Charge
+The central charge c is deﬁned as a coeﬃcient in the two-point correlation function of the
+canonically normalized stress tensor:
+⟨Tµν(x1)Tρσ(x2)⟩= c
+S2
+D
+1
+x2D
+12
+1
+2 [Iµρ(x12)Iνσ(x12) + Iµσ(x12)Iνρ(x12)] −1
+Dηµνηρσ
+
+,
+(4.3)
+where SD = 2πD/2/Γ(D/2).
+In our notation, the central charge is related to the OPE
+coeﬃcient of the stress tensor λS,3,2 by
+λ2
+S,3,2 =
+∆2
+φ
+c/cfree
+,
+(4.4)
+13
+
+
+--- Page 14 ---
+
+∆φ
+∆T
+O(10)
+O(20)
+O(2)
+O(3)
+O(4)
+O(5)
+O(6)
+O(N) Symmetric Tensor Bounds
+0.505
+0.515
+0.51
+0.525
+0.52
+0.535
+0.53
+0.5
+1.05
+1.1
+1.15
+1
+1.2
+1.25
+1.3
+Figure 3: Upper bounds on the dimension of the lowest dimension symmetric tensor T in
+the φ × φ OPE, where φ transforms as a vector under an O(N) global symmetry group, for
+N = 2, 3, 4, 5, 6, 10, 20. We additionally assume that the lowest dimension singlet S has ∆S ≥
+1. The blue error bars represent the best available analytical and Monte Carlo determinations
+of the operator dimensions (∆φ, ∆T ) in the O(N) vector models for N = 2, 3, 4, 5.
+Note
+in particular that previous predictions for the O(5) model are essentially ruled out by our
+bounds. The black crosses show the predictions in Eq. (4.1) from the large-N expansion for
+N = 10, 20, ..., 100. The dashed line interpolates the large-N prediction for N ∈(4, ∞).
+where cfree = D/(D −1) is the central charge of a free scalar ﬁeld.
+We can ﬁnd an
+upper bound on this OPE coeﬃcient as follows. Rewrite the sum rule (2.8), separating
+the contribution of the stress tensor:
+λ2
+S,3,2VS,3,2 = −Vunit −
+X
+O̸=Tµν
+λ2
+OVO.
+(4.5)
+Applying a functional α such that α(VO) ≥0 for all operators in the spectrum other than
+unit operator and normalized so that α(VS,3,2) = 1, Eq. (4.5) then yields the inequality
+λ2
+S,3,2 ≤−α(Vunit).
+(4.6)
+Finding the functional α that minimizes −α(Vunit) then gives the strongest upper bound on
+the OPE coeﬃcient. By Eq. (4.4) this implies a lower bound on the central charge.
+The most general bound would be obtained by making no assumptions about the op-
+erator spectrum, except that they obey unitarity conditions.
+However, we can obtain
+a somewhat stronger bound by making additional assumptions about the spectrum.
+In
+14
+
+
+--- Page 15 ---
+
+∆φ
+c/Ncfree
+Ising
+O(10)
+O(20)
+O(2)
+O(3)
+O(4)
+O(5)
+O(6)
+O(N) Central Charge Bounds
+0.505
+0.515
+0.51
+0.525
+0.52
+0.535
+0.53
+0.5
+1.025
+1
+0.875
+0.925
+0.95
+0.975
+0.9
+Figure 4: Lower bounds on the central charge for theories containing a scalar φ transforming
+as a vector under O(N). We additionally assume that ∆S, ∆T ≥1. The black crosses show
+the predictions in Eq. (4.1) from the large-N expansion for N = 10, 20, ..., 100. The dashed
+line shows the asymptotic behavior of the central charge as a function of ∆φ as N →∞.
+particular, we can assume there are gaps in the spectrum of singlet and symmetric tensor
+operators, as long as they are consistent with the results of previous subsections. Here we
+will assume mild gaps, ∆S ≥1 and ∆T ≥1. This assumption on the operator dimension
+spectrum is not too stringent; for example, we know from previous determinations that
+O(N) vector models satisfy these conditions, see Table 2.
+The central charge bound as a function of the scalar dimension ∆φ is shown in Fig. 4.
+The central charge approximately scales linearly with N (exactly in the non-interacting
+theory), so we have plotted c scaled to Ncfree.
+At low values of ∆φ, all of the bounds
+approach the same asymptote. The slope of the asymptote is −10/3, which is the same
+curve that one obtains in the N →∞limit from Eqs. (4.1) and (4.2); i.e. the O(N) vector
+model points will lie on that line for large values of N.
+To obtain stronger bounds on the central charge we can introduce larger gaps in the
+operator spectrum. In the plots of Fig. 5 we assumed that the gap in the singlet scalar
+spectrum saturates the bound obtained in subsection 4.1, while the gap in the symmetric
+tensor scalar spectrum is kept at ∆T ≥1. At low values of ∆φ, the bounds again approach
+the same asymptote and in general don’t diﬀer too much from the bounds in the Fig. 4.
+However, here the bounds exhibit a change in the slope at certain value of ∆φ. At larger
+values of ∆φ the bounds are much stronger than the ones in Fig. 4. For large N values the
+change in the slope occurs at the O(N) vector model points. At smaller N the change in the
+15
+
+
+--- Page 16 ---
+
+c/Ncfree
+∆φ
+Ising
+O(10)
+O(20)
+O(2)
+O(3)
+O(4)
+O(5)
+O(6)
+O(N) Central Charge Bounds With Singlet Gap
+0.505
+0.515
+0.51
+0.525
+0.52
+0.535
+0.53
+0.5
+1.025
+1
+0.875
+0.925
+0.95
+0.975
+0.9
+Figure 5: Lower bounds on the central charge for theories containing a scalar φ transforming
+as a vector under O(N). In this ﬁgure we assume that the lowest dimension singlet scalar
+operators saturate the bounds we found in subsection 4.1, while the symmetric tensor scalar
+operators are assumed to have dimensions ∆T ≥1. The black crosses show the predictions
+in Eq. (4.1) from the large-N expansion for N = 10, 20, ..., 100. The dashed line shows the
+asymptotic behavior of the central charge as a function of ∆φ as N →∞.
+slope is more gradual, but still occurs at ∆φ close to the known values in the O(N) models.
+Just like the operator dimensions in the previous subsections, the central charge values
+obtained using 1/N expansion in the case of large N lie very close to the boundary line.
+Encouraged by these facts, we can conjecture that the central charge values will lie on the
+boundary even for low values of N. Using the values of ∆φ determined by other methods, we
+can then make a prediction for the values of c. These are shown, along with our bootstrap
+predictions for ∆S and ∆T, in Table 3. In calculating these values of c we used the bounds
+of Fig. 5, since these are our strongest bounds for the O(N) vector models.
+5
+Discussion
+Let us take a moment to reﬂect on the results of the previous section.
+First, we have
+discovered the remarkable fact that operator dimensions in the critical O(N) vector models
+take on values which saturate general constraints from crossing symmetry and unitarity.
+This gives us an organizing principle by which we can understand why these theories
+are special – gaps in the spectrum of operator dimensions are maximized in a way that
+16
+
+
+--- Page 17 ---
+
+N
+∆φ
+∆S
+∆T
+c/Ncfree
+1
+0.51813(5)
+1.4119+0.0005
+−0.0015
+–
+0.946600+0.000022
+−0.000015
+2
+0.51905(10)
+1.5118+0.0012
+−0.0022
+1.23613+0.00058
+−0.00158
+0.94365+0.00013
+−0.00010
+3
+0.51875(25)
+1.5942+0.0037
+−0.0047
+1.2089+0.0013
+−0.0023
+0.94418+0.00043
+−0.00036
+4
+0.51825(50)
+1.6674+0.0077
+−0.0087
+1.1864+0.0024
+−0.0034
+0.94581+0.00071
+−0.00039
+5
+0.5155(15)
+1.682+0.047
+−0.048
+1.1568+0.009
+−0.010
+0.9520+0.0040
+−0.0030
+6
+0.5145(15)
+1.725+0.052
+−0.053
+1.1401+0.0085
+−0.0095
+0.9547+0.0041
+−0.0027
+10
+0.51160
+1.8690+0.000
+−0.001
+1.1003+0.000
+−0.001
+0.96394
+20
+0.50639
+1.9408+0.000
+−0.001
+1.0687+0.000
+−0.001
+0.97936
+Table 3: The values of the scalar and symmetric tensor operator dimensions and the values
+of the central charge saturating the obtained bound for the O(N) vector model values of ∆φ.
+For N = 1, 2, 3, 4, 5, 6, the value of ∆φ is taken from Table 2; for N = 10, 20 the value of ∆φ
+is the 3-loop large-N result. The errors reﬂect the uncertainty in the value of ∆φ. In the
+determinations of ∆S,T we have also included a contribution to the error due to our bisection
+precision of 0.001. This uncertainty is only in one direction, since the upper bound is rigorous.
+is consistent with unitarity. It will be interesting to verify that this trend continues for
+operators of higher dimension. A promising approach to extracting more of the spectrum in
+these theories is to consider the locations of the zeros of α(VO) along the boundary [7, 15, 17].
+We hope to develop this approach in the O(N) models in future work.
+As far as we are aware, we have presented the ﬁrst predictions for the central charge in the
+O(N) models at small values of N. In doing so we have veriﬁed that there is approximately
+linear growth with N and that c < Ncfree for each value of N. It will be interesting if these
+predictions can be veriﬁed in lattice simulations of the O(N) models – this will require a
+robust lattice construction of the stress-energy tensor, which is a worthwhile task in its own
+right. One can also easily extend these methods to determine the ﬂavor central charges,
+appearing in ⟨JµJν⟩∝τ, where Jµ is the O(N) current.
+In this work we only considered the constraints from crossing symmetry of ⟨φiφjφkφl⟩. It
+is very interesting to extend this analysis to include constraints from other correlators, such
+as ⟨φiφjφ2φ2⟩, ⟨φ2φ2φ2φ2⟩, ⟨φiφjJµJν⟩, or ⟨φiφjT µνT ρσ⟩. Such extensions are e.g. necessary
+in order to learn about the Z2 odd operators in the spectrum of these theories. Studying
+these correlators may also help to give a sharper criterion that can be used to determine
+the value of ∆φ in the O(N) models, going beyond the fact that it appears to take a value
+near (somewhat smooth) changes in slope of the general bounds.
+The recursion representation for the conformal blocks presented in section 3 is a powerful
+and eﬃcient method of computing conformal blocks in any number of dimensions. This
+representation can for example be utilized in studies of CFTs that interpolate between
+2 < D < 4, in D = 5, 7 where conformal blocks are similarly complicated, or perhaps in
+17
+
+
+--- Page 18 ---
+
+constructing an argument (extending [55]) that nontrivial CFTs in large D do not exist.
+The representation as a sum over poles in ∆may also be useful for making general analytic
+arguments (going beyond the large spin arguments of [56, 57]) in the context of the conformal
+bootstrap. The sum over poles may also be particularly interesting from the perspective of
+Mellin amplitudes [58–66].
+Finally, we’d like to emphasize that the O(N) models at N = 2, 3 have numerous
+beautiful realizations in experimental condensed matter systems.
+E.g., the O(2) model
+describes the superﬂuid transition in 4He and the bicritical point in uniaxial magnets
+such as GdAlO3, while the O(3) model describes the Curie transition in simple isotropic
+magnets such as Ni, Fe, and EuO. Many more examples can be found in [20]. Thus, the
+conformal bootstrap in 3D allows one to realize the physicists’ dream – it makes quantitative
+predictions in strongly-interacting systems that can be experimentally tested!
+Acknowledgements
+We are grateful to Rich Brower, Sheer El-Showk, George Fleming, Liam Fitzpatrick, Fred
+Hucht, Jared Kaplan, Miguel Paulos, Jo˜ao Penedones, Slava Rychkov, Leonardo Rastelli,
+Balt van Rees, Alessandro Vichi, and Sasha Zhiboedov for discussions. We would also like
+to thank the other organizers and participants in the Back to the Bootstrap 3 conference
+at CERN. The work of DSD is supported by DOE grant number DE-SC0009988. DSD
+would like to thank SLAC for hospitality while this work was completed. DP would like
+to thank the Galileo Galilei Institute for Theoretical Physics and the INFN for hospitality
+and partial support during the completion of this work. The computations in this paper
+were run on the Bulldog computing clusters supported by the facilities and staﬀof the Yale
+University Faculty of Arts and Sciences High Performance Computing Center, as well as
+the Aurora computing cluster supported by the School of Natural Sciences Computing Staﬀ
+at the Institute for Advanced Study.
+18
+
+
+--- Page 19 ---
+
+A
+Improving Rational Approximations
+When truncated to a ﬁnite number of poles ∆i, the recursion relation
+h∆,ℓ(r, η)
+=
+h(∞)
+ℓ
+(r, η) +
+X
+i
+cirni
+∆−∆i
+h∆i+ni,ℓi(r, η)
+(A.1)
+gives a rational approximation for h∆,ℓ= r−∆g∆,ℓas a function of ∆. The precision of
+this approximation increases as we include more and more poles ∆i. However, the degree
+increases as well, and this can be problematic for computation. Larger degree polynomials
+slow down semideﬁnite program solvers.
+A useful compromise is to keep n poles ∆1, . . . , ∆n with the largest residues, and use
+these as a basis to approximate other poles ∆j with smaller residues. That is, for poles with
+small residues, we write
+1
+∆−∆j
+≈
+n
+X
+i=1
+ai
+∆−∆i
+.
+(A.2)
+where the coeﬃcients ai are chosen to make the approximation as good as possible. In
+this way, we can approximately include the contribution of the pole at ∆= ∆j without
+increasing the degree of our rational function. Note that the ∆i lie below the unitarity
+bound ∆unitarity, so ∆itself never approaches a pole when we compute CFT bounds.
+How should we choose the coeﬃcients ai? We need Eq. (A.2) to hold to high accuracy
+across all ∆≥∆unitarity (away from the singularities on both sides). A method that works
+well in practice is to ensure that Eq. (A.2) and its ﬁrst n/2 derivatives hold exactly at
+∆= ∆unitarity and at ∆= ∞. These conditions give n linear equations which determine the
+ai.
+In practice, including poles with residues less than 10−2 yields rational approximations
+to conformal blocks which are correct to within 10−9. Including poles with residues less
+than 10−10 yields approximations correct to within 10−22.
+B
+Implementation in Mathematica and SDPA-GMP
+A brief summary of our implementation is as follows. All steps but the last are performed
+in Mathematica.
+1. We compute a rational approximation for derivatives of conformal blocks at the
+crossing symmetric point ∂m
+r ∂n
+η g∆,ℓ≈r∆P (m,n)
+ℓ
+(∆)/Qℓ(∆), where r = 3 −2
+√
+2. This
+can be done using either the Gegenbauer expansion and Casimir equation described
+in [42], or more eﬃciently using our recursion relation (3.10). The recursion relation
+can be implemented numerically in the space of vectors of (r, η) derivatives, where
+multiplication by rk is a matrix on this space. We compute approximations up to
+order 60 in the r-expansion.
+19
+
+
+--- Page 20 ---
+
+2. We approximate “small” poles as described in Appendix A, resulting in a new rational
+approximation with smaller degree ∂m
+r ∂n
+η g∆,ℓ≈r∆p(m,n)
+ℓ
+(∆)/qℓ(∆). To decide which
+poles to keep and which poles to approximate, we choose a threshold value θ and
+compute
+θi
+≡
+max
+m,n
+
+Res∆→∆i ∂m
+r ∂n
+η g∆,ℓ
+∂m
+r ∂nη g∆,ℓ|∆=unitarity bound
+ .
+(B.1)
+Poles with θi ≤θ are approximated in terms of other poles. In practice, we found
+that θ = 10−2 gives a good tradeoﬀbetween accuracy and speed. We have checked
+that our results remain essentially unchanged as θ is varied between 10−2 and 10−12.
+After reducing the degree of our rational approximation, the factors r∆/qℓ(∆) can be
+discarded. Henceforth, we will use “∼” to indicate approximate equality up to an
+overall positive function of ∆.
+3. To compute a bound, we need derivatives ∂m
+z ∂n
+z VR,∆,ℓ, where the vectors VR,∆,ℓare
+deﬁned in (2.5). These are linearly related to the vectors of derivatives of g∆,ℓ,
+∂m
+z ∂n
+z VR,∆,ℓ,i
+∼
+(MR,∆φ)mn
+i
+rsP (r,s)
+ℓ
+(∆)
+(B.2)
+where i = 1, 2, 3 runs over the components of VR,∆,ℓand MR,∆φ is a matrix depending
+only on the representation/channel R and the external operator dimension ∆φ.
+4. In section 2.3, we deﬁned a semideﬁnite program as an aﬃne optimization problem
+which can include constraints of the form
+α(Pi(x)) for all x ≥0, where Pi(x) are polynomials in x.
+(B.3)
+More precisely, semideﬁnite programs can include matrix inequalities of the form
+X is positive semideﬁnite,
+(B.4)
+where X is a matrix of variables (which might be subject to additional linear con-
+straints).
+The transformation of a set of inequalities from the form (B.3) to the
+form (B.4) is standard in the optimization literature [67] and is described in detail in
+[11]. We transform our polynomial inequalities
+ai
+mn(MR,∆φ)mn
+i
+rsP (r,s)
+ℓ
+(∆min,ℓ+ x) ≥0
+for x ≥0
+(B.5)
+into matrix inequalities in this fashion.
+5. Once written in terms of matrix inequalities, our semideﬁnite program can be solved
+using a variety of freely available tools. For this work, we use the solver SDPA-GMP
+with the parameters listed in Table 4. Our plots are computed in parallel by assigning
+each point to an individual cluster node. Our cluster management software is written
+in Cloud Haskell.
+20
+
+
+--- Page 21 ---
+
+parameter
+value
+maxIteration
+1000
+epsilonStar
+10−20 (10−10)
+lambdaStar
+1020
+omegaStar
+1020
+lowerBound
+−1040
+upperBound
+1040
+betaStar
+0.1
+betaBar
+0.3
+gammaStar
+0.7
+epsilonDash
+10−20 (10−10)
+precision
+200 (300)
+Table 4: SDPA-GMP parameters used in the calculation of the operator dimension bounds. In
+parentheses are the values of the parameters used in the central charge bounds.
+References
+[1] A. A. Belavin, A. M. Polyakov, and A. B. Zamolodchikov, “Inﬁnite conformal
+symmetry in two-dimensional quantum ﬁeld theory,”
+Nucl. Phys. B241 (1984) 333–380.
+[2] S. Ferrara, A. F. Grillo, and R. Gatto, “Tensor representations of conformal algebra
+and conformally covariant operator product expansion,”
+Annals Phys. 76 (1973) 161–188.
+[3] A. M. Polyakov, “Nonhamiltonian approach to conformal quantum ﬁeld theory,” Zh.
+Eksp. Teor. Fiz. 66 (1974) 23–42.
+[4] R. Rattazzi, V. S. Rychkov, E. Tonni, and A. Vichi, “Bounding scalar operator
+dimensions in 4D CFT,” JHEP 12 (2008) 031, arXiv:0807.0004 [hep-th].
+[5] V. S. Rychkov and A. Vichi, “Universal Constraints on Conformal Operator
+Dimensions,” Phys. Rev. D80 (2009) 045006, arXiv:0905.2211 [hep-th].
+[6] F. Caracciolo and V. S. Rychkov, “Rigorous Limits on the Interaction Strength in
+Quantum Field Theory,” Phys. Rev. D81 (2010) 085037,
+arXiv:0912.2726 [hep-th].
+[7] D. Poland and D. Simmons-Duﬃn, “Bounds on 4D Conformal and Superconformal
+Field Theories,” JHEP 1105 (2011) 017, arXiv:1009.2087 [hep-th].
+21
+
+
+--- Page 22 ---
+
+[8] R. Rattazzi, S. Rychkov, and A. Vichi, “Central Charge Bounds in 4D Conformal
+Field Theory,” Phys. Rev. D83 (2011) 046011, arXiv:1009.2725 [hep-th].
+[9] R. Rattazzi, S. Rychkov, and A. Vichi, “Bounds in 4D Conformal Field Theories with
+Global Symmetry,” J. Phys. A44 (2011) 035402, arXiv:1009.5985 [hep-th].
+[10] A. Vichi, “Improved bounds for CFT’s with global symmetries,”
+JHEP 1201 (2012) 162, arXiv:1106.4037 [hep-th].
+[11] D. Poland, D. Simmons-Duﬃn, and A. Vichi, “Carving Out the Space of 4D CFTs,”
+JHEP 1205 (2012) 110, arXiv:1109.5176 [hep-th].
+[12] S. Rychkov, “Conformal Bootstrap in Three Dimensions?,”
+arXiv:1111.2115 [hep-th].
+[13] S. El-Showk, M. F. Paulos, D. Poland, S. Rychkov, D. Simmons-Duﬃn, and A. Vichi,
+“Solving the 3D Ising Model with the Conformal Bootstrap,”
+Phys.Rev. D86 (2012) 025022, arXiv:1203.6064 [hep-th].
+[14] P. Liendo, L. Rastelli, and B. C. van Rees, “The Bootstrap Program for Boundary
+CFTd,” JHEP 07 (2013) 113, arXiv:1210.4258 [hep-th].
+[15] S. El-Showk and M. F. Paulos, “Bootstrapping Conformal Field Theories with the
+Extremal Functional Method,” Phys. Rev. Lett. 111 no. 24, (2013) 241601,
+arXiv:1211.2810 [hep-th].
+[16] C. Beem, L. Rastelli, and B. C. van Rees, “The N = 4 Superconformal Bootstrap,”
+Phys. Rev. Lett. 111 (2013) 071601, arXiv:1304.1803 [hep-th].
+[17] S. El-Showk, M. F. Paulos, D. Poland, S. Rychkov, D. Simmons-Duﬃn, and A. Vichi,
+“Solving the 3d Ising Model with the Conformal Bootstrap II. c-Minimization and
+Precise Critical Exponents,” J. Stat. Phys. 157 (2014) 869,
+arXiv:1403.4545 [hep-th].
+[18] E. Brezin, D. Wallace, and K. Wilson, “FEYNMAN-GRAPH EXPANSION FOR
+THE EQUATION OF STATE NEAR THE CRITICAL POINT,”
+Phys.Rev. B7 (1973) 232–239.
+[19] K. Wilson and J. B. Kogut, “The Renormalization group and the epsilon expansion,”
+Phys.Rept. 12 (1974) 75–200.
+[20] A. Pelissetto and E. Vicari, “Critical phenomena and renormalization-group theory,”
+Phys. Rept. 368 (2002) 549–727, arXiv:cond-mat/0012164.
+[21] M. Moshe and J. Zinn-Justin, “Quantum ﬁeld theory in the large N limit: A Review,”
+Phys.Rept. 385 (2003) 69–228, arXiv:hep-th/0306133 [hep-th].
+[22] I. Klebanov and A. Polyakov, “AdS dual of the critical O(N) vector model,”
+Phys.Lett. B550 (2002) 213–219, arXiv:hep-th/0210114 [hep-th].
+22
+
+
+--- Page 23 ---
+
+[23] K. Lang and W. Ruhl, “Field algebra for critical O(N) vector nonlinear sigma models
+at 2 < d < 4,” Z.Phys. C50 (1991) 285–292.
+[24] K. Lang and W. Ruhl, “Anomalous dimensions of tensor ﬁelds of arbitrary rank for
+critical nonlinear O(N) sigma models at 2 < d < 4 to ﬁrst order in 1/N,”
+Z.Phys. C51 (1991) 127–132.
+[25] K. Lang and W. Ruhl, “The Critical O(N) Sigma Model at Dimension 2 < D < 4
+and Order 1/N2: Operator Product Expansions and Renormalization,”
+Nucl. Phys. B377 (1992) 371–404.
+[26] K. Lang and W. Ruhl, “The Scalar ancestor of the energy momentum ﬁeld in critical
+sigma models at 2 < d < 4,” Phys.Lett. B275 (1992) 93–98.
+[27] K. Lang and W. Ruhl, “The Critical O(N) sigma model at dimensions 2 < d < 4 :
+Fusion coeﬃcients and anomalous dimensions,” Nucl.Phys. B400 (1993) 597–623.
+[28] K. Lang and W. Ruhl, “Critical nonlinear O(N) sigma models at 2 < d < 4: The
+Degeneracy of quasiprimary ﬁelds and it resolution,” Z.Phys. C61 (1994) 495–510.
+[29] A. Petkou, “Conserved currents, consistency relations and operator product
+expansions in the conformally invariant O(N) vector model,”
+Annals Phys. 249 (1996) 180–221, arXiv:hep-th/9410093 [hep-th].
+[30] A. C. Petkou, “C(T) and C(J) up to next-to-leading order in 1/N in the conformally
+invariant O(N) vector model for 2 < d < 4 ,” Phys.Lett. B359 (1995) 101–107,
+arXiv:hep-th/9506116 [hep-th].
+[31] J. Maldacena and A. Zhiboedov, “Constraining Conformal Field Theories with A
+Higher Spin Symmetry,” J. Phys. A46 (2013) 214011, arXiv:1112.1016 [hep-th].
+[32] J. Maldacena and A. Zhiboedov, “Constraining conformal ﬁeld theories with a
+slightly broken higher spin symmetry,” Class. Quant. Grav. 30 (2013) 104003,
+arXiv:1204.3882 [hep-th].
+[33] A. Zamolodchikov, “CONFORMAL SYMMETRY IN TWO-DIMENSIONS: AN
+EXPLICIT RECURRENCE FORMULA FOR THE CONFORMAL PARTIAL
+WAVE AMPLITUDE,” Commun.Math.Phys. 96 (1984) 419–422.
+[34] A. Zamolodchikov, “Conformal symmetry in two-dimensional space: Recursion
+representation of conformal block,”
+Theoretical and Mathematical Physics 73 no. 1, (1987) 1088–1093.
+[35] S. Ferrara, R. Gatto, and A. F. Grillo, “Positivity Restrictions on Anomalous
+Dimensions,” Phys. Rev. D9 (1974) 3564.
+[36] G. Mack, “All Unitary Ray Representations of the Conformal Group SU(2,2) with
+Positive Energy,” Commun.Math.Phys. 55 (1977) 1.
+23
+
+
+--- Page 24 ---
+
+[37] R. R. Metsaev, “Massless Mixed Symmetry Bosonic Free Fields in D- Dimensional
+Anti-de Sitter Space-Time,” Phys. Lett. B354 (1995) 78–84.
+[38] S. Minwalla, “Restrictions Imposed by Superconformal Invariance on Quantum Field
+Theories,” Adv. Theor. Math. Phys. 2 (1998) 781–846, arXiv:hep-th/9712074.
+[39] B. Grinstein, K. A. Intriligator, and I. Z. Rothstein, “Comments on Unparticles,”
+Phys. Lett. B662 (2008) 367–374, arXiv:0801.1140 [hep-ph].
+[40] F. Dolan and H. Osborn, “Conformal four point functions and the operator product
+expansion,” Nucl.Phys. B599 (2001) 459–496, arXiv:hep-th/0011040 [hep-th].
+[41] F. Dolan and H. Osborn, “Conformal partial waves and the operator product
+expansion,” Nucl.Phys. B678 (2004) 491–507, arXiv:hep-th/0309180 [hep-th].
+[42] M. Hogervorst and S. Rychkov, “Radial Coordinates for Conformal Blocks,”
+Phys. Rev. D87 (2013) 106004, arXiv:1303.1111 [hep-th].
+[43] F. Dolan and H. Osborn, “Conformal Partial Waves: Further Mathematical Results,”
+arXiv:1108.6194v2 [hep-th].
+[44] M. S. Costa, J. Penedones, D. Poland, and S. Rychkov, “Spinning Conformal
+Correlators,” JHEP 1111 (2011) 071, arXiv:1107.3554 [hep-th].
+[45] M. S. Costa, J. Penedones, D. Poland, and S. Rychkov, “Spinning Conformal Blocks,”
+JHEP 1111 (2011) 154, arXiv:1109.6321 [hep-th].
+[46] D. Simmons-Duﬃn, “Projectors, Shadows, and Conformal Blocks,”
+JHEP 04 (2014) 146, arXiv:1204.3894 [hep-th].
+[47] M. Hasenbusch, “Finite size scaling study of lattice models in the three-dimensional
+Ising universality class,” Phys.Rev. B82 (2010) 174433,
+arXiv:1004.4486 [cond-mat].
+[48] M. Campostrini, A. Pelissetto, P. Rossi, and E. Vicari, “25th order high temperature
+expansion results for three-dimensional Ising like systems on the simple cubic lattice,”
+Phys.Rev. E65 (2002) 066127, arXiv:cond-mat/0201180 [cond-mat].
+[49] M. Campostrini, M. Hasenbusch, A. Pelissetto, and E. Vicari, “The Critical
+exponents of the superﬂuid transition in He-4,” Phys.Rev. B74 (2006) 144506,
+arXiv:cond-mat/0605083 [cond-mat].
+[50] P. Calabrese and P. Parruccini, “Harmonic crossover exponents in O(n) models with
+the pseudo-epsilon expansion approach,” Phys.Rev. B71 (2005) 064416,
+arXiv:cond-mat/0411027 [cond-mat].
+[51] M. Campostrini, M. Hasenbusch, A. Pelissetto, P. Rossi, and E. Vicari, “Critical
+exponents and equation of state of the three-dimensional Heisenberg universality
+class,” Phys.Rev. B65 (2002) 144520, arXiv:cond-mat/0110336 [cond-mat].
+24
+
+
+--- Page 25 ---
+
+[52] M. Hasenbusch, “Eliminating leading corrections to scaling in the three-dimensional
+O(N) symmetric phi**4 model: N=3 and N=4,” J.Phys. A34 (2001) 8221–8236,
+arXiv:cond-mat/0010463 [cond-mat].
+[53] A. Butti and F. Parisen Toldin, “The Critical equation of state of the
+three-dimensional O(N) universality class: N > 4,” Nucl.Phys. B704 (2005) 527–551,
+arXiv:hep-lat/0406023 [hep-lat].
+[54] J. Gracey, “Crossover exponent in O(N) phi**4 theory at O(1 / N**2),”
+Phys.Rev. E66 (2002) 027102, arXiv:cond-mat/0206098 [cond-mat].
+[55] A. L. Fitzpatrick, J. Kaplan, and D. Poland, “Conformal Blocks in the Large D
+Limit,” JHEP 08 (2013) 107, arXiv:1305.0004 [hep-th].
+[56] A. L. Fitzpatrick, J. Kaplan, D. Poland, and D. Simmons-Duﬃn, “The Analytic
+Bootstrap and AdS Superhorizon Locality,” JHEP 12 (2013) 004,
+arXiv:1212.3616 [hep-th].
+[57] Z. Komargodski and A. Zhiboedov, “Convexity and Liberation at Large Spin,”
+JHEP 11 (2013) 140, arXiv:1212.4103 [hep-th].
+[58] G. Mack, “D-independent representation of Conformal Field Theories in D
+dimensions via transformation to auxiliary Dual Resonance Models. Scalar
+amplitudes,” arXiv:0907.2407 [hep-th].
+[59] G. Mack, “D-dimensional Conformal Field Theories with anomalous dimensions as
+Dual Resonance Models,” Bulg.J.Phys. 36 (2009) 214–226,
+arXiv:0909.1024 [hep-th].
+[60] J. Penedones, “Writing CFT correlation functions as AdS scattering amplitudes,”
+JHEP 1103 (2011) 025, arXiv:1011.1485 [hep-th].
+[61] A. L. Fitzpatrick, J. Kaplan, J. Penedones, S. Raju, and B. C. van Rees, “A Natural
+Language for AdS/CFT Correlators,” JHEP 1111 (2011) 095,
+arXiv:1107.1499 [hep-th].
+[62] M. F. Paulos, “Towards Feynman rules for Mellin amplitudes,”
+JHEP 1110 (2011) 074, arXiv:1107.1504 [hep-th].
+[63] A. L. Fitzpatrick and J. Kaplan, “Analyticity and the Holographic S-Matrix,”
+JHEP 1210 (2012) 127, arXiv:1111.6972 [hep-th].
+[64] A. L. Fitzpatrick and J. Kaplan, “Unitarity and the Holographic S-Matrix,”
+JHEP 1210 (2012) 032, arXiv:1112.4845 [hep-th].
+[65] M. F. Paulos, M. Spradlin, and A. Volovich, “Mellin Amplitudes for Dual Conformal
+Integrals,” JHEP 1208 (2012) 072, arXiv:1203.6362 [hep-th].
+[66] A. L. Fitzpatrick and J. Kaplan, “AdS Field Theory from Conformal Field Theory,”
+JHEP 1302 (2013) 054, arXiv:1208.0337 [hep-th].
+25
+
+
+--- Page 26 ---
+
+[67] L. Vandenberghe and S. Boyd, “Semideﬁnite Programming,” SIAM Rev. 38 (1996) 49.
+26

@@ -1,0 +1,1069 @@
+# Poisson surface reconstruction.pdf
+# Converted: 2025-07-19 12:45:30
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Poisson surface reconstruction.pdf
+# Output: ../layer2_completion/txt/Poisson surface reconstruction.txt
+
+
+--- Page 1 ---
+
+Eurographics Symposium on Geometry Processing (2006)
+Konrad Polthier, Alla Sheffer (Editors)
+Poisson Surface Reconstruction
+Michael Kazhdan1, Matthew Bolitho1 and Hugues Hoppe2
+1Johns Hopkins University, Baltimore MD, USA
+2Microsoft Research, Redmond WA, USA
+Abstract
+We show that surface reconstruction from oriented points can be cast as a spatial Poisson problem. This Poisson
+formulation considers all the points at once, without resorting to heuristic spatial partitioning or blending, and
+is therefore highly resilient to data noise. Unlike radial basis function schemes, our Poisson approach allows a
+hierarchy of locally supported basis functions, and therefore the solution reduces to a well conditioned sparse
+linear system. We describe a spatially adaptive multiscale algorithm whose time and space complexities are pro-
+portional to the size of the reconstructed model. Experimenting with publicly available scan data, we demonstrate
+reconstruction of surfaces with greater detail than previously achievable.
+1. Introduction
+Reconstructing 3D surfaces from point samples is a well
+studied problem in computer graphics. It allows ﬁtting of
+scanned data, ﬁlling of surface holes, and remeshing of ex-
+isting models. We provide a novel approach that expresses
+surface reconstruction as the solution to a Poisson equation.
+Like much previous work (Section 2), we approach the
+problem of surface reconstruction using an implicit function
+framework. Speciﬁcally, like [Kaz05] we compute a 3D in-
+dicator function χ (deﬁned as 1 at points inside the model,
+and 0 at points outside), and then obtain the reconstructed
+surface by extracting an appropriate isosurface.
+Our key insight is that there is an integral relationship be-
+tween oriented points sampled from the surface of a model
+and the indicator function of the model. Speciﬁcally, the gra-
+dient of the indicator function is a vector ﬁeld that is zero
+almost everywhere (since the indicator function is constant
+almost everywhere), except at points near the surface, where
+it is equal to the inward surface normal. Thus, the oriented
+point samples can be viewed as samples of the gradient of
+the model’s indicator function (Figure 1).
+The problem of computing the indicator function thus re-
+duces to inverting the gradient operator, i.e. ﬁnding the scalar
+function χ whose gradient best approximates a vector ﬁeld
+⃗V deﬁned by the samples, i.e. minχ ∥∇χ −⃗V∥. If we apply
+the divergence operator, this variational problem transforms
+into a standard Poisson problem: compute the scalar func-
+1
+1
+1
+0
+0
+FM
+0
+0
+0
+0
+0
+1
+1
+1
+0
+Indicator function
+FM
+Indicator gradient
+0
+0
+0
+0
+0
+0
+Surface
+wM
+Oriented points
+V
+G
+Figure 1: Intuitive illustration of Poisson reconstruction in 2D.
+tion χ whose Laplacian (divergence of gradient) equals the
+divergence of the vector ﬁeld ⃗V,
+∆χ ≡∇·∇χ = ∇·⃗V.
+We will make these deﬁnitions precise in Sections 3 and 4.
+Formulating surface reconstruction as a Poisson problem
+offers a number of advantages. Many implicit surface ﬁtting
+methods segment the data into regions for local ﬁtting, and
+further combine these local approximations using blending
+functions. In contrast, Poisson reconstruction is a global so-
+lution that considers all the data at once, without resorting
+to heuristic partitioning or blending. Thus, like radial basis
+function (RBF) approaches, Poisson reconstruction creates
+very smooth surfaces that robustly approximate noisy data.
+But, whereas ideal RBFs are globally supported and non-
+decaying, the Poisson problem admits a hierarchy of locally
+supported functions, and therefore its solution reduces to a
+well-conditioned sparse linear system.
+c
+⃝The Eurographics Association 2006.
+
+
+--- Page 2 ---
+
+Kazhdan et al. / Poisson Surface Reconstruction
+Moreover, in many implicit ﬁtting schemes, the value
+of the implicit function is constrained only near the sam-
+ple points, and consequently the reconstruction may con-
+tain spurious surface sheets away from these samples. Typ-
+ically this problem is attenuated by introducing auxiliary
+“off-surface” points (e.g. [CBC∗01, OBA∗03]). With Pois-
+son surface reconstruction, such surface sheets seldom arise
+because the gradient of the implicit function is constrained at
+all spatial points. In particular it is constrained to zero away
+from the samples.
+Poisson systems are well known for their resilience in the
+presence of imperfect data. For instance, “gradient domain”
+manipulation algorithms (e.g. [FLW02]) intentionally mod-
+ify the gradient data such that it no longer corresponds to any
+real potential ﬁeld, and rely on a Poisson system to recover
+the globally best-ﬁtting model.
+There has been broad interdisciplinary research on solv-
+ing Poisson problems and many efﬁcient and robust methods
+have been developed. One particular aspect of our problem
+instance is that an accurate solution to the Poisson equation
+is only necessary near the reconstructed surface. This allows
+us to leverage adaptive Poisson solvers to develop a recon-
+struction algorithm whose spatial and temporal complexities
+are proportional to the size of the reconstructed surface.
+2. Related Work
+Surface reconstruction
+The reconstruction of surfaces
+from oriented points has a number of difﬁculties in prac-
+tice. The point sampling is often nonuniform. The positions
+and normals are generally noisy due to sampling inaccuracy
+and scan misregistration. And, accessibility constraints dur-
+ing scanning may leave some surface regions devoid of data.
+Given these challenges, reconstruction methods attempt to
+infer the topology of the unknown surface, accurately ﬁt (but
+not overﬁt) the noisy data, and ﬁll holes reasonably.
+Several approaches are based on combinatorial structures,
+such as Delaunay triangulations (e.g. [Boi84, KSO04]), al-
+pha shapes [EM94, BBX95, BMR∗99]), or Voronoi dia-
+grams [ABK98, ACK01]. These schemes typically create a
+triangle mesh that interpolates all or a most of the points.
+In the presence of noisy data, the resulting surface is often
+jagged, and is therefore smoothed (e.g. [KSO04]) or reﬁt to
+the points (e.g. [BBX95]) in subsequent processing.
+Other schemes directly reconstruct an approximating sur-
+face, typically represented in implicit form. We can broadly
+classify these as either global or local approaches.
+Global ﬁtting methods commonly deﬁne the implicit
+function as the sum of radial basis functions (RBFs) centered
+at the points (e.g. [Mur91, CBC∗01, TO02]). However, the
+ideal RBFs (polyharmonics) are globally supported and non-
+decaying, so the solution matrix is dense and ill-conditioned.
+Practical solutions on large datasets involve adaptive RBF
+reduction and the fast multipole method [CBC∗01].
+Local ﬁtting methods consider subsets of nearby points at
+a time. A simple scheme is to estimate tangent planes and
+deﬁne the implicit function as the signed distance to the tan-
+gent plane of the closest point [HDD∗92]. Signed distance
+can also be accumulated into a volumetric grid [CL96]. For
+function continuity, the inﬂuence of several nearby points
+can be blended together, for instance using moving least
+squares [ABCO∗01,SOS04]. A different approach is to form
+point neighborhoods by adaptively subdividing space, for
+example with an adaptive octree. Blending is possible over
+an octree structure using a multilevel partition of unity, and
+the type of local implicit patch within each octree node can
+be selected heuristically [OBA∗03].
+Our Poisson reconstruction combines beneﬁts of both
+global and local ﬁtting schemes. It is global and therefore
+does not involve heuristic decisions for forming local neigh-
+borhoods, selecting surface patch types, and choosing blend
+weights. Yet, the basis functions are associated with the am-
+bient space rather than the data points, are locally supported,
+and have a simple hierarchical structure that results in a
+sparse, well-conditioned system.
+Our approach of solving an indicator function is sim-
+ilar to the Fourier-based reconstruction scheme of Kazh-
+dan [Kaz05]. In fact, we show in Appendix A that our basic
+Poisson formulation is mathematically equivalent. Indeed,
+the Fast Fourier Transform (FFT) is a common technique
+for solving dense, periodic Poisson systems. However, the
+FFT requires O(r3 logr) time and O(r3) space where r is
+the 3D grid resolution, quickly becoming prohibitive for ﬁne
+resolutions. In contrast, the Poisson system allows adaptive
+discretization, and thus yields a scalable solution.
+Poisson problems
+The Poisson equation arises in numer-
+ous applications areas. For instance, in computer graph-
+ics it is used for tone mapping of high dynamic range im-
+ages [FLW02], seamless editing of image regions [PGB03],
+ﬂuid mechanics [LGF04], and mesh editing [YZX∗04].
+Multigrid Poisson solutions have even been adapted for efﬁ-
+cient GPU computation [BFGS03,GWL∗03].
+The Poisson equation is also used in heat transfer and
+diffusion problems. Interestingly, Davis et al [DMGL02]
+use diffusion to ﬁll holes in reconstructed surfaces. Given
+boundary conditions in the form of a clamped signed dis-
+tance function d, their diffusion approach essentially solves
+the homogeneous Poisson equation ∆d = 0 to create an im-
+plicit surface spanning the boundaries. They use a local iter-
+ative solution rather than a global multiscale Poisson system.
+Nehab et al [NRDR05] use a Poisson system to ﬁt a 2.5D
+height ﬁeld to sampled positions and normals. Their ap-
+proach ﬁts a given parametric surface and is well-suited to
+the reconstruction of surfaces from individual scans. How-
+ever, in the case that the samples are obtained from the union
+of multiple scans, their approach cannot be directly applied
+to obtain a connected, watertight surface.
+c
+⃝The Eurographics Association 2006.
+
+
+--- Page 3 ---
+
+Kazhdan et al. / Poisson Surface Reconstruction
+3. Our Poisson reconstruction approach
+The input data S is a set of samples s ∈S, each consisting of a
+point s.p and an inward-facing normal s.⃗N, assumed to lie on
+or near the surface ∂M of an unknown model M. Our goal is
+to reconstruct a watertight, triangulated approximation to the
+surface by approximating the indicator function of the model
+and extracting the isosurface, as illustrated in Figure 2.
+The key challenge is to accurately compute the indicator
+function from the samples. In this section, we derive a rela-
+tionship between the gradient of the indicator function and
+an integral of the surface normal ﬁeld. We then approximate
+this surface integral by a summation over the given oriented
+point samples. Finally, we reconstruct the indicator function
+from this gradient ﬁeld as a Poisson problem.
+Deﬁning the gradient ﬁeld Because the indicator function
+is a piecewise constant function, explicit computation of its
+gradient ﬁeld would result in a vector ﬁeld with unbounded
+values at the surface boundary. To avoid this, we convolve
+the indicator function with a smoothing ﬁlter and consider
+the gradient ﬁeld of the smoothed function. The following
+lemma formalizes the relationship between the gradient of
+the smoothed indicator function and the surface normal ﬁeld.
+Lemma: Given a solid M with boundary ∂M, let χM de-
+note the indicator function of M, ⃗N∂M(p) be the inward
+surface normal at p ∈∂M, ˜F(q) be a smoothing ﬁlter, and
+˜Fp(q) = ˜F(q−p) its translation to the point p. The gradient
+of the smoothed indicator function is equal to the vector ﬁeld
+obtained by smoothing the surface normal ﬁeld:
+∇
+
+χM ∗˜F
+
+(q0) =
+
+∂M
+˜Fp(q0)⃗N∂M(p)dp.
+(1)
+Proof: To prove this, we show equality for each of the com-
+ponents of the vector ﬁeld. Computing the partial derivative
+of the smoothed indicator function with respect to x, we get:
+∂
+∂x
+
+q0
+
+χM ∗˜F
+
+=
+∂
+∂x
+
+q=q0
+
+M
+˜F(q−p)dp
+=
+
+M
+
+−∂
+∂x
+˜F(q0 −p)
+
+dp
+= −
+
+M ∇·
+ ˜F(q0 −p),0,0
+
+dp
+=
+
+∂M
+ ˜Fp(q0),0,0
+
+,⃗N∂M(p)
+
+dp.
+(The ﬁrst equality follows from the fact that χM is equal to
+zero outside of M and one inside. The second follows from
+the fact that (∂/∂q) ˜F(q−p) = −(∂/∂p) ˜F(q−p). The last
+follows from the Divergence Theorem.)
+A similar argument shows that the y-, and z-components
+of the two sides are equal, thereby completing the proof. □
+Approximating the gradient ﬁeld
+Of course, we cannot
+evaluate the surface integral since we do not yet know the
+Figure 2: Points from scans of the “Armadillo Man” model (left),
+our Poisson surface reconstruction (right), and a visualization of the
+indicator function (middle) along a plane through the 3D volume.
+surface geometry. However, the input set of oriented points
+provides precisely enough information to approximate the
+integral with a discrete summation. Speciﬁcally, using the
+point set S to partition ∂M into distinct patches Ps ⊂∂M,
+we can approximate the integral over a patch Ps by the value
+at point sample s.p, scaled by the area of the patch:
+∇(χM ∗˜F)(q) = ∑
+s∈S
+
+Ps
+˜Fp(q)⃗N∂M(p)dp
+≈∑
+s∈S
+|Ps| ˜Fs.p(q) s.⃗N ≡⃗V(q).
+(2)
+It should be noted that though Equation 1 is true for any
+smoothing ﬁlter ˜F, in practice, care must be taken in choos-
+ing the ﬁlter. In particular, we would like the ﬁlter to satisfy
+two conditions. On the one hand, it should be sufﬁciently
+narrow so that we do not over-smooth the data. And on the
+other hand, it should be wide enough so that the integral over
+Ps is well approximated by the value at s.p scaled by the
+patch area. A good choice of ﬁlter that balances these two
+requirements is a Gaussian whose variance is on the order of
+the sampling resolution.
+Solving the Poisson problem Having formed a vector ﬁeld
+⃗V, we want to solve for the function ˜χ such that ∇˜χ = ⃗V.
+However, ⃗V is generally not integrable (i.e. it is not curl-
+free), so an exact solution does not generally exist. To ﬁnd
+the best least-squares approximate solution, we apply the di-
+vergence operator to form the Poisson equation
+∆˜χ = ∇·⃗V.
+In the next section, we describe our implementation of
+these steps in more detail.
+4. Implementation
+We ﬁrst present our reconstruction algorithm under the as-
+sumption that the point samples are uniformly distributed
+over the model surface. We deﬁne a space of functions with
+high resolution near the surface of the model and coarser
+resolution away from it, express the vector ﬁeld⃗V as a linear
+sum of functions in this space, set up and solve the Poisson
+equation, and extract an isosurface of the resulting indicator
+function. We then extend our algorithm to address the case
+of non-uniformly sampled points.
+c
+⃝The Eurographics Association 2006.
+
+
+--- Page 4 ---
+
+Kazhdan et al. / Poisson Surface Reconstruction
+4.1. Problem Discretization
+First, we must choose the space of functions in which to dis-
+cretize the problem. The most straightforward approach is
+to start with a regular 3D grid [Kaz05], but such a uniform
+structure becomes impractical for ﬁne-detail reconstruction,
+since the dimension of the space is cubic in the resolution
+while the number of surface triangles grows quadratically.
+Fortunately, an accurate representation of the implicit
+function is only necessary near the reconstructed surface.
+This motivates the use of an adaptive octree both to repre-
+sent the implicit function and to solve the Poisson system
+(e.g. [GKS02,LGF04]). Speciﬁcally, we use the positions of
+the sample points to deﬁne an octree O and associate a func-
+tion Fo to each node o ∈O of the tree, choosing the tree and
+the functions so that the following conditions are satisﬁed:
+1. The vector ﬁeld ⃗V can be precisely and efﬁciently repre-
+sented as the linear sum of the Fo.
+2. The matrix representation of the Poisson equation, ex-
+pressed in terms of the Fo can be solved efﬁciently.
+3. A representation of the indicator function as the sum of
+the Fo can be precisely and efﬁciently evaluated near the
+surface of the model.
+Deﬁning the function space Given a set of point samples
+S and a maximum tree depth D, we deﬁne the octree O to be
+the minimal octree with the property that every point sample
+falls into a leaf node at depth D.
+Next, we deﬁne a space of functions obtained as the span
+of translates and scales of a ﬁxed, unit-integral, base func-
+tion F : R3 →R. For every node o ∈O, we set Fo to be the
+unit-integral “node function” centered about the node o and
+stretched by the size of o:
+Fo(q) ≡F
+q−o.c
+o.w
+
+1
+o.w3 .
+where o.c and o.w are the center and width of node o.
+This space of functions FO,F ≡Span{Fo} has a multires-
+olution structure similar to that of traditional wavelet repre-
+sentations. Finer nodes are associated with higher-frequency
+functions, and the function representation becomes more
+precise as we near the surface.
+Selecting a base function
+In selecting a base function F,
+our goal is to choose a function so that the vector ﬁeld ⃗V,
+deﬁned in Equation 2, can be precisely and efﬁciently repre-
+sented as the linear sum of the node functions {Fo}.
+If we were to replace the position of each sample with the
+center of the leaf node containing it, the vector ﬁeld ⃗V could
+be efﬁciently expressed as the linear sum of {Fo} by setting:
+F(q) = ˜F
+	 q
+2D
+
+.
+This way, each sample would contribute a single term (the
+normal vector) to the coefﬁcient corresponding to its leaf’s
+node function. Since the sampling width is 2−D and the sam-
+ples all fall into leaf nodes of depth D, the error arising from
+the clamping can never be too big (at most, on the order of
+half the sampling width). In the next section, we show how
+the error can be further reduced by using trilinear interpola-
+tion to allow for sub-node precision.
+Finally, since a maximum tree depth of D corresponds to a
+sampling width of 2−D, the smoothing ﬁlter should approxi-
+mate a Gaussian with variance on the order of 2−D. Thus, F
+should approximate a Gaussian with unit-variance.
+For efﬁciency, we approximate the unit-variance Gaussian
+by a compactly supported function so that (1) the resulting
+Divergence and Laplacian operators are sparse and (2) the
+evaluation of a function expressed as the linear sum of Fo at
+some point q only requires summing over the nodes o ∈O
+that are close to q. Thus, we set F to be the n-th convolution
+of a box ﬁlter with itself resulting in the base function F:
+F(x,y,z) ≡(B(x)B(y)B(z))∗n
+with B(t) =
+ 1 |t| < 0.5
+0 otherwise
+Note that as n is increased, F more closely approximates
+a Gaussian and its support grows larger; in our implemen-
+tation we use a piecewise quadratic approximation with
+n = 3. Therefore, the function F is supported on the domain
+[-1.5,1.5]3 and, for the basis function of any octree node,
+there are at most 53-1 = 124 other nodes at the same depth
+whose functions overlap with it.
+4.2. Vector Field Deﬁnition
+To allow for sub-node precision, we avoid clamping a sam-
+ple’s position to the center of the containing leaf node and
+instead use trilinear interpolation to distribute the sample
+across the eight nearest nodes. Thus, we deﬁne our approxi-
+mation to the gradient ﬁeld of the indicator function as:
+⃗V(q) ≡∑
+s∈S
+∑
+o∈NgbrD(s)
+αo,sFo(q)s.⃗N
+(3)
+where NgbrD(s) are the eight depth-D nodes closest to s.p
+and {αo,s} are the trilinear interpolation weights. (If the
+neighbors are not in the tree, we reﬁne it to include them.)
+Since the samples are uniform, we can assume that the
+area of a patch Ps is constant and ⃗V is a good approxima-
+tion, up to a multiplicative constant, of the gradient of the
+smoothed indicator function. We will show that the choice
+of multiplicative constant does not affect the reconstruction.
+4.3. Poisson Solution
+Having deﬁned the vector ﬁeld⃗V, we would like to solve for
+the function ˜χ ∈FO,F such that the gradient of ˜χ is closest
+to ⃗V, i.e. a solution to the Poisson equation ∆˜χ = ∇·⃗V.
+One challenge of solving for ˜χ is that though ˜χ and the
+c
+⃝The Eurographics Association 2006.
+
+
+--- Page 5 ---
+
+Kazhdan et al. / Poisson Surface Reconstruction
+coordinate functions of ⃗V are in the space FO,F it is not
+necessarily the case that the functions ∆˜χ and ∇·⃗V are.
+To address this issue, we need to solve for the function ˜χ
+such that the projection of ∆˜χ onto the space FO,F is closest
+to the projection of ∇·⃗V. Since, in general, the functions
+Fo do not form an orthonormal basis, solving this problem
+directly is expensive. However, we can simplify the problem
+by solving for the function ˜χ minimizing:
+∑
+o∈O
+⟨∆˜χ −∇·⃗V,Fo⟩
+
+2
+= ∑
+o∈O
+⟨∆˜χ,Fo⟩−⟨∇·⃗V,Fo⟩
+
+2
+.
+Thus given the |O|-dimensional vector v whose o-th coordi-
+nate is vo = ⟨∇·⃗V,Fo⟩, the goal is to solve for the function
+˜χ such that the vector obtained by projecting the Laplacian
+of ˜χ onto each of the Fo is as close to v as possible.
+To express this in matrix form, let ˜χ = ∑o xoFo, so that
+we are solving for the vector x ∈R|O|. Then, let us deﬁne the
+|O|×|O| matrix L such that Lx returns the dot product of the
+Laplacian with each of the Fo. Speciﬁcally, for all o,o′ ∈O,
+the (o,o′)-th entry of L is set to:
+Lo,o′ ≡
+∂2Fo
+∂x2 ,Fo′
+
++
+∂2Fo
+∂y2 ,Fo′
+
++
+∂2Fo
+∂z2 ,Fo′
+
+.
+Thus, solving for ˜χ amounts to ﬁnding
+min
+x∈R|O| ∥Lx−v∥2.
+Note that the matrix L is sparse and symmetric. (Sparse
+because the Fo are compactly supported, and symmetric be-
+cause
+ f ′′g = −
+ f ′g′.) Furthermore, there is an inherent
+multiresolution structure on FO,F, so we use an approach
+similar to the multigrid approach in [GKS02], solving the
+restriction Ld of L to the space spanned by the depth d func-
+tions (using a conjugate gradient solver) and projecting the
+ﬁxed-depth solution back onto FO,F to update the residual.
+Addressing memory concerns In practice, as the depth in-
+creases, the matrix Ld becomes larger and it may not be prac-
+tical to store it in memory. Although the number of entries in
+a column of Ld is bounded by a constant, the constant value
+can be large. For example, even using a piecewise quadratic
+base function F, we end up with as many as 125 non-zero
+entries in a column, resulting in a memory requirement that
+is 125 times larger than the size of the octree.
+To address this issue, we augment our solver with a block
+Gauss-Seidel solver. That is, we decompose the d-th dimen-
+sional space into overlapping regions and solve the restric-
+tion of Ld to these different regions, projecting the local so-
+lutions back into the d-dimensional space and updating the
+residuals. By choosing the number of regions to be a func-
+tion of the depth d, we ensure that the size of the matrix used
+by the solver never exceeds a desired memory threshold.
+4.4. Isosurface Extraction
+In order to obtain a reconstructed surface ∂˜M, it is necessary
+to ﬁrst select an isovalue and then extract the corresponding
+isosurface from the computed indicator function.
+We choose the isovalue so that the extracted surface
+closely approximates the positions of the input samples. We
+do this by evaluating ˜χ at the sample positions and use the
+average of the values for isosurface extraction:
+∂˜M ≡{q ∈R3  ˜χ(q) = γ}
+with
+γ = 1
+|S| ∑
+s∈S
+˜χ(s.p).
+This choice of isovalue has the property that scaling ˜χ does
+not change the isosurface. Thus, knowing the vector ﬁeld ⃗V
+up to a multiplicative constant provides sufﬁcient informa-
+tion for reconstructing the surface.
+To extract the isosurface from the indicator function, we
+use a method similar to previous adaptations of the March-
+ing Cubes [LC87] to octree representations (e.g. [WG92,
+SFYC96, WKE99]). However, due to the nonconforming
+properties of our tree, we modify the reconstruction ap-
+proach slightly, deﬁning the positions of zero-crossings
+along an edge in terms of the zero-crossings computed by
+the ﬁnest level nodes adjacent to the edge. In the case that an
+edge of a leaf node has more than one zero-crossing associ-
+ated to it, the node is subdivided. As in previous approaches,
+we avoid cracks arising when coarser nodes share a face with
+ﬁner ones by projecting the isocurve segments from the faces
+of ﬁner nodes onto the face of the coarser one.
+4.5. Non-uniform Samples
+We now extend our method to the case of non-uniformly dis-
+tributed point samples. As in [Kaz05], our approach is to es-
+timate the local sampling density, and scale the contribution
+of each point accordingly. However, rather than simply scal-
+ing the magnitude of a ﬁxed-width kernel associated with
+each point, we additionally adapt the kernel width. This re-
+sults in a reconstruction that maintains sharp features in ar-
+eas of dense sampling and provides a smooth ﬁt in sparsely
+sampled regions.
+Estimating local sampling density
+Following the ap-
+proach of [Kaz05], we implement the density computation
+using a kernel density estimator [Par62]. The approach is to
+estimate the number of points in a neighborhood of a sam-
+ple by “splatting” the samples into a 3D grid, convolving the
+“splatting” function with a smoothing ﬁlter, and evaluating
+the convolution at each of the sample points.
+We implement the convolution in a manner similar to
+Equation 3. Given a depth ˆD ≤D we set the density esti-
+mator to be the sum of node functions at depth ˆD:
+W ˆD(q) ≡∑
+s∈S
+∑
+o∈Ngbr ˆD(s)
+αo,sFo(q).
+c
+⃝The Eurographics Association 2006.
+
+
+--- Page 6 ---
+
+Kazhdan et al. / Poisson Surface Reconstruction
+Since octree nodes at lower resolution are associated with
+functions that approximate Gaussians of larger width, the
+parameter ˆD provides away for specifying the locality of the
+density estimation, with smaller values of ˆD giving sampling
+density estimates over larger regions.
+Computing the vector ﬁeld
+Using the density estimator,
+we modify the summation in Equation 3 so that each sam-
+ple’s contribution is proportional to its associated area on the
+surface. Speciﬁcally, using the fact that the area is inversely
+proportional to sampling density, we set:
+⃗V(q) ≡∑
+s∈S
+1
+W ˆD(s.p)
+∑
+o∈NgbrD(s)
+αo,sFo(q).
+However, adapting only the magnitudes of the sample
+contributions results in poor noise ﬁltering in sparsely sam-
+pled regions as demonstrated later in Figure 7. Therefore,
+we additionally adapt the width of the smoothing ﬁlter ˜F to
+the local sampling density. Adapting the ﬁlter width lets us
+retain ﬁne detail in regions of dense sampling, while smooth-
+ing out noise in regions of sparse sampling.
+Using the fact that node functions at smaller depths corre-
+spond to wider smoothing ﬁlters, we deﬁne
+⃗V(q) ≡∑
+s∈S
+1
+W ˆD(s.p)
+∑
+o∈NgbrDepth(s.p)(s)
+αo,sFo(q).
+In this deﬁnition, Depth(s.p) represents the desired depth of
+a sample point s ∈S. It is deﬁned by computing the average
+sampling density W over all of the samples and setting:
+Depth(s.p) ≡min
+
+D,D+log4(W ˆD(s.p)/W)
+
+so that the width of the smoothing ﬁlter with which s con-
+tributes to ⃗V is proportional to the radius of its associated
+surface patch Ps.
+Selecting an isovalue
+Finally, we modify the surface ex-
+traction step by selecting an isovalue which is the weighted
+average of the values of ˜χ at the sample positions:
+∂˜M ≡{q ∈R3  ˜χ(q) = γ}
+with
+γ =
+∑
+1
+W ˆD(s.p) ˜χ(s.p)
+∑
+1
+W ˆD(s.p)
+.
+5. Results
+To evaluate our method we conducted a series of experi-
+ments. Our goal was to address three separate questions:
+How well does the algorithm reconstruct surfaces? How
+does it compare to other reconstruction methods? And, what
+are its performance characteristics?
+Much practical motivation for surface reconstruction de-
+rives from 3D scanning, so we have focused our experiments
+on the reconstruction of 3D models from real-world data.
+5.1. Resolution
+We ﬁrst consider the effects of the maximum octree depth
+on the reconstructed surface.
+Figure 3 shows our reconstruction results for the “dragon”
+model at octree depths 6, 8, and 10. (In the context of recon-
+struction on a regular grid, this would correspond to reso-
+lutions of 643, 2563, and 10243, respectively.) As the tree
+depth is increased, higher-resolution functions are used to ﬁt
+the indicator function, and consequently the reconstructions
+capture ﬁner detail. For example, the scales of the dragon,
+which are too ﬁne to be captured at the coarsest resolution
+begin appearing and become more sharply pronounced as
+the octree depth is increased.
+Figure 3: Reconstructions of the dragon model at octree depths 6
+(top), 8 (middle), and 10 (bottom).
+5.2. Comparison to Previous Work
+We compare the results of our reconstruction algorithm
+to the results obtained using Power Crust [ACK01], Ro-
+bust Cocone [DG04], Fast Radial Basis Functions (Fas-
+tRBF) [CBC∗01], Multi-Level Partition of Unity Implicits
+(MPU) [OBA∗03], Surface Reconstruction from Unorga-
+nized Points [HDD∗92], Volumetric Range Image Process-
+ing (VRIP) [CL96], and the FFT-based method of [Kaz05].
+c
+⃝The Eurographics Association 2006.
+
+
+--- Page 7 ---
+
+Kazhdan et al. / Poisson Surface Reconstruction
+Figure 4: Reconstructions of the Stanford bunny using Power
+Crust (a), Robust Cocone (b), Fast RBF (c), MPU (d), Hoppe et al.’s
+reconstruction (e), VRIP (f), FFT-based reconstruction (g), and our
+Poisson reconstruction (h).
+Our initial test case is the Stanford “bunny” raw dataset of
+362,000 points assembled from ten range images. The data
+was processed to ﬁt the input format of each algorithm. For
+example, when running our method, we estimated a sample’s
+normal from the positions of the neighbors; Running VRIP,
+we used the registered scans as input, maintaining the regu-
+larity of the sampling, and providing the conﬁdence values.
+Figure 4 compares the different reconstructions. Since the
+scanned data contains noise, interpolatory methods such as
+Power Crust (a) and Robust Cocone (b) generate surfaces
+that are themselves noisy. Methods such as Fast RBF (c) and
+MPU (d), which only constrain the implicit function near
+the sample points, result in reconstructions with spurious
+surface sheets. Non-interpolatory methods, such as the ap-
+proach of [HDD∗92] (e), can smooth out the noise, although
+often at the cost of model detail. VRIP (f), the FFT-based
+approach (g), and the Poisson approach (h) all accurately re-
+construct the surface of the bunny, even in the presence of
+noise, and we compare these three methods in more detail.
+Figure 5: Reconstructions of a fragment of the Forma Urbis Ro-
+mae tablet using VRIP (left) and the Poisson solution (right).
+Comparison to VRIP
+A challenge in surface reconstruc-
+tion is the recovery of sharp features. We compared our
+method to VRIP by evaluating the reconstruction of sam-
+ple points obtained from fragment 661a of the Forma Ur-
+bis Romae (30 scans, 2,470,000 points) and the “Happy
+Buddha” model (48 scans, 2,468,000 points), shown in Fig-
+ures 5 and 6. In both cases, we ﬁnd that VRIP exhibits a
+“lipping” phenomenon at sharp creases. This is due to the
+fact that VRIP’s distance function is grown perpendicular to
+the view direction, not the surface normal. In contrast, our
+Poisson reconstruction, which is independent of view direc-
+tion, accurately reconstructs the corner of the fragment and
+the sharp creases in the Buddha’s cloak.
+Comparison to the FFT-based approach
+As Fig-
+ure 4 demonstrates, our Poisson reconstruction (h) closely
+matches the one obtained with the FFT-based method (g).
+Since our method provides an adaptive solution to the same
+problem, the similarity is a conﬁrmation that in adapting
+the octree to the data, our method does not discard salient,
+high-frequency information. We have also conﬁrmed that
+our Poisson method maintains the high noise resilience al-
+ready demonstrated in the results of [Kaz05].
+Though theoretically equivalent in the context of uni-
+formly sampled data, our use of adaptive-width ﬁlters (Sec-
+tion 4.5) gives better reconstructions than the FFT-based
+method on the non-uniform data commonly encountered in
+3D scanning. For example, let us consider the region around
+the left eye of the “David” model, shown in Figure 7(a). The
+area above the eyelid (highlighted in red) is sparsely sam-
+pled due to the fact that it is in a concave region and is seen
+only by a few scans. Furthermore, the scans that do sample
+c
+⃝The Eurographics Association 2006.
+
+
+--- Page 8 ---
+
+Kazhdan et al. / Poisson Surface Reconstruction
+Figure 6: Reconstructions of the “Happy Buddha” model using
+VRIP (left) and Poisson reconstruction (right).
+the region tend to sample at near-grazing angles resulting
+in noisy position and normal estimates. Consequently, ﬁxed-
+resolution reconstruction schemes such as the FFT-based ap-
+proach (b) introduce high-frequency noise in these regions.
+In contrast, our method (c), which adapts both the scale and
+the variance of the samples’ contributions, ﬁts a smoother re-
+construction to these regions, without sacriﬁcing ﬁdelity in
+areas of dense sampling (e.g. the region highlighted in blue).
+Limitation of our approach
+A limitation of our method
+is that it does not incorporate information associated with
+the acquisition modality. Figure 6 shows an example of this
+in the reconstruction at the base of the Buddha. Since there
+are no samples between the two feet, our method (right)
+connects the two regions. In contrast, the ability to use sec-
+ondary information such as line of sight allows VRIP (left)
+to perform the space carving necessary to disconnect the two
+feet, resulting in a more accurate reconstruction.
+5.3. Performance and Scalability
+Table 1 summarizes the temporal and spatial efﬁciency of
+our algorithm on the “dragon” model, and indicates that the
+Figure 7: Reconstruction of samples from the region around the
+left eye of the David model (a), using the ﬁxed-resolution FFT ap-
+proach (b), and Poisson reconstruction (c).
+memory and time requirements of our algorithm are roughly
+quadratic in the resolution. Thus, as we increase the oc-
+tree depth by one, we ﬁnd that the running time, the mem-
+ory overhead, and the number of output triangles increases
+roughly by a factor of four.
+Tree Depth
+Time
+Peak Memory
+# of Tris.
+7
+6
+19
+21,000
+8
+26
+75
+90,244
+9
+126
+155
+374,868
+10
+633
+699
+1,516,806
+Table 1: The running time (in seconds), the peak memory usage (in
+megabytes), and the number of triangles in the reconstructed model
+for the different depth reconstructions of the dragon model. A kernel
+depth of 6 was used for density estimation.
+The running time and memory performance of our method
+in reconstructing the Stanford Bunny at a depth of 9 is com-
+pared to the performance of related methods in Table 2. Al-
+though in this experiment, our method is neither fastest nor
+most memory efﬁcient, its quadratic nature makes it scalable
+to higher resolution reconstructions. As an example, Fig-
+ure 8 shows a reconstruction of the head of Michelangelo’s
+David at a depth of 11 from a set of 215,613,477 samples.
+The reconstruction was computed in 1.9 hours and 5.2GB
+of RAM, generating a 16,328,329 triangle model. Trying
+to compute an equivalent reconstruction with methods such
+as the FFT approach would require constructing two voxel
+grids at a resolution of 20483 and would require in excess of
+100GB of memory.
+c
+⃝The Eurographics Association 2006.
+
+
+--- Page 9 ---
+
+Kazhdan et al. / Poisson Surface Reconstruction
+Figure 8: Several images of the reconstruction of the head of Michelangelo’s David, obtained running our algorithm with a maximum tree
+depth of 11. The ability to reconstruct the head at such a high resolution allows us to make out the ﬁne features in the model such as the inset
+iris, the drill marks in the hair, the chip on the eyelid, and the creases around the nose and mouth.
+Method
+Time
+Peak Memory
+# of Tris.
+Power Crust
+380
+2653
+554,332
+Robust Cocone
+892
+544
+272,662
+FastRBF
+4919
+796
+1,798,154
+MPU
+28
+260
+925,240
+Hoppe et al 1992
+70
+330
+950,562
+VRIP
+86
+186
+1,038,055
+FFT
+125
+1684
+910,320
+Poisson
+263
+310
+911,390
+Table 2: The running time (in seconds), the peak memory usage
+(in megabytes), and the number of triangles in the reconstructed
+surface of the Stanford Bunny generated by the different methods.
+6. Conclusion
+We have shown that surface reconstruction can be expressed
+as a Poisson problem, which seeks the indicator function that
+best agrees with a set of noisy, non-uniform observations,
+and we have demonstrated that this approach can robustly
+recover ﬁne detail from noisy real-world scans.
+There are several avenues for future work:
+• Extend the approach to exploit sample conﬁdence values.
+• Incorporate line-of-sight information from the scanning
+process into the solution process.
+• Extend the system to allow out-of-core processing for
+huge datasets.
+Acknowledgements
+The authors would like to express their thanks to the Stan-
+ford 3D Scanning Repository for their generosity in dis-
+tributing their 3D models. The authors would also like to
+express particular gratitude to Szymon Rusinkiewicz and
+Benedict Brown for sharing valuable experiences and ideas,
+and for providing non-rigid body aligned David data.
+References
+[ABCO∗01]
+ALEXA M., BEHR J., COHEN-OR D., FLEISHMAN
+S., LEVIN D., SILVA C.: Point set surfaces. In Proc. of the
+Conference on Visualization ’01 (2001), 21–28.
+[ABK98]
+AMENTA N., BERN M., KAMVYSSELIS M.: A new
+Voronoi-based surface reconstruction algorithm.
+Computer
+Graphics (SIGGRAPH ’98) (1998), 415–21.
+c
+⃝The Eurographics Association 2006.
+
+
+--- Page 10 ---
+
+Kazhdan et al. / Poisson Surface Reconstruction
+[ACK01]
+AMENTA N., CHOI S., KOLLURI R.: The power crust,
+unions of balls, and the medial axis transform. Computational
+Geometry: Theory and Applications 19 (2001), 127–153.
+[BBX95]
+BAJAJ C., BERNARDINI F., XU G.: Automatic recon-
+struction of surfaces and scalar ﬁelds from 3d scans. In SIG-
+GRAPH (1995), 109–18.
+[BFGS03]
+BOLZ J., FARMER I., GRINSPUN E., SCHRÖDER P.:
+Sparse matrix solvers on the GPU: Conjugate gradients and
+multigrid. TOG 22 (2003), 917–924.
+[BMR∗99]
+BERNARDINI F., MITTLEMAN J., RUSHMEIER H.,
+SILVA C., TAUBIN G.: The ball-pivoting algorithm for surface
+reconstruction. IEEE TVCG 5 (1999), 349–359.
+[Boi84]
+BOISSONNAT J.: Geometric structures for three dimen-
+sional shape representation. TOG (1984), 266–286.
+[CBC∗01]
+CARR J., BEATSON R., CHERRIE H., MITCHEL T.,
+FRIGHT W., MCCALLUM B., EVANS T.: Reconstruction and
+representation of 3D objects with radial basis functions. SIG-
+GRAPH (2001), 67–76.
+[CL96]
+CURLESS B., LEVOY M.: A volumetric method for build-
+ing complex models from range images.
+Computer Graphics
+(SIGGRAPH ’96) (1996), 303–312.
+[DG04]
+DEY T., GOSWAMI S.: Provable surface reconstruction
+from noisy samples. In Proc. of the Ann. Symp. Comp. Geom.
+(2004), 428–438.
+[DMGL02]
+DAVIS J., MARSCHNER S., GARR M., LEVOY M.:
+Filling holes in complex surfaces using volumetric diffusion. In
+Int. Symp. 3DPVT (2002), 428–438.
+[EM94]
+EDELSBRUNNER H., MÜCKE E.: Three-dimensional al-
+pha shapes. TOG (1994), 43–72.
+[FLW02]
+FATTAL R., LISCHINKSI D., WERMAN M.: Gradient
+domain high dynamic range compression. In SIGGRAPH (2002),
+249–256.
+[GKS02]
+GRINSPUN E., KRYSL P., SCHRÖDER P.:
+Charms:
+a simple framework for adaptive simulation.
+In SIGGRAPH
+(2002), 281–290.
+[GWL∗03]
+GOODNIGHT N., WOOLLEY C., LEWIN G., LUE-
+BKE D., HUMPHREYS G.: A multigrid solver for boundary value
+problems using programmable graphics hardware. In Graphics
+Hardware (2003), 102–111.
+[HDD∗92]
+HOPPE H., DEROSE T., DUCHAMP T., MCDONALD
+J., STUETZLE W.:
+Surface reconstruction from unorganized
+points. Computer Graphics 26 (1992), 71–78.
+[Kaz05]
+KAZHDAN M.: Reconstruction of solid models from ori-
+ented point sets. SGP (2005), 73–82.
+[KSO04]
+KOLLURI R., SHEWCHUK J., O’BRIEN J.: Spectral
+surface reconstruction from noisy point clouds. In SGP (2004),
+11–21.
+[LC87]
+LORENSEN W., CLINE H.: Marching cubes: A high res-
+olution 3d surface reconstruction algorithm. SIGGRAPH (1987),
+163–169.
+[LGF04]
+LOSASSO F., GIBOU F., FEDKIW R.: Simulating water
+and smoke with an octree data structure. TOG (SIGGRAPH ’04)
+23 (2004), 457–462.
+[Mur91]
+MURAKI S.: Volumetric shape description of range data
+using “blobby model”. Computer Graphics 25 (1991), 227–235.
+[NRDR05]
+NEHAB D., RUSINKIEWICZ S., DAVIS J., RA-
+MAMOORTHI R.: Efﬁciently combining positions and normals
+for precise 3D geometry. TOG (SIGGRAPH ’05) 24 (2005).
+[OBA∗03]
+OHTAKE Y., BELYAEV A., ALEXA M., TURK G.,
+SEIDEL H.: Multi-level partition of unity implicits. TOG (2003),
+463–470.
+[Par62]
+PARZEN E.: On estimation of a probability density func-
+tion and mode. Ann. Math Stat. 33 (1962), 1065–1076.
+[PGB03]
+PÉREZ P., GANGNET M., BLAKE A.: Poisson image
+editing. TOG (SIGGRAPH ’03) 22 (2003), 313–318.
+[SFYC96]
+SHEKHAR R., FAYYAD E., YAGEL R., CORNHILL J.:
+Octree-based decimation of marching cubes surfaces. In IEEE
+Visualization (1996), 335–342.
+[SOS04]
+SHEN C., O’BRIEN J., SHEWCHUK J.: Interpolating
+and approximating implicit surfaces from polygon soup. TOG
+(SIGGRAPH ’04) 23 (2004), 896–904.
+[TO02]
+TURK G., O’BRIEN J.: Modelling with implicit surfaces
+that interpolate. In TOG (2002), 855–873.
+[WG92]
+WILHELMS J., GELDER A. V.: Octrees for faster iso-
+surface generation. TOG 11 (1992), 201–227.
+[WKE99]
+WESTERMANN R., KOBBELT L., ERTL T.: Real-time
+exploration of regular volume data by adaptive reconstruction of
+iso-surfaces. The Visual Computer 15 (1999), 100–111.
+[YZX∗04]
+YU Y., ZHOU K., XU D., SHI X., BAO H., GUO B.,
+SHUM H.: Mesh editing with Poisson-based gradient ﬁeld ma-
+nipulation. TOG (SIGGRAPH ’04) 23 (2004), 641–648.
+Appendix A:
+The solution to surface reconstruction described in this paper
+approaches the problem in a manner similar to the solution
+of [Kaz05] in that the reconstructed surface is obtained by
+ﬁrst computing the indicator function and then extracting the
+appropriate isosurface.
+While the two methods seem to approach the problem
+of computing the indicator function in different manners
+( [Kaz05] uses Stokes’ Theorem to deﬁne the Fourier co-
+efﬁcients of the indicator function while we use the Poisson
+equation), the two methods are in fact equivalent.
+To show this, we use the fact that the Poisson equation
+∆u = f where f is periodic can be solved using the Fourier
+transform. The Fourier series expansion is −|ζ|2 ˆu(ζ) =
+ˆf(ζ), or equivalently ˆu(ζ) = −1
+|ζ|2 ˆf(ζ).
+Thus, our Poisson equation ∆χ = ∇·⃗V can be solved us-
+ing ˆχ = −1
+|ζ|2 
+∇·⃗V. With the well known identity ˆf ′ = −iζ ˆf
+and its generalization 
+∇·⃗V = −iζ · ˆ⃗V, we get ˆχ =
+i
+|ζ|2 ζ · ˆ⃗V,
+which is identical to [Kaz05].
+c
+⃝The Eurographics Association 2006.

@@ -1,0 +1,459 @@
+# Surface reconstruction from unorganized points.pdf
+# Converted: 2025-07-18 12:58:53
+# Method: pdfplumber
+# Domain: pixel2physics
+# Source: /home/user/vekt/papers/pixel2physics/pdfs/layer2/Surface reconstruction from unorganized points.pdf
+# Output: /home/user/vekt/papers/pixel2physics/dot_txt/layer2/Surface reconstruction from unorganized points.txt
+
+
+--- Page 1 ---
+
+z
+Computer Graphics, 26, 2,July 1992
+Surface Reconstruction from Unorganized Points
+Hugues Hoppe* Tony DeRose* Tom Duchampt
+John McDonald$ Werner Stuetzle~
+University of Washington
+Seattle, WA98195
+Abstract
+including those assimple asacoffee cup with ahandle (asur-
+face ofgenus 1),ortheobject depictedirt Figure 1a(a surface
+We describe and demonstrate an algorithm that takes as input an of genus 3), cannot be accomplished by either of these meth-
+unorganized set of points {xl, ....x.} c IR3 on or near an un- ods. To adequately scan these objects, multiple view points
+known manifold M, and produces as output a simplicial surface must be used. Merging the data generated from multiple view
+that approximates M. Neither the topology, thepresence ofbound- points to reconstruct apolyhedral surface representation is a
+aries, nor the geometry of M are assumed tobe known in advance non-trivial task [11].
+— all are inferred automatically from the data. This problem natu-
+rally arises inavariety ofpractical situations such asrange scanning
+an object from multiple view points, recovery of biological shapes Surfaces from corriours: In many medicai studies it is com-
+from two-dimensional slices, and interactive surface sketching. mon to slice biological specimens into thin layers with ami-
+crotome. The outlines of the structures of interest are then
+digitized to create a stack of contours. The problem is to
+CR Categories and Subject Descriptors: 1.3.5 [Computer reconsmct the three-dimensional smtctures tlom the stacks
+Graphics]: Computational Geometry and Object Modeling. of two-dimensional contours. Although this problem has re-
+Additional Keywords: Geomernc Modeling, Surface Fitting, ceived agood deal ofattention, there remain severe limitations
+Three-Dimensional Shape Recovery, Range Data Analysis. with current methods. Perhaps foremost among these is the
+difficulty of automatically dealing with branching structures
+1 Introduction [3, 12].
+Broadly speaking, the class of problems we are interested in can Itieractive surface sketching: A number of researchers, in-
+be stated as follows: Given partial information of an unknown sur- cluding Schneider [21] and‘Eisenman [6], have investigated
+face, construct, to the extent possible, acompact representation of the creation of curves in IFt2by tracing the path of a stylus
+the surface. Reconstruction problems of this sort occur in diverse or mouse as the user sketches the desired shape. Sachs et al.
+scientific and engineering application domains, including: [19] describe a system, called 3-Draw, that permits the cre-
+ation of free-form curves in IR3 by recording the motion of a
+s Surfaces from range data: The data produced by laser range
+stylus fitted with aPolhemus sensor. This can be extended to
+scanning systems is typically a rectangular grid of distances
+thedesign of free-form surfaces byignoring theorder inwhich
+from the sensor to the object being scanned. If the sensor and
+positions arerecorded, allowing the user tomove thestylus ar-
+object are fixed, only objects that are ‘“pointviewable” can be
+bitrarily back and forth over the surface. The problem is then
+fuily digitized. More sophisticated systems, such asthose pro-
+to construct asurface representation faithful to the unordered
+duced byCyberware Laboratory, Inc., arecapable ofdigitizing
+collection ofpoints.
+cylindrical objec~ by rotating either the sensor or the object.
+However, the scanning of topologically more complex objects,
+Reconstruction algorithms addressing these problems have typi-
+lDepatient ofComputerScience andEngineering,FR-35
+tDepartmentofMathematics,GN-50 cally been crafted on acase bycase basis toexpioit partiaf smtcture
+$Depan.mentofStatistics,GN-22 in the data. For instance, algorithms solving the surface from con-
+ThisworkwassupportedinpartbyBeflcore,theXeroxCorporation, tours problem make heavy useofthefact thatdata areorganize-dinto
+IBM, Hewlett-Packard, the Digital Equipment Corporation, the Depart- contours (i.e., closed polygons), and that the contours lie in paral-
+mentofEnergyundergrant DE-FG06-85-ER25006,theNationalLlbraty lelplanes. Similarly, specialized algorithms toreconstruct surfaces
+ofMedicineundergrantNIHL&4-04174,andtheNationalScienceFounda- from multiple view point range data might exploit the adjacency
+tionundergrantsCCR-8957323andDMS-9103002. relationship of the data points within each view.
+In contras~ our approach is to pose a unifying general problem
+that does notassume any structure onthedata points. This approach
+PermissiontocopywithoutfeeallorpartO(thismaterial isgrmrted has both theoretical and practical merit. On the theoretical side,
+providedthatthecopiesarenolmate urdistributedfordirect
+abstracting toageneral probiem often sheds iight onthetruiy criticai
+commercial advantage,(heACM copyrightnoticeandthetitleofthe
+aspects oftheproblem. On thepractical side, asingle algorithm that
+pufrlicatmnandItsdateappear.andrmticeMgiventhatcopyingisby
+solves thegeneral problem canbeused tosolve anyspecific problem
+fxrmlssion oftheAswcta[ion forComputing Machinery. Tocopy
+otherwise.or10republish.requiresafeeand/orspeciticpermission. instance.
+[[~Iwz AcM-1)-x9791-479- l/92/M)7/(x)71 $01.50 71
+
+--- Page 2 ---
+
+1.1 Terminology fn contrast to implicit reconstruction techniques, parametic re-
+construction techniques represent the reconstructed surface as a
+By a surface we mean a “compac~ connected, orientable two- topological embedding ~(A) of a2dimensional parameter domain
+dimensional manifold, possibly with boundary, embedded in lR3° Ainto IR3. Previous workhas concentrated on domain spaces with
+(cf. O’Neilf [17]). A surface without boundary will be called a simple topology, i.e. the plane and the sphere. Hastie and Stuet-
+closed surface. ff we want toemphasize that asurface possesses a zle [9] and Vemun [26, 27] dwcuss reconsmtction of surfaces by a
+non-emptyboundary,wewillcallitaborderedsurface. Apiecewise
+topological embedding f(A) of aplanar region Ainto IR3. Schudy
+liiear surface with triangular faces will be referred to as asimpli-
+and Ballard [2Z 23] md Brinkley [4] consider the reconstruction
+ciai surfme. We use IIxIItodenote the Euclidean length ofavector
+of surfaces that are slightfy deformed spheres, and thus choose A
+x, and we use d(X, Y) to denote the Hausdorff distance between to be a sphere. Sclaroff and Pentland [24] describe a hybrid im-
+the sets of points X and Y (the Hausdorff distance is simply the plicit/parametric method for fitting a deformed sphere to a set of
+distance between the two closest points of X and Y). points using deformations of asuperqttadric.
+Letx= {x,,..., x.} be sampled data points on or near an Compared to the techniques mentioned above, our method has
+unknown surface M (see Figure lb). To capture the error in most several advantages
+sampling processes, we assume that each of thepoints x, E X isof
+the form x: = yt + ei, where yi c M is apoint on the unknown l Itrequires only anunorganized collection ofpoints onor near
+surface and ei c lR3 is an error vector. Wecall such asample X the surface. No additional information isneeded (such asnor-
+6-noisy if [IelIIs 6for all i. Avalue for 6can be estimated in most maf information used by Muraki’s method).
+applications (e.g., the accuracy ofthelaser scanner). Features of M l Unlike theparametric methods mentioned abov~ itcan recon-
+that are smalf compared to 6will obviously not berecoverable. struct surfaces of arbhry topology.
+It is also impossible to recover features of M in regions where
+l Unlike previously suggested implicit methods, it deals with
+insufficient sampling hasoccurred. Inparticular, ifM isabordered boundaries in anatural way, and itdoes not generate spurious
+surface, such as a sphere with a disc removed, it is impossible to
+surface components not supported by the data.
+distinguish holes in thesample from holes inthe surface. Tocapture
+the intuitive notion of sampling density we need to make another
+2.2 Surface Reconstruction vs Function Recon-
+definition: Let Y = {yl ,. ... Y~} c M bea(noiseless) sampleof
+asurface M. The sample Y issaid tobe p-dense ifany sphere with struction
+radius pandcenter inM contains atleast one sample point in Y. A
+Terms like “surface fitting” appear in reference to two distinct
+6-noisy sample {xl,... ,x.} C IR3of asurface M issaid tobep-
+classes of problems: surface reconstruction and function recon-
+dense ifthere exists anoiseless pdense sample{ yl, ..., Y*} c M
+struction. The goal ofsurface reconstmction was stated earlier. The
+such thatx, =y, +e,, lle,ll~6, i=l, ....n.
+goal of function reconstruction may be stated as foflows: Given a
+surface h4, a set {x, E M}, and a set {y, E El}, determine a
+1.2 Problem Statement function ~ : M ~ Et, such that f(x, ) x w.
+The goalofsurface reconstruction istodetermine asurface M’ (see The domain surface M is most commonly aplane embedded in
+Figure 2f3that approximates an unknown surface M (Figure 1a), IR3, in which case theproblem is astandard one considered in ap-
+using asample X (Ftgure lb) and information about the sampling proximation theo~. The case where M is a sphere has also been
+process, forexample, bounds on thenoise magnitude 6andthesant- extensively treated (cf. [7]). Some recent work under the titfe sur-
+pling density p. faces on surjaces addresses the case when M is a general curved
+surface such as the skin of an airplane [16].
+We are cturently working to develop conditions on the original
+surface M and the sample X that are sufficient to allow M to be Function reconstruction methods can be used for surface recon-
+reliably reconstructed. As that work is still preliminary, we are un- struction in simple, speciaf cases, where the surface to be recon-
+able togive guarantees for the afgorithm presented here. However, structed is, roughly speakiig, the graph of afunction over aknown
+the algorithm has worked welI in practiu where the results can be surface M. Itis important torecognize just how limited these spe-
+compared to the original surface (see Section 4). ciaf cases are— forexample, not evety surface homomorphic toa
+sphere isthegraph of afunction over the sphere. The point wewant
+to make isthat function recons~ction must not bemisconstrued to
+2 Related Work
+solve the general surface reconstruction problem.
+2.1 Surface Reconstruction 3 A Description of the Algorithm
+Surface reconstruction methods can be classified according to the
+way inwhich they represent the reconstmcted surface. 3.1 Overview
+Impficit reconstruction methods attempt to find a smooth func-
+Our surface reconstruction algorithm consists of two stages. In the
+tion f : IR3 ~ lR such that {xl ,.. .,xn}is close totfte zero set
+first stage we define a function ~ : D ~ IR, where D c IR3 is
+Z(t). Theydiffer withrespect totheformof~ andthemeasureof
+aregion near the data, such that ~ estimates the signed geometric
+closeness, Ratt[18] and Taubin [25] minimize the sum of squared
+distance to the unknown surface M. The zero set Z(f) isour esti-
+Hausdorff distances from the data points to the zero set of apoly-
+mate for M. In the second stage we use acontouring afgorithm to
+nomial inthree variables. Muraki [15] takes ~ tobe alinear combi-
+approximate Z(j) by asimpliciaf surface.
+nation of three-dimensional Gaussian kemefs with different means
+and spreads. His goodness-of-fit function measures how close the Although the unsigned distance function [~1would be easier to
+values of j atthedata poin~ are tozero, and how well the unit nor- estimate, zero is not a regular value of Ifl. Zero is, however, a
+mals tothe zero setof j match the normals estimated from the data. regular value of j, andtheimplicit function theorem thus guarantees
+Moore and Warren [13] fit apiecewise polynomial recursively and that our approximation Z(f) is amanifold.
+then enforce continuity using atechnique they callfiee form blend- The key ingredient to defining the signed distance function is to
+ing. associate anoriented plane with each ofthe data points. These tan-
+72
+
+--- Page 3 ---
+
+Computer Graphics, 26,2, July 1992
+genl planes serve aslocal linear approximations tothe surface. Al- the surface is assumed toconsist of asingle connected componen~
+though the construction of the tangent planes is relatively simple, the graph should be connected. A simple connected graph for aset
+the selection of their orientations so as to define a globally consis- ofpoints that tends toconnect neighbors isthe Euclidean Minimum
+tent orientation for the surface isone of the major obstacles facing Spanning Tree (EMST). However, the EMST over the tangent plane
+the algorithm. As indicated in Figure 2b, the tangent planes do not centers {01, ....on} (Figure 1c)isnotsufficiently dense inedges
+directly define the surface, since their union may have a compli- to serve our purposes. We therefore enrich it by adding a number
+cated non-manifold smscture. Rather, we use the tangent planes to of edges to it. Specifically, we add the edge (i, j) if either o, is
+define thesigned distance function tothesurface. Anexample ofthe in the k-neighborhood of OJ, oro, is inthe k-neighborhood ofo,
+simplicial surface obtained by contouring the zero set ofthe signed (where k-neighborhood is defined over {01,..., on }as it was for
+distance function is shown in Figure 2e. The next several sections X). The resulting graph (Figure Id), calledtheRiemmrnianGraph,
+develop inmore detail the successive steps ofthe algorithm. isthusconstructed tobe aconnected graph that encodes geometric
+proximity of the tangent plane centers.
+3.2 l%rtgent Plane Estimation A relatively simple-minded algorithm toorient theplanes would
+be to arbitrarily choose an orientation for some plane, then “’prop-
+The first step toward defining asigned distance function is tocom-
+agate” the orientation to neighboring planes in tie Riemannian
+pute an oriented tangent plane for each data point. The tangent
+Graph. In practice, we found that the order in which the orienta-
+plane Tp(x, ) associated with the data point xi is represented as
+tion is propagated is important. Figure 3b shows what may result
+apoint o,, called the center, together with aunit normal vector n,.
+when propagating orientation solely on thebasis of geometric prox-
+The signed distance of an arbitrary point p E IR3 to Tp(x, ) is
+imity; acorrect reconsmtction is shown in Figure 3C. Intuitively,
+defined to be dish(p) = (p – o,) .n,. The center and normal
+we would like tochoose anorder ofpropagation that favors propa-
+for Tp(x, )are determined by gathering together the k points of X
+gation horn T’p(x, ) to Tp(x, ) if the unoriented planes are nearly
+nearest to x,; this set is denoted by Nbhd(x, ) and is called the k-
+parallel. This can be accornp~shed by assigning to each edge (i, j)
+neighborhood of x,. (We currently assume k tobe auser-specified
+in the Riemannian Graph thecost 1– @ ftj 1.In addition mbeing
+parameter, although inSection 5wepropose amethod fordetermin-
+non-negative, this assignment has theproperty that acost issmall if
+ing k automatically.) The center and unit normal are computed so
+the unoriented tangent planes are nearly parallel. Afavorable prop-
+that the plane {dis~ (p) = O}is the least squares best fitting plane
+agation order can therefore be achieved by traversing the minimal
+to Nbhd(x, ). That is, the center o, is taken to be the centzoid of
+spanning lree (MST) of the resulting graph. This order is advarrta-
+Nbhd(x, ), and the normal n, isdetermined using principal compo-
+geous because ittends to propagate orientation stfongdirections of
+nent analysis. To compute n,, the covariance matrix of Nbhd(xi )
+low curvature inthedata, thereby largely avoiding ambiguous situa-
+isformed. This isthe symmetric 3x 3positive semidefinite matrix
+tions encountered when trying topropagate orientation across sharp
+edges (asatthe tipofthecat’s ears inFigure 3b). IntheMST shown
+Cv= ~ (y-ot)C3(Y-sh) in Figure 2a, the edges are colored according to their cos~ with the
+y~Nbhd(X, ) brightly colored edges corresponding to regions of high variation
+(where n, n] is somewhat less than 1).
+where @denotes the outer product vector operatorl. If ~! ~ ~~ ~ To assign orientation to an initial plane, the unit normal of the
+J: denote the eigenvaiues of CV associated with unit eigenvectors plane whose center has the hugest z coordinate is forced to point
+V:, V?,t:, respectively, we choose f~,tobeeither t: or –O:. The toward the +Z axis. Then, rooting the tree at this initial node, we
+selection determines theorientation ofthe tangent plane, anditmust traverse the tree in depth-first order, assigning each plane an or-
+bedone sothat nearby planes are “consistently oriented”, ientation that is consistent with that of its parent. That is, ifduring
+traversal, thecurrent plane 7’p(x, )hasbeen assigned theorientation
+3.3 Consistent Tangent Plane Orientation fit and TP(x7 ) is the next plane to be visited, then n, isreplaced
+with —n, ifn, .tij < 0.
+Suppose two data points x,, XJ E X are geometrically close. Ide-
+This orientation algorithm haabeen used inall our examples and
+ally, when the data is dense and the surface is smooth, the corre-
+has produced correct orientations in all the cases we have run. The
+sponding tangent planes Tp(x, )= (o,, n,) and Tp(xJ) = (o,, fij)
+resulting oriented tangent planes are represented ass haded rectan-
+arenearly parallel, i.e. n, tij ~ +1. Ifthe planes are consistently
+gles in Figure 2b.
+oriented, then n, n] x +1; otherwise, either n, or n] should
+be flipped. The difficulty in finding aconsistent global orientation
+3.4 Signed Distance Function
+is that this condition should hold between all pairs of “sufficiently
+close” data points.
+The signed distance f(p) from an arbitmy point p E IR3 to a
+Wecan model theproblem asgraph optimization. The graph con- known surface M is the distance between p and the closest point
+tains one node N, per tangent plane Tp(x, ), with an edge (i, j) z E M, multiplied by *1, depending on which side of the surface
+between N, and Nj ifthe tangent plane centers o, and o, are suffi- p lies. In reali~ AI is not known, but we can mimic this proce-
+ciently close (we will be more precise about what wemean by suffi- dure using theoriented tangent planes as follows. First we findthe
+ciently close shortly). The cost onedge (i, j)encodes tie degree to tangent plane Tp(x, )whose center o, isclosest to p.This tangent
+which N, and NJ areconsistently oriented andistaken toben,. f~j. plane is a local linear approximation to M, so we take the signed
+The problem isthen toselect orientations forthetangent planes soas distance f(p) to M to be the signed distance between p and its
+tomaximize the total cost of the graph. Unfortunately, this problem projection z onto Tp(x, ); that is,
+can be shown tobe NP-complete via areduction to MAXCXJT [8].
+Toefficiently solve tie orientation problem we must therefore resort ~(p) = dis~(p) = (p–o,). n,
+to an approximation algorithm.
+Before describing the approximation algorithm we use, we must If M is known not to have boundaries, this simple rule works
+decide when apair ofnodes are tobe connected inthe graph. Since well. However, therule must beextended toaccommodate surfaces
+that might have boundaries. Recall that the set X = {XI, . ,x. )
+1Ifa andb havecomponentsa, andb] respectively,thenthematrix is assumed to be ap-dense, 6-noisy sample of M. If there was no
+a ISIb hasa,bj asitstj-th entry. noise, we could deduce that a point z with d(z, X ) > p cannot
+73
+
+--- Page 4 ---
+
+SIGGRAPH ’92Chicago, July26-31, 1992
+4 Results
+be a point of M since that would violate X being p-dense. Intu-
+itively, the sample points do not leave holes ofradius larger than p.
+ff the sample is $-noisy, the radius of the holes may increase, but We have experimented with the reconstruction method on data sets
+by no more than 6. We therefore conclude that apoint z cannot be obtained from several different sources. In all cases, any s~cture
+apoint of M if d(z, X) > p + 6. If the projection z of p onto (including ordering) that might have been present in the point sets
+theclosest tangent plane haad(z, X) > p+6, we take f(p) tobe was discarded.
+undefined. Undefined vahtes are used by the contouring afgorithm
+Meshes : Points wererandomly sampled from anumber ofexist-
+of Section 3.5 toidentify boundaries.
+ing simplicial surfaces3. For instance, the mesh of Figure 3a
+Stated procedurally, our signed distance function isdefined as: was randomly sampled toyield 1000 unorgsmized points, and
+these in turn were used toreconstruct the surface in Figure 3c.
+i - index of tangent plane whose center isclosest top This particular case illustrates the behavior of the method on a
+bordered surface (the cat has no base and is thus homomorp-
+{Compute zas theprojection ofponto Tp(xi) } hic to a disc). The reconstructed knot (original mesh from
+ZtCSi-((p -O, )fli)ti,
+Rob Scharein) of Figure 3d is an example of a surface with
+simple topology yet complex geometrical embeddmg.
+if d(z, X) < p+ 6 then
+Ray ‘lkaced Points : To simulate laser range imaging from mul-
+eke /(P) - (P – Oi) .fli {= *lip - 211}
+tiple view points, CSG models were ray traced from multiple
+eye points. The ray tracer recorded the point of first intersec-
+f(P) + undefined
+tion along each ray. Eight eye points (the vertices of a large
+endff
+cube centered atthe object) were used to generate thepoint set
+The simple approach outlkted above creates azero set Z(f) that of Figure lb from the CSG object shown in Figure la. This
+ispiecewise linear but contains discontinuities. The discontinuities is the point set used in Section 3 to illus~ate the steps of the
+result from the implicit partitioning of space into regions within algorithm (Figures 1a-2f).
+which a single tangent plane is used to define the signed distance Range Images :The bust of Speck (Figure 3e) was reconstructed
+function. (’These regions are in fact the Voronoi regions associ- from pointa taken from anactual cylindrical rangeimage (gen-
+ated with thecenters o,.) Fortunately, thediscontinuities do not ad- erated by Cyberware Laboratory, Inc.). Only 25~0of theorig-
+versely affect our algorithm. The contouring algorithm discussed in inal points were used.
+the next section will discretely sample the function f over aportion
+Contours :Pointsfrom39planar (horizontal) slices ofthe~ scan
+of a3dimensionaf grid near the data and reconstruct acontinuous
+of a femur were combined together to obtain the surface of
+piecewise linear approximation to Z(f).
+Figure 3f.
+The algorithm’s parameters are shown in the next table for each
+3.5 Contour ‘h-acing of the examples. The execution times were obtained on a20MIPS
+workstation. The parameter p + iiand the marching cube cell size
+Contour tracing, the extraction of anisosurface from ascalar func- are both expressed as afraction of the object’s size. The parameter
+tion, is a well-studied problem [1, 5, 28]. We chose to implement p+ 6isset toinfinity for those surfaces that areknown tobeclosed.
+avariation of the marching cubes algorithm (cf. [28]) that samples . 0
+Object n k p+6 cefl size
+the function atthe vertices of acubical lattice and finds the contour
+(seCo:&;
+intersections within tetrahedral decompositions ofthe cubical cells.
+cat 1000 15 .06 1/30 19
+To accurately estimate boundaries, thecube size should be set so
+knot 1000O 20 co 1/50 137
+that edges are of length less than p + 6. In practice we have often
+mechpart 4102 12 1/40 54
+found it convenient to set the cube size somewhat larger than this
+speck 21760 8 .; 1/80 514
+value, simply to increase the speed of execution and toreduce the
+femur 18224 40 .06 1/50 2135
+number of biangular facets generated.
+The algorithm only visits cubes that intersect thezero setbypush- 5 Discussion
+ingonto aqueueonly theappropriate neighboring cubes (Figure 2c).
+Inthisway, thesigned distance function f isevaluated only atpoints
+5.1 Tangent Plane Approximation
+close to the data. Figure 2d ilhts~ates the signed distance function
+by showing line segments between the query points p (at the cube The neighborhood /Vbhd(X, ) of adata point x, is defined to con-
+vertices) and their associated projected points z. As suggested in
+sist of its k nearest neighbors, where k iacurrently assumul to be
+Section 3.4, no intersection is reported within acube if the signed
+an input parameter. In the case where the data contains little or no
+distance function is undefined at any vertex of the cube, thereby
+noise, kisnot acritical parameter since the output hasbeen empiri-
+giving rise toboundaries inthe simplicial surface.
+cally observed tobe stable over awide range ofsetrings. However,
+The resulting simplicial surface can contain triangles with arbi- it would be best if k could be selected automatically. Furthermore,
+trarily poor aspect ratio (Figure 2e). We alleviate this problem us- allowing k to adapt locally would make less stringent the require-
+ing apost-processing procedure that collapses edges in the surface ment that the data be uniformly distributed over the surface. To
+using an aspect ratio criterion.2 The final result is shown in Fig- select and adapt k, the algorithm could incrementally gather points
+ure 2f. Alternatively, other contouring methods exist that cartguar- while monitoring thechanging eigenvafues ofthecovariance matrix
+antee bounds on the triangle aspect ratio [14]. (see Section 3.2). For small values of k, data noise tends to domi-
+nate, the eigenvahses are similar, and theeigenvectora donotreveal
+thesurface’s true tangent plane. Atthe other extreme, askbecomes
+2~e ~ge~ am keptinapriorityqueue;thecriteriontominimizeisthe
+productoftheedgelengrhtimestheminimuminscribedradiusofitatwoad- af)is~re~inversetmnsfom sampling[1O,page469]ontri~gle am was
+jacentfaces.TestaarealsoperformedLOensurethatedgecolfapsespreserve usedtoselectfaceindicesfromthemesh,anduniformsamplingwasused
+thetopologicaltypeofshesurface. withinrftefaces.
+74
+
+--- Page 5 ---
+
+Computer Graphics, 26, 2,July 1992
+large, the k-neighborhoods become less localized and the surface the sample and theoriginal surface. To further improve the geomet-
+curvature tends toincrease the“thickness” ,4: ofthe neighborhood. ric accuracy of the fi~ and to reduce the space required to store the
+Another possible criterion istocompare A: tosome local or global reconstruction, weenvision using theoutput of our algorithm asthe
+estimate of data noise. Although we have done some initial-exper- starting point for asubsequent spline surface fitting procedure. We
+imentation in this direction, we have not yet fully examined these arecurrently investigating such amethod basedon anonlinear least
+options. squares approach using triangular B4zier surfaces.
+If the data is obtained born range images, there exists some
+knowledge of surface orientation at each data point. Indeed, each References
+datapoint isknown tobevisible from aparticular viewing direction,
+sotha~ unless the surface incident angle islarge, thepoint’s tangent [1] 3.L.Allgower and P.H. Schmidt. An algorithm forpiecewise
+plane orientation can be inferred from that viewing direction. Our inear approximation of animplicitly defined manifold. SIAM
+method could exploit this additional information inthetangent plane ~ournalofNumerical Analysis, 22:322–346, April 1985.
+orientation step (Section 3.3) by augmenting theRiemannisn Graph [2] ‘.L. Bentley. Multidimensional divide and conquer. Comm.
+with anadditional pseudo-node and n additional edges. !CM, 23(4):214-229, 1980.
+[3] KBreseler, J. A. Fessler, and A. Macovski. A Bayesiarr ap-
+5.2 Algorithm Complexity xoach toreconstruction from incomplete projections ofamul-
+iple object 3D domain. IEEETrans. Pat. Anal. Mach. Intell.,
+A spatial partitioning Abstract Data Type greatly improves perfor-
+~1(8):840-858, August 1989.
+mance of many of the subproblems discussed previously. The crit-
+[4] 1lames F. Brinkley. Knowledge-driven ultnsonic three-
+ical subproblems are (with their standard time complexity):
+iimensional organ modeling. IEEE Traiu. Pat. And. Mach.
+l EMST graph (O(n2 )) hlell., 7(4)431+41, July 1985.
+l k-nearest neighbors to agiven point (O(rs + klog n.)) [5] David P.Dobkin, Silvio V.F.hwy, William P.Thurston, and
+Mlan R. Wilks. Contour tracing by piecewise linear approxi-
+c nearest tangent plane origin to agiven point (O(n))
+mations. ACIU TOG, 9(4):389423, October 1990.
+Hierarchical spatial partitioning schemes such as octrees [20] [6] John A. Eisenman. Graphical editing of composite bezier
+and k-D trees [2] can be used to solve these problems more effi- curves. Master’s thesis, Department of Elecaical Engineer-
+ciently. However, the uniform sampling density assumed in our ingand Computer Science, M.I.T., 1988.
+data allows simple spatial cubic partitioning towork efficiently. The [7] T.A. Foley. Interpolation to scattered data on a spherical do-
+axis-aligned bounding box of the points is partitioned by a cubi- main. In M. Cox and J. Mason, editors, AlgorMrnsfor Ap-
+cal grid. Points are entered into sers comesponding to the cube to woxinurtion II, pages 303–3 10.Chapman and Hafl, London,
+which they belong, and these sets are accessed through ahash table 1990.
+indexed by the cube indices. It is difficult to analyze the resulting [8] Michael R. Garey and David S.Johnson. Computers and In-
+improvements analytically, but, empirically, the time complexity of fracfabifity. W. H. Freeman and Company, 1979.
+the above problems is effectively reduced by a factor of n, except
+[9] T. Hastie and W. Stuetzle. Principaf curves. JASA, 84:502-
+for the k-nearest neighbors problem which becomes O(k).
+516, 1989.
+As aresult of the spatial partitioning, the Riemannian Graph can [10] Averill M. Law and W. David Kelton. .$itnulatwn Modeling
+beconstructed in O(nk) time, Because the Riemannian Graph has and Analysis. McGraw-Hill, Inc., second edition, 1991.
+O(n) edges (at most n + nk), the MST computation used in find- [11] Marshal L. Merriam. Experience with the cyberware 3D dig-
+ing the best path on which to propagate orientation requires only itizer. InNCGA Proceedings, pages 125-133, March 1992.
+O(n log n) time. Traversal of the MST isof course O(n).
+[12] David Meyers, Shelly Skinner, and Kenneth Sloan. Surfaces
+The time complexity of the contouring algorithm depends only from contours: The correspondence and branching problems.
+on the number of cubes visited, since the evaluation of the signed In Proceedings of Graphics Irsterfwe ’91, pages 246-254,
+distance function ~ at apoint p can be done in constant time (the June 1991.
+closest tartgent plane origin o, top and the closest data point Xj to [13]I Doug Moore and Joe Warren. Approximation of dense scat-
+theprojected point z can both befound inconstant time with spatial tered data using algebraic surfaces. TR 90-135, Rice Univer-
+partitioning). sity, October 1990.
+[14:I Doug Moore and Joe Warren. Adaptive mesh generation ii:
+6 Conclusions and Future Work Packing solids. TR 90-139, Rice University, March 1991.
+[15] Shigeru Muraki. Volumetric shape description of range data
+We have developed an algorithm to reconstruct a surface in three- using “blobby model”. Computer Graphics (SIGGRAPH ’91
+dimensional space with or without boundary from aset of unorga- Proceedings), 25(4):227-235, July 1991.
+nized points scattered on or near the surface. The algorithm, based [16] Gregory M. Nielson, Thomas A. Foley, Bemd Hsrnann, and
+on the idea of determining the zero set of an estimated signed dis- David Lane. Visualizing and modeling scattered multivariate
+tance function, was demonstrated on data gathered horn a variety data. IEEE CGKd, 11(3):47-55, May 1991.
+of sources. It is capable of automatically infernng the topological [17] Barrett O’Neill. Elementary DljierentialGeornetry. Academic
+type of the surface, including the presence of boundary curves. Press, Orlando, Florida, 1966.
+The algorithm can, inprinciple, beextended toreconstruct man- [18] Vaughan Pratt. Direct least-squares fitting of algebraic sur-
+ifolds of co-dimension one in spaces of srbitr~ dimension; that faces. Computer Graphics (SIGGRAPH ’87 Proceedings),
+is, to reconswuct d – 1 dimensional manifolds in d dimensional 21(4):145-152, July 1987.
+space. Thus, essentially the same algorithm can be used to recon- [19] Emanuel Sachs, Andrew Roberts, and David Stoops. 3-Draw:
+struct curves in the plane orvolumes in four-dimensional space. Atool fordesigning 3Dshapes. IEEECo~uferGraphics and
+The output of our reconstruction method produced the correct Applications, 11(6):18-26, November 1991.
+topology in all theexamples, Weare myingtodevelop formal guar- [20] Hanan Samet. Applica!ionr of Spalial Data Structures.
+antees on thecorrectness of thereconstruction, given constraints on Addison-Wesley, 1990.
+75
+
+--- Page 6 ---
+
+SIGGRAPH ‘92 Chicago, July 26-31, 1992
+[21] Philip J. Schneider. Phoenix: An interactive curve de- [25] G. Taubin. Estimation of planar curves, surfaces and nonpla-
+sign syste.m based on the automatic fitting of hand-sketched nar space curves defined by implicit equations, with applica-
+curves. Master’s thesis, Department of Computer Science, U. tions to edge and range image segmentation. Technical Report
+of Washington, 1988. LEMS-66, Division of Engineering, Brown University, 1990.
+[22] R. B. Schudy and D. H. Ballard. Model detection of cardiac [26] B. C. Vemuri. Representation and Recognition of Objects
+chambers in ultrasound images. Technical Report 12, Com- From Dense Range Maps. PhD thesis, Department of Electri-
+puter Science Departmet& University of Rochester, 1978. cal and Computer Engineering, University of Texas at Austin,
+[23] R. B. Schudy and D. H. Ballard. Towards an anatomical model 1987.
+of heart motion as seen in 4-d cardiac ultrasound data. In Pro- [27] B. C. Vemuri, A. Mitiche, and J. K. Aggarwal. Curvature-
+ceedings of the 6th Conference on Computer Applications in based representation of objects from range data. Image and
+Radiology and Computer-Aided Analysis of Radiological Im- Vision Computing, 4(2):107-114, 1986.
+ages, 1979. 1281 G. Wyvill, C. McPheeters, and B. Wyvill. Data structures
+[24] Stan Sclaroff and Alex Pentland. Generalized implicit func- for soft objects. The Visual Computer. 2(4):227-234, August
+tions for computer graphics. Computer Graphics (SIGGRAPH 1986.
+‘91 Proceedings), 25(4):247-250, July 1991.
+(b)sunplUlpO~U(Xi)(~~ = 4102)
+(c) EMST of tangetuplane centers 0, (d) Riemannian Graph over 0;
+Figure 1: Reconstruction of ray-traced CSG object (simulated multi-view range data).
+76
+
+--- Page 7 ---
+
+Computer Graphics, 26, 2, July 1992
+ing cut
+Figure 2: Reconstruction of ray-traced CSG object (continued).
+
+--- Page 8 ---
+
+SIGGRAPH ‘92 Chlcago, July 26-31, 1992
+omplex
+Figure 3: Reconstruction examples.

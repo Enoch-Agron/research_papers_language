@@ -1,0 +1,3083 @@
+# A Survey of Surface Reconstruction from Point Clouds.pdf
+# Converted: 2025-07-19 12:45:30
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/A Survey of Surface Reconstruction from Point Clouds.pdf
+# Output: ../layer2_completion/txt/A Survey of Surface Reconstruction from Point Clouds.txt
+
+
+--- Page 1 ---
+
+See discussions, stats, and author profiles for this publication at: https://www.researchgate.net/publication/299541828
+A Survey of Surface Reconstruction from Point Clouds
+Article  in  Computer Graphics Forum · March 2016
+DOI: 10.1111/cgf.12802
+CITATIONS
+507
+READS
+6,638
+8 authors, including:
+Pierre Alliez
+National Institute for Research in Computer Science and Control
+167 PUBLICATIONS   13,573 CITATIONS   
+SEE PROFILE
+Gaël Guennebaud
+National Institute for Research in Computer Science and Control
+49 PUBLICATIONS   2,987 CITATIONS   
+SEE PROFILE
+Joshua Aaron Levine
+University of Arizona
+72 PUBLICATIONS   2,325 CITATIONS   
+SEE PROFILE
+Andrei Sharf
+60 PUBLICATIONS   4,338 CITATIONS   
+SEE PROFILE
+All content following this page was uploaded by Pierre Alliez on 26 February 2019.
+The user has requested enhancement of the downloaded file.
+
+
+--- Page 2 ---
+
+State of the Art in Surface Reconstruction from Point
+Clouds
+Matthew Berger, Andrea Tagliasacchi, Lee Seversky, Pierre Alliez, Joshua
+Levine, Andrei Sharf, Claudio Silva
+To cite this version:
+Matthew Berger, Andrea Tagliasacchi, Lee Seversky, Pierre Alliez, Joshua Levine, et al.. State
+of the Art in Surface Reconstruction from Point Clouds. Eurographics 2014 - State of the Art
+Reports, Apr 2014, Strasbourg, France. 1 (1), pp.161-185, 2014, EUROGRAPHICS star report.
+<http://diglib.eg.org/EG/DL/conf/EG2014/stars/161-185.pdf>.
+<10.2312/egst.20141040>.
+<hal-01017700>
+HAL Id: hal-01017700
+https://hal.inria.fr/hal-01017700
+Submitted on 3 Jul 2014
+HAL is a multi-disciplinary open access
+archive for the deposit and dissemination of sci-
+entiﬁc research documents, whether they are pub-
+lished or not.
+The documents may come from
+teaching and research institutions in France or
+abroad, or from public or private research centers.
+L’archive ouverte pluridisciplinaire HAL, est
+destin´ee au d´epˆot et `a la diﬀusion de documents
+scientiﬁques de niveau recherche, publi´es ou non,
+´emanant des ´etablissements d’enseignement et de
+recherche fran¸cais ou ´etrangers, des laboratoires
+publics ou priv´es.
+
+
+--- Page 4 ---
+
+Author version 2014/
+STAR – State of The Art Report
+State of the Art in Surface Reconstruction from Point Clouds
+Matthew Berger1
+Andrea Tagliasacchi2
+Lee M. Seversky1
+Pierre Alliez3
+Joshua A. Levine4
+Andrei Sharf5
+Claudio T. Silva6
+1Air Force Research Laboratory, Information Directorate
+2École Polytechnique Fédérale de Lausanne (EPFL)
+3Inria Sophia-Antipolis - Mediterranée
+4Clemson University
+5Ben-Gurion University
+6New York University, School of Engineering
+Abstract
+The area of surface reconstruction has seen substantial progress in the past two decades. The traditional problem
+addressed by surface reconstruction is to recover the digital representation of a physical shape that has been
+scanned, where the scanned data contains a wide variety of defects. While much of the earlier work has been
+focused on reconstructing a piece-wise smooth representation of the original shape, recent work has taken on more
+specialized priors to address signiﬁcantly challenging data imperfections, where the reconstruction can take on
+different representations – not necessarily the explicit geometry. This state-of-the-art report surveys the ﬁeld of
+surface reconstruction, providing a categorization with respect to priors, data imperfections, and reconstruction
+output. By considering a holistic view of surface reconstruction, this report provides a detailed characterization of
+the ﬁeld, highlights similarities between diverse reconstruction techniques, and provides directions for future work
+in surface reconstruction.
+1. Introduction
+The modeling, recognition, and analysis of the world around
+us is a longstanding goal in the ﬁeld of Computer Graphics.
+Central to these objectives is a means of obtaining a digital
+representation of objects in the real world. Surface reconstruc-
+tion is concerned with recovering such information, where
+the basic problem is to capture a 3D point cloud that sam-
+ples the real world, and reconstruct as much information as
+possible concerning the scanned objects.
+Surface reconstruction came to importance primarily as
+a result of the ability to acquire 3D point clouds and hence
+there are very close ties between how the data is acquired and
+the method used to reconstruct it. Early on, these techniques
+ranged from active methods such as optical laser-based range
+scanners, structured light scanners, and LiDAR scanners,
+as well as passive methods such as multi-view stereo. A
+recent trend has seen the massive proliferation of point clouds
+from commodity real-time scanners such as the Microsoft
+Kinect. As the diversity, ease of use, and popularity of 3D
+acquisition methods continues to increase, so does the need
+for the development of new surface reconstruction techniques.
+Acquisition methods tend to produce point clouds contain-
+ing a variety of properties and imperfections that pose signif-
+icant challenges for surface reconstruction methods. These
+properties, in conjunction with the nature of the scanned
+shape, effectively distinguish the class of reconstruction meth-
+ods that exist today. This diverse set of techniques ranges
+from methods that assume a well-sampled point cloud, gen-
+eralize to arbitrary shapes, and produce a watertight surface
+mesh, to methods that make very loose assumptions on the
+quality of the point cloud, operate on speciﬁc classes of
+shapes, and output a non-mesh based shape representation.
+It is with this rich space of algorithms in mind that we sur-
+vey the ﬁeld of surface reconstruction and provide a detailed
+taxonomy of existing methods. This categorization is timely,
+as we see the ﬁeld of surface reconstruction diverging from
+its more traditional class of methods in an effort to handle
+more challenging data imperfections.
+Our survey presents surface reconstruction algorithms
+from the perspective of priors: assumptions made by algo-
+rithms in order to combat imperfections in the point cloud
+and recover as much information about the shape as possible.
+Without prior assumptions, the reconstruction problem is ill-
+posed; an inﬁnite number of surfaces pass through or near the
+data points. Assumptions are usually imposed on the point
+cloud itself, such as sampling density, level of noise, and mis-
+c
+⃝Author version
+
+
+--- Page 5 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+Figure 1: Surface reconstruction has grown in diversity
+in recent years, with a wide variety of techniques taking
+on specialized priors. ROSA [TZCO09], shown on the left,
+uses volumetric smoothness to aid in reconstruction. Non-
+local consolidation [ZSW∗10], shown in the middle, uses
+global regularity in the form of structural repetition. Part
+composition [SFCH12], shown on the right, uses data-driven
+techniques to perform reconstruction.
+alignment. But just as importantly they are also imposed on
+the scanned shape, such as local surface smoothness, volumet-
+ric smoothness, absence of boundaries, symmetries, shape
+primitives, global regularity, and data-driven assumptions. In
+some instances, requirements are made on knowledge of the
+acquisition, such as scanner head position, as well as RGB
+images of the object. In other cases, the user is involved in
+prescribing high-level cues for reconstruction. All of these
+factors permit the regularization of the otherwise ill-posed
+problem of surface reconstruction, particularly when process-
+ing a point cloud containing severe imperfections. Figure 1
+depicts several different priors used to reconstruct surfaces
+from challenging point clouds.
+Historically, priors have evolved according to the types
+of point clouds being processed. For instance, local surface
+smoothness priors were developed primarily to handle small
+objects acquired from desktop scanners. Mobile, real-time
+scanners have enabled the dynamic acquisition of more gen-
+eral scenes, rather than single objects, prompting more spe-
+cialized structural and data-driven priors. Since priors tend
+to be coupled with the type of acquisition, we argue that
+this perspective of surface reconstruction is beneﬁcial for
+understanding how to process future types of acquired point
+clouds.
+Organization. Our STAR is organized as follows. In Sec-
+tion 2 we characterize the problem of surface reconstruc-
+tion by examining common input and output characteristics,
+namely:
+• Point Cloud Artifacts: the imperfections of the point
+cloud that the method is able to effectively handle.
+• Input Requirements: the types of inputs associated with
+a point cloud required by the algorithm.
+• Shape Class: the class of shapes that the method is capable
+of reconstructing.
+• Reconstruction Output: the representation and level of
+detail of the reconstruction output.
+We use these factors as a way of examining surface recon-
+struction methods by prior, starting with traditional surface
+smoothness priors in Section 3, and delving into specialized
+priors in Sections 4–9. In Table 1.1 we provide a summary
+of surface reconstruction methods by prior, characterizing
+their input and output, as well as their level of robustness to
+various artifacts. We discuss methods for evaluating surface
+reconstruction in Section 10, and conclude in Section 11 with
+a discussion on future trends in surface reconstruction.
+1.1. Survey Scope and Related Works
+There are many facets to surface reconstruction. This survey
+focuses on those relating to the reconstruction from point
+clouds of static objects and scenes acquired through 3D scan-
+ners, wherein the point cloud contains a considerable level of
+imperfection. Furthermore, we concentrate on methods that
+approximate the input point cloud.
+Urban reconstruction. Our survey covers a wide variety of
+reconstruction methods, with urban reconstruction from point
+clouds among them. We note that [MWA∗13] surveys urban
+reconstruction more broadly: 3D reconstruction from images,
+image-based facade reconstruction, as well as reconstruction
+from 3D point clouds. Although there exists some overlap
+between the surveys, we cover these methods in a different
+context, namely the priors that underly the reconstruction
+methods and how they address challenges in point cloud
+reconstruction.
+Surface completion. Given a surface with boundaries, there
+exists many methods for inpainting and surface completion
+for handling missing data. Though one may use such ap-
+proaches for reconstruction by ﬁrst reconstructing a surface
+with boundary from a point cloud, this can be quite challeng-
+ing given other imperfections in the data. These methods are
+not covered in this survey and we refer the reader to the recent
+survey of [ACK13] on surface completion.
+Interpolatory reconstruction. An important ﬁeld of surface
+reconstruction methods are those that interpolate a point
+cloud without any additional information, such as normals
+c
+⃝Author version
+
+
+--- Page 6 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+Method
+Point Cloud Artifacts
+Input Requirements
+Shape Class
+Reconstruction Output
+nonuniform
+sampling
+noise
+outliers
+misalignment
+missing data
+unoriented
+normals
+oriented
+normals
+scanner
+information
+RGB image
+Surface Smoothness
+Tangent Planes [HDD∗92]
+#
+#
+general
+implicit ﬁeld
+RBF [CBC∗01]
+#
+#
+✓
+general
+implicit ﬁeld
+MLS [ABCO∗03]
+#
+#
+✓
+general
+point set
+MPU [OBA∗03a]
+#
+#
+#
+✓
+general
+implicit ﬁeld
+Poisson [KBH06]
+#
+ 
+#
+#
+#
+✓
+general
+implicit ﬁeld
+Graph Cut [HK06]
+#
+#
+#
+#
+#
+general
+volumetric segmentation
+Unoriented Indicator [ACSTD07]
+#
+ 
+#
+#
+#
+✓
+general
+implicit ﬁeld
+LOP [LCOLTE07]
+ 
+ 
+#
+#
+general
+point set
+Visibility
+VRIP [CL96]
+#
+ 
+#
+✓
+general
+implicit ﬁeld
+TVL1-VRIP [ZPB07]
+#
+ 
+#
+#
+#
+✓
+general
+implicit ﬁeld
+Signing the Unsigned [MDGD∗10]
+#
+ 
+ 
+#
+✓
+general
+implicit ﬁeld
+Cone Carving [SSZCO10]
+#
+#
+ 
+✓
+✓
+general
+implicit ﬁeld
+Multi-Scale Scan Merge [FG11]
+ 
+ 
+#
+✓
+general
+implicit ﬁeld
+Volumetric smoothness
+ROSA [TZCO09]
+#
+#
+ 
+✓
+organic
+skeleton curve
+Arterial Snakes [LLZM10]
+#
+#
+ 
+✓
+man-made
+skeleton curve
+VASE [TOZ∗11]
+#
+#
+ 
+✓
+general
+implicit ﬁeld
+l1 Skeleton [HWCO∗13]
+#
+#
+ 
+organic
+skeleton curve
+Geometric Primitives
+Primitive Completion [SDK09]
+#
+#
+#
+ 
+✓
+CAD
+volumetric segmentation
+Volume Primitives [XF12]
+#
+#
+#
+ 
+✓
+indoor environment
+interior volume
+Point Restructuring [LA13]
+#
+#
+#
+#
+#
+✓
+✓
+general
+volumetric segmentation
+CCDT [vKvLV13]
+#
+#
+#
+#
+✓
+✓
+urban environment
+volumetric segmentation
+Global Regularity
+Symmetry [PMW∗08]
+#
+#
+ 
+✓
+architectural
+point set
+Nonlocal Consolidation [ZSW∗10]
+ 
+#
+#
+ 
+✓
+architectural
+point set
+2D-3D Facades [LZS∗11]
+#
+#
+ 
+✓
+✓
+architectural
+point set
+Globﬁt [LWC∗11]
+ 
+#
+#
+ 
+✓
+man-made
+primitive relations
+Data-driven
+Completion by Example [PMG∗05]
+#
+#
+ 
+✓
+general
+point set
+Semantic Modeling [SXZ∗12]
+#
+#
+ 
+✓
+✓
+indoor scene objects
+deformed model
+Shape Variability [KMYG12]
+#
+#
+ 
+✓
+indoor scene objects
+deformed model
+Part Composition [SFCH12]
+#
+#
+ 
+✓
+✓
+man-made
+deformed model parts
+Interactive
+Topological Scribble [SLS∗07]
+#
+#
+ 
+✓
+general
+implicit ﬁeld
+Smartboxes [NSZ∗10]
+ 
+#
+#
+ 
+✓
+architectural
+primitive shapes
+O-Snap [ASF∗13]
+#
+#
+#
+ 
+✓
+architectural
+primitive shapes
+Table 1: A categorization of surface reconstruction in terms of the type of priors used, the ability to handle point cloud artifacts,
+input requirements, shape class, and the form of the reconstruction output. Here # indicates that the method is moderately
+robust to a particular artifact and  indicates that the method is very robust. ✓indicates an input requirement and ✓indicates
+optional input.
+or scanner information. Delaunay-based methods are quite
+common in this area. The basic idea behind these methods
+is that the reconstructed triangulated surface is formed by a
+subcomplex of the Delaunay triangulation. A comprehensive
+survey of these methods is presented in [CG06], as well as
+the monograph of [Dey07]. A very attractive aspect of such
+methods is that they come with provable guarantees in the
+geometric and sometimes topological quality of the recon-
+struction if a sufﬁciently dense sampling of the input surface
+is provided. These methods place rather strong requirements
+on the point cloud and are impractical for scanned real-world
+scenes containing signiﬁcant imperfections. Hence we do
+not cover these methods, since we focus on reconstruction
+techniques capable of dealing with challenging artifacts.
+2. Characterizing Surface Reconstruction
+Surface reconstruction methods typically have to handle var-
+ious types of imperfections, make certain requirements on
+input associated with the point cloud, contain restrictions
+on the class of shapes that they can reconstruct, and may
+produce reconstructions of different forms. Here we summa-
+rize each of these properties in order to provide a detailed
+characterization of surface reconstruction.
+2.1. Point Cloud Artifacts
+The properties of the input point cloud are an important fac-
+tor in understanding the behavior of reconstruction methods.
+Here we provide a characterization of point clouds according
+to properties that have the most impact on reconstruction
+algorithms: sampling density, noise, outliers, misalignment,
+and missing data. See Figure 2 for a 2D illustration of these
+artifacts.
+Sampling density. The distribution of the points sampling
+the surface is referred to as sampling density. 3D scans typi-
+cally produce a nonuniform sampling on the surface, which
+can be due to the distance from the shape to the scanner posi-
+c
+⃝Author version
+
+
+--- Page 7 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+(a) Original shape
+(b) Nonuniform sampling
+(c) Noisy data
+(d) Outliers
+(e) Misaligned scans
+(f) Missing data
+Figure 2: Different forms of point cloud artifacts, shown
+here in the case of a curve in 2D.
+tion, the scanner orientation, as well as the shape’s geometric
+features. See Figure 2(b) for an illustration of nonuniform
+sampling on a curve. Many surface reconstruction algorithms
+must be able to estimate a notion of sampling density at every
+point, see e.g. [LCOL06, WSS09], and hence the level of
+nonuniformity in the sampling can have a great impact on
+estimation accuracy.
+Noise. Points that are randomly distributed near the surface
+are traditionally considered to be noise – see Figure 2(c). The
+speciﬁc distribution is commonly a function of scanning arti-
+facts such as sensor noise, depth quantization, and distance
+or orientation of the surface in relation to the scanner. For
+some popular scanners, noise is introduced along the line
+of sight, and can be impacted by surface properties, includ-
+ing scattering characteristics of materials. In the presence
+of such noise, the typical goal of surface reconstruction al-
+gorithms is to produce a surface that passes near the points
+without overﬁtting to the noise. Robust algorithms that im-
+pose smoothness on the output [KBH06], as well as methods
+that employ robust statistics [OGG09], are common ways of
+handling noise. We note that spatially varying noise poses a
+signiﬁcant challenge [GCSA13], where for many scanners,
+the noise level is correlated with the depth measurement –
+see [KE12] for such an error study done on the Kinect.
+Outliers. Points that are far from the true surface are clas-
+siﬁed as outliers. Outliers are commonly due to structural
+artifacts in the acquisition process. In some instances, out-
+liers are randomly distributed in the volume, where their
+density is smaller than the density of the points that sample
+the surface. Outliers can also be more structured, however,
+where high density clusters of points may exist far from the
+surface, see Figure 2(d). This can occur in multi-view stereo
+acquition, where view-dependent specularities can result in
+false correspondences; see Figure 10. Unlike noise, outliers
+are points that should not be used to infer the surface, ei-
+ther explicitly through detection [LCOLTE07], or implicitly
+through robust methods [MDGD∗10].
+Misalignment. The imperfect registration of range scans
+results in misalignment. Misalignment tends to occur for
+a registration algorithm when the initial conﬁguration of
+a set of range scans is far from the optimal alignment –
+see [vKZHCO11] for a survey on registration techniques.
+Misalignment is a signiﬁcant challenge for surface recon-
+struction, as it introduces structured noise via scans that are
+slightly offset from the surface; see Figure 5(a). For instance,
+it may be inappropriate to simply ﬁnd the surface that passes
+near the scans since this may result in sharp discontinuities
+between different scans. Figure 2(e) illustrates such a case,
+where there can exist discontinuities when the red and orange
+samples stop overlapping.
+Missing data. A motivating factor behind many reconstruc-
+tion methods is dealing with missing data. Missing data is due
+to such factors as limited sensor range, high light absorption,
+and occlusions in the scanning process where large portions
+of the shape are not sampled. Although some of these arti-
+facts may be reduced as scanning technology advances with
+higher precision, denser sampling, and lower noise levels,
+occlusion remains a persistent problem due to the physical
+constraints of the device. We note that missing data differs
+from nonuniform sampling, as the sampling density is zero
+in such regions – see Figure 2(f).
+Many methods deal with missing data by assuming that the
+scanned shape is watertight [CBC∗01,Kaz05,KBH06,HK06,
+ACSTD07]. Within this setting, the goal of some methods is
+to handle the aforementioned challenges where data exists,
+and infer geometry in parts of the surface that have not been
+sampled. Other methods are focused on handling missing
+data by trying to infer topological structures in the original
+surface at the possible expense of retaining geometric ﬁdelity,
+for instance, ﬁnding a surface that is homeomorphic to the
+original shape [SLS∗07].
+If the level of missing data is signiﬁcant, for instance a
+single scan, then trying to infer the entire shape can be too
+ambiguous. Some methods focus on performing reconstruc-
+tion only on the available information, effectively preserving
+the boundaries from the scan [DGQ∗12]. Other approaches
+make prior knowledge and assumptions on the missing region,
+permitting the reconstruction of higher-level information.
+This can range from inferring a skeleton [TZCO09], shape
+primitives [SDK09], symmetry relationships [PMW∗08], and
+canonical regularities [LWC∗11].
+2.2. Point Cloud Input
+Reconstruction methods have different types of input require-
+ments associated with a point cloud. The bare minimum
+requirement of all algorithms is a set of 3D points that sample
+the surface. Working with the points alone, however, may
+fail to sufﬁciently regularize the problem of reconstruction
+c
+⃝Author version
+
+
+--- Page 8 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+for certain types of point clouds. Other types of input can be
+extremely beneﬁcial in reconstruction from challenging point
+clouds. We consider the following basic forms of inputs com-
+monly associated with point clouds: surface normals, scanner
+information, and RGB imagery.
+2.2.1. Surface Normals
+Surface normals are an extremely useful input for recon-
+struction methods. For smooth surfaces the normal, uniquely
+deﬁned at every point, is the direction perpendicular to the
+point’s tangent space. The tangent space intuitively represents
+a localized surface approximation at a given point. Surface
+normals may be oriented, where each normal is consistently
+pointing inside or outside of the surface, or may lack such a
+direction. Normals that are oriented provide extremely useful
+cues for reconstruction algorithms. However, we note that
+if certain information associated with the point cloud is not
+present, obtaining an orientation can be challenging.
+Unoriented normals. Normals that do not possess direction
+– the input normal at every point can be expected to be point-
+ing either in the inside or the outside of the surface – are
+considered to be unoriented normals. This information can
+be used in a number of ways: determining planar regions
+in a point cloud [SWK07], the projection of a point onto an
+approximation of the surface [ABCO∗03], the construction of
+an unsigned distance ﬁeld [AK04], or computing covariance
+matrices [ACSTD07]. Unoriented normals are typically com-
+puted directly from the point cloud. This is because additional
+scanner-speciﬁc information can be used to provide a means
+to infer normal orientation. A popular and simple method for
+computing the normal at a given point p is to perform prin-
+cipal component analysis (PCA) in a local neighborhood of
+p, see e.g. [HDD∗92]. More speciﬁcally, if we denote a local
+neighborhood of p by Np, then the basic way to apply PCA
+is to compute the spectral decomposition of the covariance
+matrix:
+Cp = ∑
+q∈Np
+(p−q)(p−q)⊺
+(1)
+The eigenvector of Cp associated with the smallest eigenvalue
+deﬁnes the unoriented normal – assuming eigenvalues have
+a multiplicity of 1, the eigenvectors are unique up to a sign.
+Note that if the smallest eigenvalue is 0, then the region de-
+ﬁned by p and Np is planar, since the eigenvectors associated
+with the 2 largest eigenvalues capture all of the variance in
+the data.
+PCA deﬁnes a least-squares estimation of a tangent plane
+and there are many other methods for computing unori-
+ented normals: using a weighted covariance matrix [PMG04],
+higher-order approximations via osculating jets [CP05], or ro-
+bust methods that employ l1 norm minimization [ASGCO10].
+Common to all methods is the need to deﬁne a local neigh-
+borhood of points, where the neighborhood should be small
+enough to accurately represent a point’s tangent space. The
+scale of the neighborhood should be proportional to the sam-
+pling density at the point, where estimation of sampling den-
+sity is itself a challenging problem, particularly when faced
+with nonuniform sampling; see [LCOL06,WSS09]. Further-
+more, noise and misalignment may necessitate larger neigh-
+borhood sizes in order to combat such imperfections, yet
+the size should not be so large as to no longer reﬂect the
+point’s tangent space [GG07]. All of these difﬁculties often
+result in imperfect normal estimation and surface reconstruc-
+tion algorithms must be robust to inaccuracies in unoriented
+normals.
+Oriented normals. Normals that have consistent directions,
+either pointing in the inside or the outside of the surface are
+referred to as being oriented. Knowledge of the exterior and
+interior of the surface has proven extremely useful in surface
+reconstruction. It can be used to construct a signed distance
+ﬁeld over the ambient space, where up to a sign, the ﬁeld takes
+on positive values in the exterior and negative values in the
+interior. The surface is then represented by the zero crossing
+of the signed distance ﬁeld. Other methods generalize this to
+implicit ﬁelds and indicator functions, but the basic idea of
+trying to construct the exterior and interior remains the same,
+see [CBC∗01,OBA∗03a,KBH06] to name a few.
+There are numerous ways to compute oriented normals. If
+the original 2D range scans are known, then the 2D lattice
+structure provides a way of performing consistent orientation
+since one always knows how to turn clockwise around a given
+vertex. For instance, if we denote the point in a range scan at
+pixel (x,y) as px,y, then one can take the normal at px,y simply
+as the cross product between (px+1,y −px,y) and (px,y+1 −
+px,y). If the point cloud is noisy, then this method can produce
+rather noisy normals, since it does not use nearby points in
+overlapping scans. If the view direction is known, then one
+can ﬁrst estimate unoriented normals as previously discussed
+to better handle noise and then use the view direction to
+determine the orientation. This can be done by choosing the
+orientation that results in the normal vector having the largest
+angle with the view direction.
+If scanner information is absent altogether, then one must
+orient the points exclusively from the unoriented normals.
+A very common method for achieving this is to start from a
+single point containing an initial orientation and propagate
+the orientation to nearby points whose unoriented normals
+are facing a similar direction [HDD∗92]. While there exist
+multiple extensions to this method [HLZ∗09, LW10], they
+face difﬁculty in the presence of nonuniform sampling, noise,
+and misalignment and as a result can leave some normals
+unoriented or pointing in the wrong direction – see Figure 3.
+The impact on surface reconstruction largely depends on the
+distribution of incorrect orientations: if randomly distributed,
+then methods may treat this as spurious noise, but if incorrect
+orientations are clustered together over large regions, then
+this form of structured noise can be difﬁcult to handle – see
+Figure 3 for an illustration.
+c
+⃝Author version
+
+
+--- Page 9 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+Figure 3: The impact of incorrect normal orientation. On the
+left we show the result of normal orientation via [HDD∗92],
+where red splats indicate incorrect orientation. The results
+of running Poisson surface reconstruction [KBH06] on this
+point cloud are shown in mid-left, where we indicate un-
+wanted surface components due to the clustered normal
+ﬂips. Similarly, on the right we show the orientation results
+of [LW10], and the corresponding results of [KBH06].
+2.2.2. Scanner Information
+The scanner from which the point cloud was acquired can
+provide useful information for surface reconstruction. As
+discussed, the 2D lattice structure of a scan can be used to
+determine normal orientation. It can also be used to estimate
+the sampling density for a given scan and as a result it can be
+used to detect certain forms of outliers in the scan – points
+whose scan lattice neighbors are at a far greater distance than
+the sampling density are likely outliers. However, caution
+must be taken in distinguishing outliers from sharp features.
+Scanner information may also be used to deﬁne the con-
+ﬁdence of a point, which is useful in handling noise. For
+instance, the approach of [CL96] demonstrates how to use
+conﬁdence measures to suppress noise when integrating range
+scans into a reconstructed surface. Certain scanners (e.g. Li-
+DAR) can provide conﬁdence measures in the form of the
+reﬂectivity measured at each point.
+One can also derive conﬁdence through line of sight in-
+formation. Line of sight is deﬁned as a collection of line
+segments between each point in the point cloud and the scan-
+ner head position from which that point was acquired. In
+particular, we can use the grazing angle formed by line of
+sight at each point to derive a notion of conﬁdence. The graz-
+ing angle is the incident angle between the point’s surface
+normal and its line of sight. In active scanning systems such
+as optical laser-based scanners, the cause of inaccuracy stems
+from the large area formed by the projection (i.e., the laser
+stripe) onto the surface at a large grazing angle. Hence we can
+assign a conﬁdence measure as being inversely proportional
+to the grazing angle.
+Note that line of sight also deﬁnes a region of space that
+may be marked as lying outside of the shape. Combining line
+of sight from multiple scans reﬁnes the bounding volume in
+which the surface lies – this volume is known as the visual
+hull. This information is particularly useful when handling in-
+complete data – for instance, line of sight can be used to infer
+that there exists a large concavity in the shape [TOZ∗11].
+2.2.3. RGB Imagery
+Different acquisition modalities that complement depth ac-
+quisition can be of great assistance. RGB image acquisition is
+a very common modality that accompanies numerous sensors,
+such as the Microsoft Kinect. In the case of the Kinect, the
+RGB camera is co-located with the IR camera, hence assum-
+ing the two are calibrated, it is straightforward to identify
+corresponding depth and RGB values at a pixel level. RGB
+images are most useful for reconstruction when they are able
+to complement depth information that was not measured by
+the data. By fusing features present in the depth scan with
+image-based features, one can then employ this for inferring
+depth from images [LZS∗11]. Contours in an image can also
+be used by considering their corresponding unsigned distance
+ﬁeld, and how it relates to the point cloud’s unsigned distance
+ﬁeld [SFCH12].
+2.3. Shape Class
+Surface reconstruction algorithms can be further distin-
+guished by the class of shapes they support. Although earlier
+reconstruction methods tended not to focus on speciﬁc types
+of shapes [HDD∗92,CL96], by restricting to a shape class,
+specialized assumptions can be made on what the recon-
+structed surface should be. These shape speciﬁc assumptions
+greatly help regularize the problem especially in the pres-
+ence of point cloud artifacts. Quite often, a reconstruction
+prior is in part driven by a shape class, so understanding the
+characteristics of a shape class is an essential component to
+gaining insight into surface reconstruction. Here we cover
+the following predominant shape classes: CAD models, man-
+made shapes, organic shapes, architectural models, urban
+environments, and indoor environments.
+CAD models. These models are typically composed of a
+collection of simpler geometric primitives such as planes,
+cylinders, and spheres. The detection of such instances in the
+point cloud can be used for denoising and in the presence of
+missing data the assembly of all detected primitives can be
+used to infer missing regions by extending and intersecting
+primitives [SDK09] – see Figure 12.
+Man-made (synthetic) shapes. These shapes often contain
+certain canonical geometric properties such as coplanar faces,
+orthogonal faces, as well as faces that form equal angles that
+often repeatedly appear and relate different parts of the shape.
+This form of global regularity is often due to aesthetic con-
+siderations and a variety of practical constraints, such as cost
+considerations, functional requirements, and fabrication con-
+straints. For man-made shapes, this derived form of regularity
+can greatly help the problem [LWC∗11] – see Figure 14.
+Organic shapes. These shapes tend to contain a more free-
+form structure and are often composed of curvilinear ele-
+ments. For instance, trees [LYO∗10] possess a strong skeletal
+c
+⃝Author version
+
+
+--- Page 10 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+structure, where imposing certain 1D priors [TZCO09] on
+the reconstruction can be used to handle signiﬁcant missing
+data in the scanning process – see Figure 11.
+Architectural models. A subset of man-made shapes, these
+shapes contain similar global regularities in addition to many
+other constraints such as upright orientation and various
+functional constraints. By assuming that the shape is an ar-
+chitectural model, the problem can be greatly regularized
+by making assumptions on facade structures [ZSW∗10],
+manhattan-world geometry [VAB12], and structural regu-
+larity [PMW∗08] – see Figure 16.
+Urban environments. Often composed of a limited number
+of object types, urban environments are well-suited for data-
+driven methods for reconstruction. For instance one can make
+assumptions on the presence of ground, buildings, vegetation,
+and other urban objects to aid in reconstruction [MWA∗13].
+Indoor environments. The types of shapes within this envi-
+ronment tend to be a mixture of man-made and organic. A dis-
+tinguishing factor behind indoor environments is that similar
+to urban environments, there exist a small number of object
+types. For instance, in a typical ofﬁce setting there exists a
+variety of chairs, desks, and tables. Furthermore, each type of
+object can often be deﬁned through a low-dimensional shape
+space, permitting data-driven methods [NXS12] and methods
+that utilize a deformable model for each object [KMYG12] –
+see Figure 15.
+2.4. Reconstruction Output
+It is desirable for a reconstruction algorithm to produce a
+faithful and detailed representation of the scanned shape’s
+surface. For challenging point clouds containing signiﬁcant
+imperfections, it may be unrealistic to expect such highly de-
+tailed information as the output. However for certain methods
+it is still possible to obtain a less informative yet valuable
+shape representation.
+Methods targeting detailed reconstruction generally pro-
+duce as output either a discrete surface or an implicit function.
+The implicit function can either be in the form of a signed
+distance ﬁeld [HDD∗92] or an indicator function [Kaz05].
+Implicit functions are usually sampled on an underlying grid,
+where the reconstructed surface is found via isocontouring for
+an appropriate isovalue. For a regular grid, the well-known
+Marching Cubes [LC87] is commonly used to extract the
+surface [HDD∗92,CL96,CBC∗01,Kaz05]. Other methods
+use grids such as octrees [KBH06,MPS08] or adaptive 3D
+triangulations [ACSTD07, MDGD∗10] to adapt grid reso-
+lution to the point sampling density. Contouring an octree
+presents several difﬁculties in ensuring watertight, manifold
+surface meshes – see [JLSW02, KKDH07, MS10] for sev-
+eral approaches. Contouring a triangulation can be done via
+marching tetrahedra, but if a mesh with a lower number of
+triangles and well-conditioned (i.e. good aspect ratio) trian-
+gles is desired, then Delaunay reﬁnement techniques may be
+used [BO05].
+Some techniques may not produce a surface represen-
+tation, but rather a resampled point set that addresses im-
+perfections present in the original point cloud [ABCO∗03,
+FCOS05b, LCOLTE07, HLZ∗09]. For severe levels of im-
+perfections, some reconstruction methods may be unable to
+provide such detailed representations, but still recover an
+informative representation such as a collection of shape prim-
+itives [JKS08,SDK09,RKMP13], a curve skeleton [TZCO09,
+CTO∗10,LLZM10,HWCO∗13], a deformed model that best
+matches the point cloud [SXZ∗12, NXS12, KMYG12], or
+segmented parts from multiple models [SFCH12].
+3. Surface Smoothness Priors
+Early surface reconstruction techniques were developed to
+handle broad assumptions on the type of shape being recon-
+structed. These methods were developed to handle sampling
+and noise artifacts, while also supporting small amounts of
+missing data. A commonality shared across all of these tech-
+niques is the use of a surface smoothness prior to constrain
+the output surface, while also ensuring that the reconstructed
+surface remains close to the input data. Methods in this cate-
+gory vary based on the smoothness constraints and how they
+are prescribed in practice. More speciﬁcally, this category
+of methods can roughly be divided into local smoothness,
+global smoothness, and piecewise smoothness.
+Methods that prescribe local smoothness ensure that the
+output surface is smooth where the input point cloud ex-
+ists [ABCO∗03,OBA∗03a]. In regions away from the point
+cloud, however, these methods can behave poorly, failing
+to reconstruct the correct global geometry and topology. In
+contrast, global smoothness methods prescribe that the en-
+tirety of the output surface is smooth [CBC∗01, KBH06].
+Hence, these methods are better suited for handling miss-
+ing data, as they are all targeted at producing a watertight
+surface. These methods are further distinguished by often
+solving an optimization problem that leads to the use of a
+global solver of some kind – typically a linear system, an
+eigenvalue problem, or a graph cut optimization. Piecewise
+smooth methods are focused on explicitly recovering sharp
+features or boundary components, while ensuring smooth-
+ness away from these features, where smoothness may be
+prescribed locally [DHOS07] or globally [ASGCO10].
+Notation. We ﬁrst ﬁx the notation for this section and all
+subsequent sections. We assume that we are given a point
+cloud P which is a sampling of a shape S. Individual points
+in P are indexed as pi ∈P for the i’th point. Many methods
+also require normals associated with the point cloud, where
+we deﬁne the normal ﬁeld N as a set of normal vectors such
+that for each pi ∈P there is an accompanying normal ni ∈N.
+The distinction between oriented and unoriented normals is
+made explicit for each method.
+c
+⃝Author version
+
+
+--- Page 11 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+(a)
+(b)
+(c)
+Figure 4: When sampling density is insufﬁcient to resolve
+local curvature (a), the plane ﬁtting operation employed by
+moving least squares [ABCO∗03] becomes highly unstable
+(b). APSS [GG07] addresses this problem by locally ﬁtting
+spheres instead of planes. Employing spheres tackles the
+aforementioned problem while remaining computationally
+inexpensive.
+3.1. Local Surface Smoothness Priors
+The pioneering method of [HDD∗92] was hugely inﬂuential
+on the class of methods that impose local smoothness priors.
+This method approximates a signed distance ﬁeld f : R3 →R
+by assigning, for each point in the ambient space x ∈R3, its
+signed projection onto the tangent plane of its closest point
+to P, denoted pi:
+f(q) = (q−pi)·ni.
+(2)
+Note that the normal ﬁeld N must be oriented in order to
+obtain an estimate of the signed distance ﬁeld. The surface is
+then deﬁned by the zero level set of f. Although straightfor-
+ward to implement, this approach suffers from several issues.
+The method is very sensitive to the estimated normals – noisy
+normals, or worse inverted normal orientations, can give rise
+to very inaccurate signed distance estimates. Furthermore,
+in the presence of nonuniform sampling, choosing the clos-
+est tangent plane to deﬁne a signed projection can produce
+a rather noisy output – see Figure 6, mid-left. Subsequent
+methods based on local surface smoothness have focused on
+addressing such issues.
+Moving least squares (MLS). These methods approach re-
+construction by approximating the surface as a spatially-
+varying low-degree polynomial – see [CWL∗08] for a survey
+on MLS methods. More speciﬁcally, in the traditional MLS
+formulation [ABCO∗03], points are ﬁrst locally parameter-
+ized by their projection on the local tangent space. Then, in
+this parameterized space, a weighted ﬁtting estimates a low-
+degree bivariate polynomial approximating the input cloud.
+MLS then deﬁnes the evaluating point’s projection onto the
+reconstructed surface as the closest point to the bivariate poly-
+nomial [ABCO∗03]. We note that this projection process only
+requires unoriented normals and can also be used to deﬁne
+an unsigned distance function [AK04].
+Such a projection process allows for resampling the point
+cloud, producing a so called point set surface – the surface is
+implicitly deﬁned as the ﬁxed point of the projection operator.
+However, it is nontrivial to explicitly construct a continuous
+representation, for instance an implicit function or a triangle
+mesh, when the user wants to know the precise geometry and
+topology of the MLS surface for geometry processing tasks
+that require a continuous surface representation. Advancing
+front methods [SFS05,SSFS06] produce a triangle mesh by
+incrementally laying out triangles to compose fronts, where
+vertex positions are determined through the MLS deﬁnition.
+Care must be taken, however, when fronts merge and split.
+If normals are oriented, then one can simplify the MLS def-
+inition to arrive at an implicit function representation for the
+surface. Namely, the method of [AA04] constructs an implicit
+function at a point as the signed distance to a weighted aver-
+age of nearby tangent planes. The method of [SOS04] uses a
+weighted average of distances to nearby tangent planes. Both
+methods assume that it is possible to construct a well-deﬁned
+tangent plane at each evaluation point, which may not exist
+for sparsely sampled data. In this case, a higher-order approx-
+imation such as algebraic point set surfaces [GG07], which
+uses an MLS deﬁnition with spheres for shape approximation,
+can be more robust – see Figure 4.
+A key property of MLS is the use of a weighting func-
+tion, used to give larger inﬂuence to points near the evalu-
+ating point in both estimating the tangent space as well as
+constructing the polynomial. This can be used to combat
+moderate levels of noise by allowing the weight function to
+have a larger spatial inﬂuence. For nonuniform sampling, it is
+necessary to deﬁne a weight function whose spatial support
+varies as a function of the sampling density. This may be
+done via a user-deﬁned scale proportional to an estimation
+of the density [GG07], as well as methods whose support
+is derived from a data-dependent error bound on the MLS
+approximation [LCOL06]. However, MLS methods are in
+general unable to provide a good surface approximation in
+the presence of missing data, since it is necessary to use a
+rather large spatial support size in such regions for which a
+tangent plane (or sphere) may provide a poor ﬁt.
+Multi-level partition of unity (MPU). For this set of tech-
+niques, the reconstruction problem is approached as a hierar-
+chical ﬁtting problem [OBA∗03a]. At a certain scale, a local
+shape ﬁt is determined adequate if its error residual is suf-
+ﬁciently small, otherwise the occupied space is reﬁned and
+the overall procedure is repeated. Once all shape ﬁts have
+been performed, an implicit function over the entire volume
+is formed by smoothly blending nearby ﬁts. Note that the
+deﬁnition of an implicit function requires the shape ﬁts to be
+signed ﬁts, hence requiring oriented normals. Compared to
+MLS methods, MPU is more robust to nonuniform sampling
+since it does not require an estimate of the sampling den-
+sity: a shape ﬁt is only accepted if it is below a certain error
+residual. The level of smoothness and hence robustness to
+noise can be adjusted by the error residual tolerance. Missing
+c
+⃝Author version
+
+
+--- Page 12 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+Figure 5: The scan on the left contains outliers and scan
+misalignment, particularly near its boundaries. The output
+of [LCOLTE07], shown on the right, is able to robustly deal
+with such challenging data through the use of multivariate
+median data ﬁtting, and a point attraction term in the output.
+data can be addressed by allowing for the extrapolation and
+subsequent blending of spatially adjacent shape ﬁts. However,
+such an extrapolation may produce erroneous surface sheets,
+depending on the form of missing data. To resolve such poor
+ﬁts, a diffusion operator can be deﬁned on the collection of
+shape ﬁts, in order to perform smoothing directly on the MPU
+representation [NOS09].
+Parameterization-free projection. These methods project
+the point cloud, without normals, onto the multivariate me-
+dian, where a point balancing term ensures samples are as-
+uniformly-as-possible distributed in the output [LCOLTE07].
+This method is limited to outputting a resampled point cloud,
+where the resampled points are restricted to where the input
+data lies, retaining boundary components. However, by using
+a multivariate median, parameterization-free projection does
+not need to estimate a local tangent plane or perform shape
+ﬁtting as in MLS and MPU methods, respectively. Hence for
+strong noise, outliers, and even misalignment, this type of
+approach is quite robust – see Figure 5. This approach was ex-
+tended by [HLZ∗09] to handle highly nonuniform sampling
+by incorporating an estimation of sampling density into the
+balancing term.
+3.2. Global Surface Smoothness Priors
+Global smoothness priors typically involve higher order
+smoothness, large-scale smoothness, or both. High order
+smoothness relates to the variation of differential properties
+of the surface: area, tangent plane, curvature, etc. Large-scale
+herein relates to the spatial scale where smoothness is en-
+forced.
+Radial basis functions (RBFs). RBFs are a well-known
+method for scattered data interpolation. Given a set of points
+with prescribed function values, RBFs reproduce functions
+containing a high degree of smoothness through a linear com-
+bination of radially symmetric basis functions. For surface re-
+construction, the method of [CBC∗01] constructs the surface
+(a)
+(b)
+(c)
+(d)
+Figure 6: A point cloud sampling a sphere consisting of 150
+points (a) is reconstructed by [HDD∗92] resulting in a C0
+surface (b). A locally supported RBF [Wen95] reconstruct
+a C1 surface, while the global triharmonic RBF (∆3 f = 0,
+φ(x) = x3) outperforms the previous methods, although in-
+curring a high computational cost.
+by ﬁnding an implicit function deﬁned via RBFs whose zero
+level set represents the surface. More speciﬁcally they use
+globally-supported basis functions of the form φ(x) = ∥x∥2.
+The implicit function f may then be expressed as:
+f(x) = p(x)+
+n
+∑
+i=1
+λiφ(x−pi),
+(3)
+where p denotes a low-degree polynomial and the basis func-
+tions are shifted by the evaluation point x.
+The coefﬁcients λi are found by prescribing, as interpo-
+lation constraints, a function value of 0 for pi ∈P. Off-
+surface constraints are necessary to avoid the trivial solution
+of f(x) = 0 for x ∈R3. Positively (resp. negative) valued
+constraints are set for points displaced at pi along ni in the
+positive (resp. negative) direction. The displaced points are
+selected such that each one’s closest point in P is pi. The coef-
+ﬁcients λi are found via a dense linear system in n, where by
+exploiting the structure of φ, fast multipole methods are used
+to reduce the complexity from O(n3) to O(nlogn) [CBC∗01].
+An advantage to using globally-supported basis functions
+for surface reconstruction is that the resulting implicit func-
+tion is globally smooth; see Figure 6(d) for triharmonic RBFs,
+compared to compactly-supported basis functions [Wen95]
+shown in Figure 6(c). Hence RBFs can be effective in pro-
+ducing a watertight surface in the presence of nonuniform
+sampling and missing data. However, when the input con-
+tains moderate noise, determining the proper placement of
+off-surface points can become challenging.
+Indicator function. These methods approach surface recon-
+struction by estimating a soft labeling that discriminates the
+interior from the exterior of a solid shape. This is accom-
+plished by ﬁnding an implicit function χ that best represents
+the indicator function, taking on the value of 0 in the interior
+of the shape and 1 otherwise. The key observation in this
+class of methods is that, assuming a point cloud with oriented
+normals, χ can be found by ensuring its gradient is as-close-
+as-possible to the normal ﬁeld N, in a least-squares sense,
+via ∥∇χ−N∥2
+2. If we apply the divergence operator to this
+problem, then this amounts to solving the following Poisson
+c
+⃝Author version
+
+
+--- Page 13 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+equation:
+∇·∇χ = ∆χ = ∇·N.
+(4)
+Once solved, the surface is found via χ with a suitable iso-
+value, typically the average or median value of χ evaluated at
+all of the input points.
+The approach of [Kaz05] solves this by transforming the
+problem into the frequency domain, where the Fourier trans-
+forms of ∆χ and ∇·N result in a simple algebraic form for
+obtaining the Fourier representation of χ. By operating in the
+frequency domain, however, it is necessary to use a regular
+grid in order to apply the FFT, hence limiting spatial reso-
+lution in the output. In order to scale to larger resolutions,
+the method of [KBH06] directly solves for χ in the spatial
+domain via a multi-grid approach, hierarchically solving for
+χ in a coarse-to-ﬁne resolution manner.
+Indicator function methods are an instance of gradient-
+domain techniques, which are known to be robust meth-
+ods for such applications as high dynamic range compres-
+sion [FLW02] and image blending [PGB03]. For surface
+reconstruction, such a gradient-domain formulation results in
+robustness to nonuniform sampling, noise, outliers, and to a
+certain extent missing data. The implicit function’s gradient
+being well-constrained at the data points enforces smooth-
+ness and a quality ﬁt to the data and since the gradient is
+assigned zero away from the point cloud, χ is smooth and
+well-behaved in such regions. Furthermore, for small scan
+misalignment, normals tend to point in a consistent direc-
+tion, which yields a well-deﬁned gradient ﬁt for the indicator
+function. Several extensions have been made to this original
+formulation, addressing limitations related to streaming re-
+construction [MPS08], faithfulness to the input [KH13], and
+sensitivity to normals [ACSTD07].
+The work of [MPS08] solves the Poisson equation in a sim-
+ilar manner to [Kaz05], but rather than using a Fourier basis,
+it uses wavelets in such a way that computing the wavelet
+transform of χ may be done in a local manner, where higher
+resolution wavelet bases contain smaller spatial support. Com-
+pact support is particularly advantageous in streaming surface
+reconstruction, where the reconstruction is done on a subset
+of the data at a time.
+A known issue with the approach of [KBH06] is that ﬁt-
+ting directly to the gradient of χ can result in over-smoothing
+of the data [KH13, Fig. 4(a)]. To address this, the method
+of [KH13] directly uses the point cloud as positional con-
+straints into the optimization, resulting in a screened Poisson
+problem. Similarly, the method of [CT11] incorporates po-
+sitional, gradient, as well as Hessian constraints on the im-
+plicit function, where the Hessian constraint can improve
+surface extrapolation in regions of missing data [KH13,
+Fig. 6(a)]. The main difference between the approaches is
+that [KH13] solves the problem via a ﬁnite-element formula-
+tion, whereas [CT11] use ﬁnite-differences, due to the com-
+plexity in discretizing the Hessian term. In particular, the
+Figure 7: From the point cloud on the left, we show a slice
+of the implicit function produced in [ACSTD07] on the right,
+where only unoriented normals are necessary in producing a
+signed ﬁeld. An isotropic surface mesh of the zero isosurface
+of the signed ﬁeld is also depicted.
+screened Poisson formulation [KH13] is up to 2 orders of
+magnitude faster than [CT11], see [KH13, Table 1].
+All of the above approaches rely on oriented normals,
+where although such methods can tolerate sparsely distributed
+normal orientation ﬂips, large continuous clusters of improper
+normal orientation can signiﬁcantly impact these methods.
+To address this, the method of [ACSTD07] uses covariance
+matrices to represent unsigned orientations, rather than using
+normals. A covariance matrix is formed at a given point by
+taking a union of neighboring Voronoi cells around the point.
+The anisotropy of the covariance acts as a notion of normal
+conﬁdence. The implicit function is found by maximizing its
+gradient’s alignment with the principal component of the co-
+variance matrix at each point, while ensuring smoothness and
+a proper signed function by enforcing the function’s bihar-
+monic energy to be small. This amounts to solving a sparse
+symmetric generalized eigenproblem – Figure 7 depicts a
+slice of the resulting eigenvector for the kitty point cloud.
+Volumetric segmentation. These methods perform recon-
+struction via a hard labeling of a volumetric discretization,
+where the goal is to label cells as being either interior or
+exterior to the surface. The method of [KSO04] constructs a
+graph Laplacian from the Delaunay triangulation of P, where
+each node represents a tetrahedron of the triangulation and
+each edge measures the likelihood of the surface passing
+through the adjacent tetrahedra. The Laplacian eigenvector
+with smallest nonzero eigenvalue then smoothly segments
+tetrahedra into interior and exterior, as this eigenvector simul-
+taneously seeks a smooth labeling and a partitioning with low
+edge weights. This approach has shown to be robust to noise
+and outliers without the use of normals, thanks to the robust-
+ness of spectral partitioning. Since it produces an explicit
+c
+⃝Author version
+
+
+--- Page 14 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+volume segmentation, it also ensures a watertight surface.
+However, in regions of missing data, the discretization from
+the Delaunay triangulation may be too coarse, giving a poor
+approximation to the surface [KSO04, Fig. 6].
+Methods based on graph cuts are also used in ﬁnding a
+volumetric segmentation. The method of [HK06] ﬁrst deﬁnes
+a small crust on the exterior and interior through a dilation
+operation on point-occupied voxels. A graph is imposed on
+the crust where edges reﬂect the local surface conﬁdence –
+a function of a smoothed unsigned distance, while nodes on
+the boundaries of the interior and exterior crust are connected
+to a source and sink node, respectively. To impose global
+smoothness, non-terminal edges also include a small regu-
+larization constant, which encourages minimal surface area.
+This method does not use normals, as it only needs to com-
+pute an unsigned distance in order to deﬁne edge weights in
+the graph cut solve. This results in robustness to nonuniform
+sampling, noise, and misalignment. Furthermore, the minimal
+surface area regularization allows for the method to handle
+missing data, where we note that such a regularization is ab-
+sent in the spectral segmentation approach of [KSO04]. How-
+ever, computing the crust such that the interior and exterior
+are identiﬁable can be challenging in certain conﬁgurations.
+3.3. Piecewise Surface Smoothness Priors
+Moving from the smooth, closed case to the piecewise smooth
+case (possibly with boundaries) is substantially harder as the
+ill-posed nature of the problem applies to each sub-feature of
+the inferred shape. The features of a piecewise smooth surface
+range from boundary components, sharp creases, corners,
+and more speciﬁc features such as tips, darts, and cusps.
+In addition, the inferred surface may be either a stratiﬁed
+manifold or a general surface with non-manifold features.
+Another difﬁculty stems from the fact that a feature is a
+notion that exists at speciﬁc scales, such that reconstruction
+and feature approximation cannot be decoupled.
+Semi-sharp features. One step toward piecewise smooth-
+ness is a class of feature-preserving methods based on im-
+plicit representations. Sharp features can be captured through
+locally adapted anisotropic basis functions [DTS01]. Adam-
+son and Alexa [AA06] rely on an anisotropic moving least
+squares (MLS) approach, where the anisotropy is based on
+principal curvatures derived from the points’ positions and
+normals. Oztireli et al. [OGG09] extend the MLS through ker-
+nel regression to allow for sharper features. However, none of
+these techniques reproduce truly sharp features: the features
+in a reconstruction contain varying degrees of smoothing.
+Moreover, the presence of sharpness in the geometry of a
+point set is detected only locally, which often leads to frag-
+mented creases when defects are present [ASGCO10, Fig.
+6].
+Locally-sharp features. Another way to detect local sharp-
+ness consists in performing a local clustering of estimated
+normals [OBA∗03b]: the algorithm ﬁts as many quadrics
+as the number of clusters of normals. Improved robustness
+is achieved in [FCOS05b] by segmenting neighborhoods
+through region growing. Lipman et al. [LCOL07] enriches
+the MLS projection framework with sharp edges driven by
+the local error of the MLS approximation. However, the
+locality of the feature detection can generate fragmented
+sharp edges, much like general feature detection approaches
+[GWM01,PP09].
+Globally-sharp features. To reduce crease fragmentation,
+some approaches favor the extraction of long sharp features.
+Pauly et al. [PKG03] use a multi-scale approach to detect
+feature points and construct a minimum-spanning tree to infer
+a feature graph. Daniels et al. [DHOS07] uses a robust projec-
+tion operator onto sharp creases and grow a set of polylines
+through projected points. Jenke et al. [JWS08] extract feature
+lines by robustly ﬁtting local surface patches and computing
+the intersection of close patches with dissimilar normals.
+Sharp and robust. Only few approaches tackle the combined
+issue of robustness to defect-laden point clouds and feature-
+preserving reconstruction [FCOS05a,ASGCO10,HWG∗13].
+The method of [FCOS05a] uses a least median of squares
+regression scheme in its region growing approach to handle
+outliers in the data. The approach of [ASGCO10] ﬁrst esti-
+mates normals that preserve sharp features in the shape via
+l1 sparse reconstruction, i.e. the vector of all neighboring
+normal differences should be sparse, where large nonzero dif-
+ferences reﬂect sharp features. The positions are then found
+as offsets from the recovered sharp normals. The method
+of [HWG∗13] allows for the preservation of sharp features
+in a resampled point cloud by ﬁrst resampling away from
+detected edges in order to reliably compute normals and then
+upsampling in a manner that preserves sharp features, deter-
+mined by the normals. This method employs a similar energy
+to [LCOLTE07] away from sharp features, hence they are
+able to handle similar types of defects in the point cloud.
+4. Visibility Priors
+Although methods based on surface smoothness priors can
+support a large variety of inputs, such a rather general as-
+sumption places restrictions on the extent to which they can
+support substantial artifacts in the point cloud. To handle chal-
+lenging point clouds, it is useful to consider speciﬁc priors
+for reconstruction. In this section we consider visibility as a
+prior and how it can help regularize certain reconstruction
+problems.
+Visibility has generally been used in three different ways.
+The ﬁrst class of methods considers how to use the visibility
+provided by the scanner that produced the point cloud – this
+is used primarily to obtain the line of sight associated with
+each sample; see Section 4.1. The second class of methods
+uses line of sight that is not provided from the scanner, but
+rather approximated from the exterior space; see Section 4.2.
+c
+⃝Author version
+
+
+--- Page 15 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+The third class of methods uses visibility to approximate
+parity – the number of times a ray intersects a surface – in
+order to approximate the interior and exterior, as discussed
+in Section 4.3. These types of methods tend to make little as-
+sumptions on the shape class, and usually produce an implicit
+function or a surface mesh in output.
+4.1. Scanner Visibility
+The most common method for using the visibility information
+provided by a scanner is the merging of individual range
+scans. This is the approach taken by [CL96], where a signed
+distance function is incrementally built up over each range
+scan. More speciﬁcally, each scan is ﬁrst triangulated via
+its image lattice structure. Then for a given ray originating
+at the scanner head position, the signed distance ﬁeld for
+points along the ray are updated based on their distance to
+the ray’s intersection point with the scan. Furthermore, as
+discussed in Section 2.2.2, a conﬁdence can be assigned to
+each point in the range scan via line of sight information,
+where [CL96] associates low conﬁdence weights with high
+grazing angles. This is particularly useful in combating noise
+in the point cloud, since one can easily over smooth or under
+smooth if no conﬁdence values are associated with points;
+see [CL96, Fig. 4].
+Furthermore, one can perform space carving through line
+of sight information, via marking regions of space observed
+by the scanner as empty. The approach of [CL96] uses this
+information to extract geometry between regions marked
+empty and regions that are unseen, where the assumption is
+that unseen regions are the interior of the shape. This is very
+useful in resolving ambiguous topology in regions of missing
+data; see [TOZ∗11, Fig.9].
+For other forms of missing data, the approach of [CL96]
+will typically preserve the hole as it does not enforce any
+type of smoothness prior. It is possible to incorporate a mini-
+mal surface area regularization to encourage smoothness in
+regions of missing data, while using line-of-sight as a data-
+ﬁtting term. Existing approaches solve such a formulation via
+level-set models [Whi98] and graph cut optimization [LB07].
+The method of [LPK09] seeks an interior and exterior label-
+ing of tetrahedra from a Delaunay triangulation of the point
+cloud, similar to [KSO04], but formulates it as a graph cut
+problem using line of sight information. At each tetrahedron,
+the method accumulates evidence for belonging to the exte-
+rior through line of sight of all range scans, hence assuming
+outliers are randomly distributed, this method is robust to
+such defects; see [LPK09, Fig. 13].
+For scans that contain a high level of misalignment and
+structured outliers, the method of [ZPB07] approaches range
+scan merging by using the l1 norm for the data term, and the
+minimization of the signed distance gradient magnitude as the
+regularization term. This type of regularization, commonly
+known as total variation denoising, allows the algorithm
+(a)
+(b)
+(c)
+Figure 8: The point cloud “hidden point removal” operator
+from [KTB07] applied to an input (a) determines the subset
+of visible points as viewed from a given viewpoint (b). Given
+this labeling, a view-dependent on-the-ﬂy reconstruction (c)
+can be obtained by retaining the topology of well shaped
+triangles from the convex hull of the spherical inversion.
+to be robust to structured outliers and scan misalignment;
+see [ZPB07, Fig. 4].
+The method of [FG11] considers the case when range
+scans have widely varying scales – the range scans have very
+different sampling densities. In such cases, merging multiple
+scans of a coarse scale with a single scan at a ﬁne scale can
+overly smooth out the ﬁne-grained detail. [FG11] extends
+[CL96] by constructing a hierarchical signed distance ﬁeld.
+This permits retaining the high resolution detail of ﬁne-scale
+scans, while capturing the more general scene present in
+coarse-scale scans.
+Scanner visibility was recently used in [UB13] in the recon-
+struction of thin objects, such as street signs. The method em-
+ploys a point-based representation for reconstruction, where a
+particle system is used to satisfy a data-ﬁtting term, an energy
+that encourages the vector formed by neighboring points to
+lie on one another’s tangent plane, and a term that penalizes
+neighboring points if their normals are in different directions.
+Each input point’s target output point is restricted to be along
+its line of sight, which helps to constrain point movement in
+the particle system and greatly simpliﬁes the optimization.
+4.2. Exterior Visibility
+It is possible to exploit visibility even in the absence of ex-
+plicit information from the scanner. Given a chosen camera
+position, point set visibility [KTB07] determines the portion
+of the point cloud that is not self-occluded. First, a spherical
+inversion of the point cloud with respect to the given query
+point is computed. Then, visible points are simply identiﬁed
+as those that lie on the convex hull of this set – see Figure 8.
+While [MTSM10] extended this method to handle moder-
+ate levels of noise, the input point cloud must respect strict
+sampling assumptions to produce satisfactory results.
+Occlusion culling. The method of [CCLN10] builds upon
+these ideas and reconstructs a watertight surface by carving
+c
+⃝Author version
+
+
+--- Page 16 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+Figure 9: The approach of [MDGD∗10] ﬁrst computes a
+robust unsigned distance function (left), and constructs an
+interior/exterior labeling (middle), and associated conﬁdence
+(right) of the labeling. Note that low conﬁdence is associated
+with regions of missing data, such as the bottom of the scan.
+the space occluded by the point cloud when observed by a
+sufﬁciently large and randomly sampled set of directions.
+Similarly to [KTB07], the input cloud has to satisfy certain
+stringent sampling conditions, limiting its effectiveness with
+undersampling and missing data. Conditions on sampling are
+relaxed in [CLCL11] where inconsistencies are detected by
+observing that if one point’s Voronoi pole [AB99] lies in the
+exterior, the other Voronoi pole should be in the interior. If
+both are occluded or visible via [KTB07], this indicates an
+inconsistency. Unfortunately, since the method uses Voronoi
+poles, which cannot always be robustly estimated in the pres-
+ence of missing data, its applicability remains limited.
+Cone carving. The method of [SSZCO10] hypothesizes that
+each point in the cloud must have been observed from the
+scanner head. It computes high-likelihood visibility cones
+originating at each sample and takes the boundary of the
+union of all cones as an approximation to the surface. This
+method can be used to infer the geometry in large regions
+of missing data for challenging scenarios, i.e. two thin, spa-
+tially close, and undersampled surface sheets – producing
+topologically clean surfaces. The main disadvantage with the
+approach is its lack of scalability, since it takes linear time to
+construct a cone at each point, resulting in a total quadratic
+running time.
+4.3. Parity
+An alternative way of using visibility is to deﬁne a measure
+of parity. Assuming a closed surface, the parity for a given
+ray (point and direction) is deﬁned as the number of times
+the ray intersects the surface – if an odd number of times, this
+indicates the point lies in the interior, otherwise the point is
+in the exterior. This general idea can be extended to a point
+cloud, giving rise to a notion of uncertainty in whether or
+not a point belongs in the exterior or interior. The approach
+of [MDGD∗10] constructs parity on the point cloud through
+the use of a robust unsigned distance function. Namely, they
+compute a crust, or an offset surface, around the point cloud
+via the unsigned distance and evaluate parity at a given point
+by randomly shooting rays in different directions, where the
+Figure 10: The point cloud on the left was captured via
+multi-view stereo – note the substantial structured outliers.
+The center image is a zoomed-in portion of the point cloud,
+centered on the object of interest. The method of [GCSA13]
+(right) is highly robust to outliers, while still preserving the
+details of the object, due to the use of parity and an unsigned
+distance function which adapts to the noise.
+crust is used to determine intersections with the surface. A
+point will very likely be exterior or interior if the parity es-
+timates are consistent over all directions. This uncertainty
+estimate is used in constructing an implicit function, consist-
+ing of a data-ﬁtting term and a smoothness term, such that
+high smoothness constraints will be assigned to regions that
+have high uncertainty (i.e. high disagreement in parity). Fig-
+ure 9 shows the unsigned distance function for a challenging
+point cloud, along with its sign estimate and conﬁdence in
+sign. This approach is highly robust to noise and outliers
+due to the use of a robust unsigned distance function, which
+does not require the estimation of normals. It is also robust to
+missing data, and since its regularization is spatially-varying
+according to the uncertainty in parity, it will not over smooth
+the data where it exists. However, since smoothness is en-
+forced via a Laplacian regularization, this could still result
+in poor behavior in regions of missing data, giving the in-
+correct topology. The method of [SY12] addresses this by
+performing space carving, guided by a parity estimate, to only
+carve out space where there does not exist highly conﬁdent
+interior regions. This can better retain topological features
+such as tunnels, where smoothness priors may erroneously
+over smooth and ﬁll these regions in.
+The method of [GCSA13] extends [MDGD∗10] by using
+a robust unsigned distance function that is adaptive to the
+noise level in the point cloud. The method produces a sign
+estimate over a random collection of line segments in the
+volume. To determine the parity for each line segment, rather
+than using a crust as in [MDGD∗10], they look at all local
+minima in the unsigned distance along the segment, ﬂip the
+function according to the local minima, and of all possible
+ﬂipped minima choose the one that is smoothest. Figure 10
+demonstrates the method’s robustness to strong, structured
+outliers.
+c
+⃝Author version
+
+
+--- Page 17 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+model image
+input point cloud
+reconstructed surface
+user-edited reconstruction
+Figure 11: The high-level geometric regularizer provided by “arterial snakes” [LLZM10] is effective in reconstructing the
+delicate geometry of the scanned tubular model affected by noise, outliers, reduced sampling density and missing data. The
+sparsity of the model does not only allow the correction of these data imperfections, but also enables intuitive data/user-driven
+reconstruction.
+5. Volumetric smoothness
+In order to handle challenging forms of missing data, a com-
+mon way to regularize surface reconstruction is to enforce
+that the local shape thickness of a surface (i.e. a measure-
+ment of its local volume) varies smoothly. For watertight
+shapes, local thickness is measured by the radii of maximally
+inscribed spheres of its medial axis transform. However, as
+the medial axis is an alternative full representation of the
+shape, determining the medial axis over which to perform
+these measurements is an inherently difﬁcult problem – as
+difﬁcult as the reconstruction problem itself.
+Skeletal regularizers. The “rosa” method from [TZCO09]
+addresses this issue by assuming that the medial axis of a
+shape can be approximated by curves instead of surfaces, that
+is, by a curve-skeleton. For organic geometry, a reconstruction
+of the skeleton can be obtained even in the presence of miss-
+ing data by exploiting the redundancies of local rotational
+symmetry. Given a skeletal structure the geometry can be
+reconstructed in regions of missing data by a three-step pro-
+cess: ﬁrst, the distance from the cloud to the curve-skeleton is
+cylindrically parameterized on the curve-skeleton; then, an in-
+painting of the distance function is performed on this domain;
+ﬁnally, the inpainted point cloud can be processed by one of
+the algorithms in Section 3. It is important to note that a cylin-
+drical parameterization prior constrains the class of shapes
+for which a reconstruction is possible to one having a star-
+shaped cross section. While the skeleton extraction method
+in [TZCO09] suffered the limitation of requiring oriented nor-
+mals, subsequent research showed how it is possible to extract
+skeletons directly from unstructured point clouds [CTO∗10]
+and even in the presence of outliers [HWCO∗13]. To over-
+come other limitations, in [CTO∗10] a ﬁrst attempt at remov-
+ing the necessity for an explicit cylindrical parameterization
+was made, while also allowing user-input to locally modify
+the regularizer.
+Deformable models. Another way to take advantage of volu-
+metric smoothness is to grow a deformable model from within
+the volume. The approach of [SLS∗06] slowly grows mul-
+tiple surface fronts, guided by a signed distance ﬁeld, from
+within the interior volume out to the point cloud. The method
+takes care to split and merge fronts in order to progressively
+reconstruct the surface in growing levels of details. Noise and
+missing data are handled by enforcing a smoothness term on
+all fronts as they evolve. This conservative approach leads
+to a better control and interpretation of the reconstructed
+topology and can be extended to reconstruct a skeletal curve
+directly from the point cloud [SLSK07].
+To handle higher amounts of missing data, the approach
+of [LLZM10] presents a deformable model for reconstructing
+skeletal curves of man-made shapes composed of a collection
+of tubular components such as metal rods and canes. The
+arterial snakes model geometry is obtained by sweeping a
+ﬁxed-topology cross section through the input point cloud
+starting from regions of high data ﬁdelity. Their approach im-
+plicitly encodes volumetric regularization by constraining the
+solution to one exhibiting a smoothly varying cross-section,
+while also allowing high-level geometric constraints like pla-
+narity, contact tangency, and symmetry to further regularize
+the reconstruction.
+Organic skeletal geometry. Tubular components exhibiting
+piecewise smooth radii variations are also suitable to model
+organic and natural geometry like trees [RFL∗05, NFD07,
+LYO∗10] or blood vessels [KQ04]. In tree reconstruction,
+biological constraints are exploited to simplify the problem
+and increase resiliency to data imperfections. Noise is intro-
+duced by foliage, as this is typically too small to be ﬁnely
+resolved by the scanning process and a substantial amount
+of self-occlusion is caused by dense branching structures.
+Therefore, the focus of the reconstruction is tree branches,
+where their approach is to ﬁrst reconstruct the skeleton of the
+captured tree. The skeleton is assumed to be a directed acyclic
+graph rooted at the ground plane; limbs are typically piece-
+wise smooth and their thickness almost everywhere smoothly
+varying, where a pipe-model [RFL∗05] controlling thick-
+ness variations can be used at branching locations. While
+a pair of orthogonal images have been shown sufﬁcient to
+c
+⃝Author version
+
+
+--- Page 18 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+hallucinate the 3D information with the help of some user
+interaction [NFD07], recent research has attempted to model
+the tree structure directly from 3D point clouds [LYO∗10].
+Generalized volumetric smoothness. Several methods exist
+for imposing volumetric smoothness on the medial axis of
+the shape, supporting a much broader class of shapes. The
+method of [BS12] approaches reconstruction by segmenting
+the point cloud into volumetric regions and in each region tak-
+ing the union of balls to obtain a coarse surface representation.
+The union of these regions then serves as an initial surface for
+the method of [SLS∗06], to recover ﬁne details. Key to their
+segmentation is a distance measure deﬁned directly on the
+point cloud that robustly measures the likelihood of a medial
+ball being generated by any pair of points. This method is ro-
+bust to noise and missing data, particularly when there exists
+nearby surface sheets, but can fail in regions where parts of
+the surface corresponding to medial sheets are missing.
+Among methods employing volumetric regularization
+[TOZ∗11] is the most general. The surface encoding the
+solution is iteratively evolved by level-sets toward the data
+considering both visibility and surface smoothness, similarly
+to [Whi98], while simultaneously enforcing a volumetric
+prior based on the medial axis of the evolving interface. This
+technique can prevent the formation of unnecessary holes
+in thin surfaces due to under-sampling, as the formation of
+a topological feature would correspond to a quickly vanish-
+ing medial radii. Furthermore, since the medial axis encodes
+local reﬂectional symmetry, this allows for information to
+be effectively propagated throughout the surface permitting
+the reconstruction of challenging data like the geometry of
+the highly concave areas in a vase – see [TOZ∗11, Fig.5].
+While highly general, the instability of the medial axis to
+surface-perturbations and the complexity of its computation
+limit the applicability of the method.
+6. Geometric Primitives
+The detection of simpler geometric structures in a point cloud
+has shown to be particularly beneﬁcial for surface recon-
+struction. Knowledge of a surface that can be described as the
+composition of geometric primitives can be extremely helpful
+for denoising and ﬁlling in missing data. Not all shapes ad-
+here to this prior, but typically CAD and architectural models
+can be described in this manner.
+Detecting primitives. The method of [SWK07] is an effec-
+tive method for ﬁnding geometric primitives in shapes. It uses
+RANSAC to robustly ﬁnd planes, spheres, cylinders, cones,
+and torii, through an efﬁcient means of sampling points for
+ﬁtting and evaluating scores, both based on locality sensitive
+methods. Importantly, this method produces primitives that
+partially match the point cloud – the collection of these shapes
+can then be used for reconstruction. We note that although
+this method can detect a small set of easily parameterizable
+shapes, efﬁcient pose detection methods for arbitrary shapes
+can also be used [DUNI10].
+Figure 12: (left) CAD models are often obtained by con-
+structive solid geometry as a composition of simple prim-
+itives: planes, spheres, cones, etc. (middle) Randomized
+search [SWK07] can be used to detect such primitives in the
+point cloud data even in the presence of noise, outliers and
+missing data. (right) The primitives can then be extrapolated
+to obtain a watertight surface from incomplete data [SDK09].
+Primitive consolidation. The work of [JKS08] takes a set
+of detected plane primitives and performs reconstruction by
+aligning and merging the boundaries of adjacent primitives.
+More speciﬁcally, the boundaries of the plane primitives are
+extracted and an optimal conﬁguration of boundaries is found
+by imposing a data-ﬁtting term to the original boundary as
+well as a term that favors the snapping of boundary points and
+corner points of neighboring planes. Explicitly using corners
+prevents the boundary from smoothing itself out. The advanc-
+ing front method of [SFS05] is used to extract a surface mesh.
+This method can reconstruct CAD and architectural models
+alike, producing a surface mesh that retains the detected prim-
+itive structures. However, the method requires that adjacent
+primitive boundaries should be geometrically close to each
+other, which may not be satisﬁed if primitive detection is
+noisy, or if missing data is present. The method of [SDK09]
+resolves this by explicitly extrapolating shape primitives (of
+all kinds) and forming the resulting output as the intersection
+of the extrapolated primitives. This extrapolation of primi-
+tives is formulated as a graph cut problem, where in addition
+to a standard minimal surface area term, a data ﬁtting term
+is used that ensures the surface normal at a given point (the
+edge in the graph) is aligned with all intersecting primitives
+at that point. This does not constrain the primitives in a local
+manner: primitives whose boundaries are far away can even-
+tually meet up and intersect with this method, as illustrated
+in Figure 12.
+Augmenting primitive information. Although the method
+of [SDK09] can robustly handle missing data, it can be sensi-
+tive to noisy primitives which may fail to deﬁne a coherent
+model when extrapolated. The work of [CLP10] instead uses
+line of sight information to help penalize poorly extrapo-
+lated primitives. Namely, this work takes the set of primitives
+as well as an additional set of primitives formed near the
+boundaries of the input primitives and constructs a cell com-
+plex reﬂecting the extrapolation of the primitives. An energy,
+similarly solved via graph cuts is then formed, where the
+data-ﬁtting term uses line of sight information to penalize
+c
+⃝Author version
+
+
+--- Page 19 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+facets in the complex lying in regions marked empty via space
+carving. The method of [RKMP13] uses the point cloud, line
+of sight, and edge features in corresponding RGB images to
+infer constraints for ﬁnding the boundary of each input shape
+primitive, consequently producing the reconstructed surface.
+Volumetric primitives. In the case of indoor scene recon-
+struction, an alternative to surface primitives is to employ
+volumetric primitives to model the interior space. In [XF12]
+the volume is modeled by ﬁtting simple cuboids to the empty
+space deﬁned by the boundaries of the scan data. A set of 2D
+constructive solid geometry (CSG) vertical slices are built by
+incrementally adding and removing candidate rectangles that
+best model the interior – a function of line of sight informa-
+tion. A similar process is used to stack up these slices to build
+a set of volumetric primitives, producing a 3D CSG model
+that composes the interior. The method of [OLA13] starts
+from a volume decomposition of the space, and labels volu-
+metric cells as interior and exterior through a parity-driven
+cost function solved via graph cuts, where parity is measured
+through ray intersections of extracted horizontal and vertical
+structures. Such volumetric methods guarantee a watertight
+output, and are highly robust to missing data, since only a par-
+tial sampling of the volume boundary is needed for a quality
+ﬁt.
+Hybrid methods. A limitation of primitive-based methods
+is that they do not degrade gracefully if certain portions of
+the shape are poorly explained by a primitive. The method
+of [LA13] resolves this by introducing a hybrid approach
+to reconstruction: shape primitives are used to resample the
+point cloud and enforce structural constraints in the output,
+such as sharp features between adjacent primitives and cor-
+ners, while a visibility-driven prior is employed in regions
+where a primitive ﬁt is not found. A similar approach was
+proposed in [vKvLV13], where planar polygons of sufﬁcient
+ﬁtting quality are extracted and a conforming, constrained
+Delaunay triangulation is constructed on the polygons and
+the remaining points so that the polygons are preserved in
+the triangulation. A visibility-driven graph cut problem is
+then solved, similarly to [LPK09], such that the extracted
+polygon primitives are retained, while the rest of the points
+rely on line of sight information for reconstruction. These
+types of methods greatly generalize the class of shapes in
+which primitive-based reconstruction may be performed.
+7. Global Regularities
+Certain classes of shapes, namely CAD, man-made, urban,
+and architectural shapes, possess a certain level of global
+regularity. Regularity in a shape can take many forms: a vase
+described by a surface of revolution, a building composed of
+facade elements, or a mechanical part consisting of recurring
+orientation relationships between sub-parts. All of these are
+examples of the following more general properties: symmetry,
+repetition, and canonical relationships. Commonly associ-
+ated with high-level shape analysis [MWZ∗13], these priors
+Figure 13:
+From the scan on the left, the method
+of [PMW∗08] is able to discover local similarity transforma-
+tions which relate individual elements. This can be used to
+resample the point cloud, as well as extrapolate the scan into
+missing regions, shown on the right.
+have also shown to be of great use in handling severe defects
+in a point cloud.
+7.1. Symmetry
+Symmetry is a well-studied problem in shape analy-
+sis [MPWC13]. Symmetry detection is focused on ﬁnding
+either global or local transformations on the shape that maps
+the entire shape, or a subset of the shape, onto itself. Find-
+ing such transformations can be extremely useful for surface
+reconstruction in handling noise and missing data.
+Global similarity. The method of [LA11] applies this to the
+case of missing data for single-scan completion by ﬁnding
+small surface patches of the scan that exhibit either bilateral,
+rotational, or surface-of-revolution symmetry, and then apply-
+ing the detected transformation to the rest of the scan to infer
+the missing data. This can produce a complete model from
+a single view and does not assume a speciﬁc type of shape
+class. However, it assumes that a shape can be well described
+by the application of a single simple transformation, which
+does not always hold.
+Local similarity. Rather than imposing global relationships,
+in [PMW∗08] the authors focus on ﬁnding repeating elements
+(small subsets of the point cloud) that can be mapped onto
+one another by local similarity transformations. They show
+that the repetition of elements in a point cloud manifests
+as a lattice structure in a suitable transformation space. In
+particular, partial matches become prominent in this transfor-
+mation space, hence repeating elements of varying levels of
+missing data can be robustly detected and used to reconstruct
+incomplete regions, see Figure 13. The method of [LCDF10]
+ﬁnds symmetries in incomplete point clouds by construct-
+ing an afﬁnity matrix that measures how symmetric all pairs
+of points are. The key insight made by [LCDF10] is that
+this matrix should be block-diagonal for many types of sym-
+metries – i.e. rotational, bilateral, intrinsic. By considering
+powers of this matrix, the authors demonstrate how incom-
+plete matches become more pronounced, allowing for a wide
+range of detected symmetries in challenging point clouds
+containing noise, outliers, and missing data. These simpler
+forms of symmetry can be generalized to a notion of subspace
+symmetries [BWM∗11], where a symmetry group is deﬁned
+c
+⃝Author version
+
+
+--- Page 20 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+by a set of local transformations as well as a low-dimensional
+shape space, in order to handle more general types of shapes.
+7.2. Structural Repetition
+In certain cases it is difﬁcult to ﬁnd repeating elements in a
+point cloud through symmetry transformations. Instead, di-
+rectly seeking repeating elements in a transformation-free
+manner can provide us with more ﬂexibility in the reconstruc-
+tion process.
+The method of [ZSW∗10] utilizes this observation for re-
+construction of building facades in noisy terrestrial LiDAR
+scans, where occlusions from vegetation or other objects re-
+sult in signiﬁcant missing data. For a given type of facade
+element, each elements’ planes are detected via [SWK07]
+and the individual elements are registered at a per-plane level.
+Once registered, denoising is performed across all elements
+via the individually registered planes and the consolidated
+facade element is projected back onto each instance for recon-
+struction. The mutual use of information across all elements
+allows one to robustly remove noise and ﬁll in missing data.
+A drawback to the approach of [ZSW∗10] is the strict
+requirement of user interaction. This limitation was addressed
+in the work of [SHFH11] by adaptively partitioning facades.
+The approach of [WS12] takes the consolidated point cloud
+of [ZSW∗10] and segments it into depth layers and uses a
+grammar deﬁnition to individually segment each depth layer
+into facades via the optimal sequence of grammar derivations.
+Facades may be appropriately extruded at each depth layer
+to obtain a polygonal representation of the building, at the
+possible expense of detail in the geometry due to the lack of
+expression in the shape grammar.
+The method of [FS12] tackles occluded facade scans by
+analyzing vertical scanlines consisting of columns of points
+along major facade planes to detect periodic features. The
+Discrete Fourier Transform is computed for each scanline
+and used to extract the period of repetitive structures. Holes
+are ﬁlled by extending the periodic features into occluded
+regions.
+Another means of detecting regularity in incomplete scans
+is to ﬁnd regularity in associated RGB imagery, and prop-
+agate this information back to the 3D scan to perform re-
+construction. The approach of [LZS∗11] achieves this by
+decomposing the RGB image into depth layers via the 3D
+scan, and upon detecting symmetries with respect to each
+layer via [WFP10], consolidates all element instances to ro-
+bustly denoise and ﬁll in missing data across the instances.
+7.3. Canonical Relationships
+Another useful prior on global regularities is the canonical
+intra-relationship between parts of a scene, or parts of a shape.
+Such relationships can be parallel or coplanar parts, recurring
+orthogonality between planes, concentric or co-axial parts,
+input scan
+ransac
+globfit
+Figure 14: From a set of misaligned scans shown on the
+left, the primitives extracted via [SWK07] (middle) retain the
+misalignment. Globﬁt [LWC∗11] (right) is able to correct
+misalignment by enforcing consistent canonical relationships
+across primitives.
+and regularity in orientation. This often arises in CAD models
+due to fabrication restrictions and budget considerations, as
+well as urban environments due to functional constraints.
+Manhattan constraints. Perhaps the simplest form of a
+canonical relationship is the Manhattan-world (MW) as-
+sumption: all planar primitives in a scene belong to one
+of three mutually orthogonal planes. This can simplify
+facade reconstruction, as in the aforementioned methods
+of [ZSW∗10, SHFH11, WS12, LZS∗11]. In [VAB12], MW
+is used for building reconstruction by ﬁrst classifying points
+by shape type – wall, edge, convex corner, or concave corner
+– and clustering points of a similar type. After constructing
+MW-aligned bounding boxes on all clusters, volume regions
+are found via parity, analogous to [MDGD∗10], where inte-
+rior regions of consistent parity are considered to belong to
+the building’s volume. As edges and corners are detected via
+relationships between walls, this method is robust to missing
+data, but may be sensitive to noise for adjacent wall conﬁgu-
+rations.
+Consolidating relationships. The method of [LWC∗11] re-
+constructs CAD shapes consisting of a much richer variety of
+canonical relationships compared to MW. Namely, starting
+from an initial set of detected primitives [SWK07], parallel,
+orthogonal, angle-equality, and distance-equality relation-
+ships are individually detected and carefully selected so as
+to not cause any relationship conﬂicts. By enforcing these
+relationships, structured noise such as scan misalignment can
+be effectively handled – see Figure 14.
+Canonical building relationships. The work of [LWC∗11]
+was extended to the case of reconstruction of buildings from
+2.5D scans in [ZN12]. The basic observation in this approach
+is that there exists three fundamental type of relationships in
+buildings: roof-roof relationships that consist of orientation
+and placement equalities, roof-roof boundary relationships
+that consist of parallelism and orthogonality relationships,
+and boundary-boundary relationships that consist of height
+and position equality. Upon ﬁnding the relationships via clus-
+tering (i.e., clustering similar angles, equality, etc..), they are
+used to inform the primitive ﬁtting method so that the prim-
+c
+⃝Author version
+
+
+--- Page 21 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+Figure 15: From the incomplete and cluttered scan on the left, the approach of [NXS12] ﬁrst oversegments the point cloud
+(mid-left), then iteratively merges segments which agree on class labels (mid-right), and ﬁnally deforms a set of detected models
+to best resemble their segmented objects (right).
+itives simultaneously ﬁt to the data and to the relationships.
+Analogous to [LWC∗11], this allows for robust reconstruction
+from building scans containing strong structured noise.
+8. Data-driven priors
+The previously discussed priors may not always be appropri-
+ate and in practice, certain shapes may simply fail to adhere
+to these priors. A more ﬂexible method of specifying a prior
+is through a data-driven means: using a collection of known
+shapes to help perform reconstruction. This can allow for the
+reconstruction of individual objects and more generally, the
+reconstruction of scenes composed of a certain type of envi-
+ronment and multiple types of objects. Fine-grained scene
+reconstruction is extremely challenging due to the large miss-
+ing data often associated with scans, such as those derived
+from the Microsoft Kinect. Hence, if reconstructing the ge-
+ometry is infeasible, these methods instead seek the most
+similar object in a database, and if necessary, its deformation
+in order to ﬁt the input data.
+Data driven inpainting. An earlier method of recon-
+structing individual objects from a database was proposed
+in [PMG∗05], where an incomplete input point cloud is
+matched against a database of complete shapes and the most
+relevant shape is then rigidly deformed into the point cloud to
+recover missing data. This allows for a watertight reconstruc-
+tion, but for the algorithm to be effective, strong similarity
+between the input data and the best-matching object is nec-
+essary. This limitation was addressed by [GSH∗07] by using
+local shape priors, where a collection of overlapping point
+cloud patches are matched against a local shape prior database
+and the retrieved priors are used to reconstruct the surface.
+A major drawback of these approaches is the assumption
+that the point cloud is sufﬁciently dense, so that matching
+the cloud against a set of complete shapes is meaningful.
+However, for the acquisition of scenes, in particular indoor
+environments, the scanned objects may be too incomplete to
+permit this due to occlusion, limited observation directions,
+or the geometry is too ﬁne-grained with respect to scanner
+resolution. Furthermore, for these methods to be applicable
+to scene reconstruction, objects need to be individually seg-
+mented.
+Reconstruction
+by
+rigid
+retrieval.
+The
+method
+of [SXZ∗12] approaches this problem by ﬁrst seman-
+tically segmenting the point cloud and then ﬁnding a
+complete model to replace each segment. More speciﬁcally,
+given a set of scans and RGB images, a conditional random
+ﬁeld class labeling problem is formulated, balancing two
+objectives: a data ﬁtting term based on a database of
+class-labeled objects and a smoothness term favoring local
+consistency in appearance and geometry. A training set
+of point clouds is built, where for each object scans are
+constructed via a virtual camera over a range of orientations
+and distances from the object. This allows the model to be
+robust with regard to missing data, as the input should map
+to one of these poses. A random forest classiﬁcation is built
+over this training set allowing for the closest complete object
+to an incomplete scan to be retrieved. Although retrieving
+a rigid template from a database can effectively handle
+incomplete data, only rigid transformations with uniform
+scaling are considered to best align each matched object.
+Reconstruction by non-rigid retrieval. A natural extension
+of reconstruction by retrieval is to consider non-rigid trans-
+formations of the template geometry to the input data. This
+is addressed in [NXS12] where upon ﬁnding a certain se-
+mantic class for a segmented object in the point cloud, every
+model is non-rigidly deformed via localized scale deforma-
+tions. The best match is identiﬁed as the model with the
+smallest registration residual. This method approaches clas-
+siﬁcation differently by building a semantically-labeled seg-
+mentation through incremental selection of oversegmented
+surface patches. A patch is chosen if the resulting merged
+object has high conﬁdence in its label. This is particularly ef-
+fective in noisy, outlier-ridden highly cluttered environments
+– see Figure 15. The authors of [KMYG12] extend these ideas
+by noting that in indoor environments it is common to have
+the same object in multiple poses. Their technique incorpo-
+rates a deformation model directly into the segmentation and
+classiﬁcation problem, rather than as a post-processing step.
+A deformation model is learned over multiple incomplete
+scans for a given object, allowing the object to be identiﬁed
+by incomplete observations of its parts. Given an input scan, it
+is ﬁrst over-segmented and then iteratively merged into parts,
+where parts are matched against learned local deformation
+modes of a model. Part relationships are then used to verify
+the global quality of a match. Compared to [NXS12,SXZ∗12],
+such deformation models allow one to reconstruct a broader
+c
+⃝Author version
+
+
+--- Page 22 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+set of objects, and lessens the need for a potentially large
+database for recognition.
+Reconstruction by part composition. A disadvantage of the
+above approaches is that the granularity of the reconstruction
+is at the level of a whole model, that is, combining parts from
+different models is not possible. The approach of [SFCH12]
+overcomes this by combining individual parts from different
+objects to best compose the input scan. Namely, starting
+from a database of segmented models, 3D data is combined
+with RGB imagery to ﬁnd candidate parts from the database
+matching the input. In particular, the use of RGB data can
+help ﬁnd parts that are completely missing in the 3D scan.
+The best combination of candidates that closely match the
+geometry, while consisting of a small intersection with each
+other, composes the ﬁnal model.
+Model-based SFM. The method of [BCLS13] performs re-
+construction at the category level (i.e. car, fruit), by learning
+a mean shape prior along with corresponding feature points
+on the shape from a given set of object instances acquired
+through structure from motion (SFM). Then for a given point
+cloud and associated imagery, its points are matched to the
+learned feature points and used to deform the mean shape to
+the given point cloud. Such an approach allows for the recon-
+struction of coarse details via the learned mean shape, while
+preserving ﬁne details present in the point cloud. Such details
+are likely to be lost by the previously described approaches.
+9. User-Driven Methods
+Incorporating the user in the process of surface reconstruction
+has shown to be extremely beneﬁcial in dealing with chal-
+lenging point clouds. The key distinguishing factors between
+user-driven methods are the level of intuition and ease of
+use an interface provides and the extent at which the user
+interaction is coupled with the underlying reconstruction
+technique. User-driven techniques were ﬁrst introduced as a
+means for generating required information as inputs to the
+reconstruction algorithm, where recent and more encompass-
+ing approaches tightly integrate the user interaction with the
+core reconstruction algorithm. Below we group user-driven
+techniques by the type of information that is solicited from
+the user.
+Feature classiﬁcation cues. The methods of [FCOS05b]
+and [GG07] showcase how user input can be used to pro-
+vide valuable information for reconstruction. In both methods
+user input is used to augment the point cloud with tags classi-
+fying different surface attributes such as regions of surface
+smoothness [FCOS05b] and sharp features [GG07]. A simple
+brush tool that acts directly on the point cloud enables the
+user to identify regions of interest. The tags are incorporated
+with moving least squares [ABCO∗03] to better handle sharp
+feature regions that are difﬁcult to detect and reconstruct auto-
+matically. Another example of user interaction is the method
+of [LZS∗11], which requires the user to correlate 2D photos
+(a)
+(b)
+(c)
+Figure 16: Given an input point cloud, simple planar prim-
+itives identiﬁed by RANSAC (a) may result in coarse and
+incomplete geometry (b). By exploiting the user’s high-level
+knowledge while remaining faithful to the input data (b) a
+constrained optimization allows to recover a high-quality
+model (c).
+and LiDAR scans by identifying corresponding 2D rectangle
+regions in both data sources.
+Topology cues. The method of [SLS∗07] demonstrates how
+user information can be more tightly integrated to guide re-
+construction in an interactive fashion. Speciﬁcally, the ap-
+proach obtains watertight and topologically correct recon-
+structions through the automatic detection of topologically
+weak regions in a given reconstruction. These low-conﬁdence
+regions are then presented to the user to be resolved, via scrib-
+bles on a 2D tablet, which translate to interior and exterior
+constraints, or potentially no constraints if the user deems
+the region valid. The reconstruction is then updated, and the
+process repeats through further user edits.
+Structural repetition cues. The ability to incorporate user
+input in reconstruction allows one to forego traditional wa-
+tertight and topological requirements. User interactivity and
+automatic reconstruction can be tightly coupled in an inte-
+grated interactive environment and is especially useful for
+the reconstruction of large-scale data. These techniques are
+best suited when the sampled objects exhibit high repetition
+and can be adequately represented in terms of a collection of
+simple geometric primitives. In [NSZ∗10] the authors present
+a technique to rapidly reconstruct architectural models, such
+as those acquired from the scanning of large urban environ-
+ments. The key idea of the approach is to enable the user to
+deﬁne and manipulate simple geometric building blocks in
+the form of axis-aligned rectangular cuboids named smart-
+boxes. The user sequentially places the smartboxes into the
+scene, where contextual regularities and symmetries between
+boxes are automatically captured and used to expedite the
+ﬁtting process. The ﬁnal placement of the user manipulated
+primitives is determined through an interactive optimization
+procedure that automatically adjusts the location, orientation,
+and sizes of the box primitives by considering how the cuboid
+ﬁts the data and its relationship in context with previously
+placed boxes. The method also allows for the grouping and
+c
+⃝Author version
+
+
+--- Page 23 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+manipulation of multiple boxes for rapidly copying and ﬁtting
+recurring structures.
+Primitive relationship cues. This class of methods ap-
+proaches the reconstruction of models that can be assembled
+by simple polygonal primitives. The role of the user is to
+provide hints in how to improve the connectivity of the re-
+constructed model. The approach of [CC08] is focused on
+building reconstruction from incomplete scans. They ﬁrst
+estimate planar polygons as well as their boundaries from
+the scans. Acknowledging that this estimation will be im-
+perfect under missing data, the authors then allow for the
+user to identify boundary lines that bound an absent polygon,
+as well as specify multiple polygons that intersect to yield
+absent edges or corners. This information is used to infer a
+watertight polygonal model of the building. To support more
+complicated polygonal relationships the method of [ASF∗13]
+reconstructs a closed polygonal model by snapping each poly-
+gon into alignment with neighboring primitives by solving
+a combined optimization problem involving both local and
+global spatial constraints – see Figure 16. The interactive
+component provides the user a set of modeling operations
+comprised of simple edits restricted to an automatically de-
+termined plane, hence ﬁxing the view for the user. A polygon
+edit mode allows the user to reﬁne existing polygons by edit-
+ing their boundaries and merging multiple disconnected poly-
+gons. A polygon sketching mode allows the user to provide
+new polygons for regions where automatic planar detection
+failed due to insufﬁcient points or incorrect estimation due
+to noise or outliers in the data. For both modes, the user has
+to only provide coarse edits, as the automatic snapping opti-
+mization is used to align polygon boundaries based on both
+local and global relations between primitives.
+10. Evaluation of Surface Reconstruction
+Given the wide diversity in reconstruction methods, the man-
+ner in which one reconstruction is evaluated compared to
+another may differ. In this section we look at different evalua-
+tion criteria used in the surface reconstruction literature.
+Geometric Accuracy. Perhaps the most common method of
+evaluation is to directly compare the geometry of the recon-
+struction output to the ground truth surface from which the
+scan was obtained. Hausdorff distance, mean distance, as well
+as measuring error in normals are common geometric error
+measures in this scenario. However, it is often challenging to
+obtain the notion of a ground truth surface from a physical
+shape. Hence, computational representations of shapes are
+typically used as the ground truth [Kaz05, MPS08], where
+synthetic scanning of the digital representation can be used in
+place of an actual scanner [BLN∗13]. In some cases, a direct
+comparison to ground truth data is insufﬁcient when targeting
+reconstruction under an error tolerance or comprising several
+levels of details (LODs). This suggests evaluating instead the
+complexity-distortion tradeoff, or the capability to generate
+LODs that are both controllable via intuitive parameters and
+meaningful for the targeted applications. Such evaluation cri-
+teria consist of the coherence of LODs across the scene, the
+ability to incrementally reﬁne the geometry, and the level of
+abstraction provided by the LODs, analogous to [MZL∗09].
+Topological Accuracy. Another important evaluation criteria
+is the recovery of higher-level information of the shape and in
+particular, its topology. Certain methods are concerned with
+reconstructing a shape with the correct genus [SLS∗07], while
+other methods that focus on recovering a skeletal representa-
+tion of the shape are more concerned with the topology of the
+underlying skeletal structure – recovering important branches
+and junctions in the skeleton. Such a topological structure
+is of particular importance for structural shape editing ap-
+plications [LLZM10] and nonrigid registration [ZST∗10].
+However, we note that most skeleton-based methods are of-
+ten concerned with qualitative evaluation, hence it can be
+difﬁcult to compare different skeleton extraction methods.
+Structure Recovery. Beyond geometry and topology it is
+also sometimes desirable to recover the structure during re-
+construction. Beyond the simple notion of scene decomposi-
+tion, the term structure has a broad meaning, ranging from the
+dimension of geometric entities (manifolds, stratiﬁed man-
+ifolds, non-manifold conﬁgurations) to adjacency relation-
+ships through canonical geometric relationships (parallelism,
+co-planarity, orthogonality, concentricity, co-axiality) and
+regularities (repetitions, symmetries). In addition, controlling
+the structure encompasses recovery, preservation, and rein-
+forcement. Structure is especially relevant when dealing with
+large-scale scenes, not just individual objects, where scenes
+are composed of a collection of objects which may have
+structural interrelationships. Structure as well as global regu-
+larities are also a means to improve robustness and resilience
+to missing data and go beyond reconstruction to consolidation
+and abstraction.
+Shape Recognition. For data-driven methods that deal
+with substantial missing data, recovering precise geome-
+try is often impractical. Instead, recognizing whole shape
+classes [SXZ∗12] or parts of shapes [SFCH12] from an in-
+complete scan are common methods of evaluating reconstruc-
+tion quality. Similar types of recognition methods can be used
+in evaluating the detection of geometric primitives.
+Ease of Use An important evaluation criterion is the ease of
+use of a surface reconstruction algorithm. For methods that
+are automatic, this can amount to how sensitive a method
+is to its set of parameters across a large range of inputs.
+For user-driven methods, this translates to the practicality
+of the user interface. This can be evaluated through user
+studies [ASF∗13] that measure the time it takes to reconstruct
+a model. The studies perform these evaluations on both users
+who are familiar with computer graphics and 3D modeling as
+well as those that are novices.
+Reproducibility An important consideration in evaluating
+the quality of a reconstruction method is its level of repro-
+ducibility. Perhaps the simplest means of determining repro-
+c
+⃝Author version
+
+
+--- Page 24 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+ducibility is whether or not certain methods are made publicly
+available or have been implemented by a third party, as this
+can be an important indicator of implementation complexity
+and algorithm robustness. Some surface reconstruction imple-
+mentations are publicly available, which provides a sense of
+methods that have a high level of reproducibility. For instance,
+Poisson surface reconstruction [KBH06] is a widely used sur-
+face reconstruction method as the code is highly stable and
+reliable. The issue of reproducibility and provenance is well
+studied in other areas, including visualization and scientiﬁc
+workﬂows [SFC07,FKSS08], and it has been shown to be use-
+ful for studying 3D model construction [DKP11]. Given the
+increasing complexity of reconstruction algorithms, the issue
+of reproducibility is likely to be of increasing importance.
+11. Conclusions
+The area of surface reconstruction has grown from methods
+that handle limited defects in point clouds while producing
+detailed reconstructions, to methods that handle substantial
+artifacts and produce high-level surface representations. Our
+survey provides insight into this wide array of methods, high-
+lighting strengths and limitations that currently exist in the
+ﬁeld. In doing so, our survey should also point the way to-
+wards future work across all of the different priors – making
+potential connections across input assumptions, point cloud
+properties, and shape classes that have not been previously
+considered.
+Hints and solvers. In our survey of recent work we observed
+how the surface reconstruction problem is tackled through
+either increasingly sophisticated solvers or richer reconstruc-
+tion hints that make the problem easier to solve. For example,
+the availability of oriented normals requires only a linear
+solve through the Poisson reconstruction approach [KH13],
+while unoriented normals require solving for a generalized
+eigenvalue problem [ACSTD07]. Other hints such as gen-
+eralized parity requires two linear solves: a ﬁrst solve to
+consolidate the local hints as sign guesses, and a second solve
+to recover a signed implicit function [GCSA13].
+Innovations in acquisition. As 3D acquisition methods con-
+tinue to increase in variety and popularity, surface reconstruc-
+tion will continue to be an important component in acquiring
+real-world shapes. To provide some historical context, con-
+sider the rise in accessibility of the optical laser-based trian-
+gulation scanner: since such a device provides line of sight
+information, this resulted in a whole category of visibility
+priors (Section 4) such as VRIP [CL96]. A more recent ex-
+ample is the Microsoft Kinect: the real-time capture of depth
+and RGB imagery has resulted in a new slate of techniques
+for reconstructing indoor scenes through data-driven means
+(Section 8) such as [SXZ∗12,NXS12,KMYG12], since ob-
+jects in indoor environments tend to satisfy such priors. As
+novel acquisition sensors and modalities are developed, it
+is likely that surface reconstruction will become even more
+specialized in order to handle the nuances of the acquisition
+type. In this setting our survey should prove useful in the
+development of novel priors that need to handle such new
+acquisition methods.
+Acquisition ubiquity. Beyond the increasing variety of sen-
+sors, we are also witnessing a rapid evolution of the acqui-
+sition paradigms. The acquisition of our physical world can
+now be complemented by exploiting the massive data sets
+shared online, referred to as community data. We also predict
+a future where geometric data are acquired through dissem-
+inated sensors, yielding disseminated data. This evolution
+translates into a paradox: despite expectations that technologi-
+cal advances should improve quality, these data are hampered
+with high variability and unprecedented amount and variety
+of defects. In addition, we are observing a trend brought on by
+the speed of technological progress: while many practitioners
+use high-end acquisition systems, an increasing number of
+them turn to consumer-level acquisition devices, willing to
+replace an accurate albeit expensive acquisition by a series
+of low-cost acquisitions – see recent work on 3D acquisi-
+tion from mobile phones [TKM∗13]. These new acquisition
+paradigms translate into a lower control over the acquisition
+process, which must be compensated by an increased robust-
+ness of the algorithms and structural or physical a priori
+knowledge. Recent works in hair reconstruction [LLR13] and
+foliage reconstruction [BNB13] demonstrate the challenges
+brought on by acquisition in uncontrolled environments.
+Big data and online algorithms. Last, the scale of acquired
+data is also quickly growing: we no longer deal exclusively
+with individual shapes, but with entire scenes, possibly at the
+scale of entire cities with many objects deﬁned as structured
+shapes. Recovering the structure of such large scale scenes is
+a stimulating scientiﬁc challenge. We also envision a future
+where the common on-disk paradigm must be replaced by
+online algorithms that perform reconstruction during acqui-
+sition. Recent works such as Kinect Fusion [NDI∗11] and
+extensions [CBI13,NZIS13] demonstrate the practicality of
+building such online systems. There are applications such
+as aero-reconstruction for disaster management where tight
+timing restrictions make an online reconstruction approach
+indispensable. In particular, we foresee a need to extend the
+surveyed priors into the online setting, in order to support
+such challenging problems in surface reconstruction.
+Acknowledgments. Pierre Alliez is supported by an ERC
+Starting Grant “Robust Geometry Processing” (257474).
+Claudio Silva was partially supported by the National Science
+Foundation grant MRI-1229185, an IBM Faculty Award, and
+a grant from the Gordon and Betty Moore and Alfred P. Sloan
+Foundations. Joshua Levine is supported by the National Sci-
+ence Foundation award IIS-1314757.
+Author Bios
+Matthew Berger is a researcher at the Air Force Research
+Laboratory, Information Directorate. He received his PhD de-
+gree in Computing in 2013 from the University of Utah. His
+c
+⃝Author version
+
+
+--- Page 25 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+research interests include various geometry processing topics
+such as surface reconstruction, meshing, and shape analy-
+sis, as well as computer vision topics such as 3D geometry
+acquisition, motion segmentation, and object recognition.
+Andrea Tagliasacchi is a postdoctoral scholar in the Com-
+puter Graphics and Geometry Laboratory at the Ecole Poly-
+technique Federale de Lausanne (EPFL). He received his
+MSc from Politecnico di Milano and a PhD from Simon
+Fraser University (SFU) under the joint supervision of Prof.
+Richard (Hao) Zhang and Prof. Daniel Cohen-Or. His re-
+search interests include computer graphics, computer vision
+and machine learning with a focus in geometry processing.
+Lee M. Seversky is a research scientist at the Air Force Re-
+search Laboratory, Information Directorate. He received his
+PhD degree in Computer Science from Binghamton Univer-
+sity where he investigated robust methods for processing and
+analyzing incomplete point cloud data. He is currently a prin-
+cipal researcher with the Air Force pursuing new problems
+in the areas of large-scale geometry processing, computer
+graphics, and computer vision.
+Pierre Alliez is Senior Researcher and team leader at In-
+ria Sophia-Antipolis - Mediterranée. He has authored many
+scientiﬁc publications and several book chapters on topics
+commonly referred to as geometry processing: mesh com-
+pression, surface reconstruction, mesh generation, surface
+remeshing and mesh parameterization. He is an associate edi-
+tor of the Computational Geometry Algorithms Library, ACM
+Transactions on Graphics, Graphical Models and Computer
+Aided Geometric Design. He received in 2005 the EURO-
+GRAPHICS young researcher award. He was awarded in
+2011 a Starting Grant from the European Research Council
+on Robust Digital Geometry Processing.
+Joshua A. Levine is an assistant professor in the Visual Com-
+puting division of the School of Computing at Clemson Uni-
+versity. He received his PhD from The Ohio State Univer-
+sity and completed a postdoc at the University of Utah’s
+SCI Institute. His research interests include geometric mod-
+eling, visualization, mesh generation, topological analysis,
+surface reconstruction, vector ﬁelds, medical imaging, com-
+puter graphics, and computational geometry.
+Andrei Sharf is a faculty at the computer sciene department
+at Ben-Gurion University, Israel. Previosly, he has been a
+Visiting Associate Professor at the Shenzhen Institute of Ad-
+vanced Technology(SIAT) Chinese Academy of Sciences and
+a Postdoctoral researcher at the School of Computer Sci-
+ence in UC-Davis U.S. His research interests are in computer
+graphics, including surface reconstruction and interaction
+techniques, geometry processing, urban modeling and motion
+analysis. He received his PhD on “Surface Reconstruction
+Techniques for Imperfect Raw Data” from Tel-Aviv Univer-
+sity in 2007 under the supervision of Daniel Cohen-Or and
+Ariel Shamir.
+Claudio T. Silva is Professor in the School of Engineering,
+and Head of Disciplines at the Center for Urban Science
+and Progress, New York University. He is also afﬁliated
+with Courant and the Center for Data Science. Claudio
+has been active in geometry processing for almost 20
+years, with a special emphasis on surface reconstruction
+and point-set surfaces. He has served on more than 100
+program committees, and he is currently on the editorial
+board of the ACM Transactions on Spatial Algorithms and
+Systems (TSAS), Computer Graphics Forum, Computing
+in Science and Engineering, The Visual Computer, and
+Graphical Models. He received four IBM Faculty Awards
+and ten best paper awards. He is a Fellow of the IEEE.
+References
+[AA04]
+ALEXA M., ADAMSON A.: On normals and projection
+operators for surfaces deﬁned by point sets. In Proc. of the EG
+conf. on Point-Based Graphics (2004). 8
+[AA06]
+ADAMSON A., ALEXA M.: Anisotropic point set surfaces.
+In Proc. AFRIGRAPH (2006). 11
+[AB99]
+AMENTA N., BERN M.:
+Surface reconstruction by
+voronoi ﬁltering. Discrete & Computational Geometry (1999). 13
+[ABCO∗03]
+ALEXA M., BEHR J., COHEN-OR D., FLEISHMAN
+S., LEVIN D., SILVA C.: Computing and rendering point set
+surfaces. Trans. on Visualization and Computer Graphics (2003).
+3, 5, 7, 8, 19
+[ACK13]
+ATTENE M., CAMPEN M., KOBBELT L.: Polygon mesh
+repairing: An application perspective. ACM Computing Surveys
+(CSUR) (2013). 2
+[ACSTD07]
+ALLIEZ P., COHEN-STEINER D., TONG Y., DES-
+BRUN M.: Voronoi-based variational reconstruction of unoriented
+point sets. In Computer Graphics Forum (Proc. of the Symposium
+on Geometry Processing) (2007). 3, 4, 5, 7, 10, 21
+[AK04]
+AMENTA N., KIL Y. J.: Deﬁning point-set surfaces. ACM
+Trans. on Graphics (2004). 5, 8
+[ASF∗13]
+ARIKAN M., SCHWÄRZLER M., FLÖRY S., WIMMER
+M., MAIERHOFER S.: O-snap: Optimization-based snapping for
+modeling architecture. ACM Trans. Graph. (Proc. SIGGRAPH)
+(2013). 3, 20
+[ASGCO10]
+AVRON H., SHARF A., GREIF C., COHEN-OR D.:
+ℓ1-sparse reconstruction of sharp point set surfaces. ACM Trans.
+on Graphics (2010). 5, 7, 11
+[BCLS13]
+BAO S. Y., CHANDRAKER M., LIN Y., SAVARESE
+S.: Dense object reconstruction with semantic priors. In CVPR
+(2013). 19
+[BLN∗13]
+BERGER M., LEVINE J. A., NONATO L. G., TAUBIN
+G., SILVA C. T.: A benchmark for surface reconstruction. ACM
+Trans. on Graphics (2013). 20
+[BNB13]
+BRADLEY D., NOWROUZEZAHRAI D., BEARDSLEY
+P.: Image-based reconstruction and synthesis of dense foliage.
+ACM Trans. Graph. (Proc. SIGGRAPH) (2013). 21
+[BO05]
+BOISSONNAT J.-D., OUDOT S.: Provably good sampling
+and meshing of surfaces. Graphical Models (2005). 7
+[BS12]
+BERGER M., SILVA C. T.: Medial kernels. In Computer
+Graphics Forum (Proc. of Eurographics) (2012). 15
+[BWM∗11]
+BERNER A., WAND M., MITRA N. J., MEWES D.,
+SEIDEL H.-P.: Shape analysis with subspace symmetries. Com-
+puter Graphics Forum (2011). 16
+c
+⃝Author version
+
+
+--- Page 26 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+[CBC∗01]
+CARR J. C., BEATSON R. K., CHERRIE J. B.,
+MITCHELL T. J., FRIGHT W. R., MCCALLUM B. C., EVANS
+T. R.: Reconstruction and representation of 3d objects with radial
+basis functions. In Proc. of ACM SIGGRAPH (2001). 3, 4, 5, 7, 9
+[CBI13]
+CHEN J., BAUTEMBACH D., IZADI S.: Scalable real-
+time volumetric surface reconstruction. ACM Transactions on
+Graphics (TOG) (2013). 21
+[CC08]
+CHEN J., CHEN B.: Architectural modeling from sparsely
+scanned range data. International Journal of Computer Vision
+(2008). 20
+[CCLN10]
+CHEN Y.-L., CHEN B.-Y., LAI S.-H., NISHITA T.:
+Binary orientation trees for volume and surface reconstruction
+from unoriented point clouds. Computer Graphics Forum (2010).
+12
+[CG06]
+CAZALS F., GIESEN J.: Delaunay triangulation based
+surface reconstruction. In Effective Computational Geometry for
+Curves and Surfaces. Springer, 2006. 3
+[CL96]
+CURLESS B., LEVOY M.: A volumetric method for build-
+ing complex models from range images. In Proc. of ACM SIG-
+GRAPH (1996). 3, 6, 7, 12, 21
+[CLCL11]
+CHEN Y.-L., LEE T.-Y., CHEN B.-Y., LAI S.-H.:
+Bipartite polar classiﬁcation for surface reconstruction. Computer
+Graphics Forum (2011). 13
+[CLP10]
+CHAUVE A.-L., LABATUT P., PONS J.-P.:
+Robust
+piecewise-planar 3d reconstruction and completion from large-
+scale unstructured point data. In CVPR (2010). 15
+[CP05]
+CAZALS F., POUGET M.: Estimating differential quanti-
+ties using polynomial ﬁtting of osculating jets. Computer Aided
+Geometric Design (2005). 5
+[CT11]
+CALAKLI F., TAUBIN G.: Ssd: Smooth signed distance
+surface reconstruction. Computer Graphics Forum (2011). 10
+[CTO∗10]
+CAO J., TAGLIASACCHI A., OLSON M., ZHANG H.,
+SU Z.: Point cloud skeletons via laplacian based contraction. In
+Proc. of IEEE Shape Modeling International (2010). 7, 14
+[CWL∗08]
+CHENG Z.-Q., WANG Y.-Z., LI B., XU K., DANG G.,
+JIN S.-Y.: A survey of methods for moving least squares surfaces.
+In Proceedings of the Fifth Eurographics/IEEE VGTC conference
+on Point-Based Graphics (2008), Eurographics Association. 8
+[Dey07]
+DEY T. K.: Curve and surface reconstruction: algorithms
+with mathematical analysis. Cambridge University Press, 2007. 3
+[DGQ∗12]
+DEY T. K., GE X., QUE Q., SAFA I., WANG L.,
+WANG Y.: Feature-preserving reconstruction of singular surfaces.
+In Computer Graphics Forum (2012). 4
+[DHOS07]
+DANIELS J. I., HA L. K., OCHOTTA T., SILVA C. T.:
+Robust smooth feature extraction from point clouds. In Proc. of
+Shape Modeling and Applications (2007). 7, 11
+[DKP11]
+DENNING J. D., KERR W. B., PELLACINI F.: Meshﬂow:
+interactive visualization of mesh construction sequences. In ACM
+Trans. on Graphics (2011). 21
+[DTS01]
+DINH H. Q., TURK G., SLABAUGH G.: Reconstruct-
+ing surfaces using anisotropic basis functions. In International
+Journal of Computer Vision (2001). 11
+[DUNI10]
+DROST B., ULRICH M., NAVAB N., ILIC S.: Model
+globally, match locally: Efﬁcient and robust 3d object recognition.
+In CVPR (2010). 15
+[FCOS05a]
+FLEISHMAN S., COHEN-OR D., SILVA C.: Robust
+moving least-squares ﬁtting with sharp features. In ACM Trans.
+Graph. (Proc. SIGGRAPH) (2005). 11
+[FCOS05b]
+FLEISHMAN S., COHEN-OR D., SILVA C. T.: Robust
+moving least-squares ﬁtting with sharp features. ACM Trans.
+Graph. (Proc. SIGGRAPH) (2005). 7, 11, 19
+[FG11]
+FUHRMANN S., GOESELE M.: Fusion of depth maps with
+multiple scales. In Proc. of ACM SIGGRAPH Asia (2011). 3, 12
+[FKSS08]
+FREIRE J., KOOP D., SANTOS E., SILVA C. T.: Prove-
+nance for computational tasks: A survey. Comp. in Science &
+Engineering (2008). 21
+[FLW02]
+FATTAL R., LISCHINSKI D., WERMAN M.: Gradient
+domain high dynamic range compression. In ACM Trans. on
+Graphics (2002). 10
+[FS12]
+FRIEDMAN S., STAMOS I.: Online facade reconstruction
+from dominant frequencies in structured point clouds. In IEEE
+CVPR Workshops (2012). 17
+[GCSA13]
+GIRAUDOT S., COHEN-STEINER D., ALLIEZ P.:
+Noise-adaptive shape reconstruction from raw point sets. Com-
+puter Graphics Forum (Proc. of the Symposium on Geometry
+Processing) (2013). 4, 13, 21
+[GG07]
+GUENNEBAUD G., GROSS M.: Algebraic point set sur-
+faces. ACM Trans. Graph. (Proc. SIGGRAPH) (2007). 5, 8,
+19
+[GSH∗07]
+GAL R., SHAMIR A., HASSNER T., PAULY M.,
+COHEN-OR D.: Surface reconstruction using local shape pri-
+ors. In Computer Graphics Forum (Proc. of the Symposium on
+Geometry Processing) (2007). 18
+[GWM01]
+GUMHOLD S., WANG X., MACLEOD R.: Feature ex-
+traction from point clouds. In International Meshing Roundtable
+(2001). 11
+[HDD∗92]
+HOPPE H., DEROSE T., DUCHAMP T., MCDONALD
+J., STUETZLE W.:
+Surface reconstruction from unorganized
+points. In Computer Graphics (Proc. SIGGRAPH) (1992). 3, 5, 6,
+7, 8, 9
+[HK06]
+HORNUNG A., KOBBELT L.: Robust reconstruction of
+watertight 3d models from non-uniformly sampled point clouds
+without normal information. In Computer Graphics Forum (Proc.
+of the Symposium on Geometry Processing) (2006). 3, 4, 11
+[HLZ∗09]
+HUANG H., LI D., ZHANG H., ASCHER U., COHEN-
+OR D.: Consolidation of unorganized point clouds for surface
+reconstruction. ACM Trans. on Graphics (2009). 5, 7, 9
+[HWCO∗13]
+HUANG H., WU S., COHEN-OR D., GONG M.,
+ZHANG H., LI G., CHEN B.: l1-medial skeleton of point cloud.
+ACM Trans. Graph. (Proc. SIGGRAPH) (2013). 3, 7, 14
+[HWG∗13]
+HUANG H., WU S., GONG M., COHEN-OR D., AS-
+CHER U., ZHANG H. R.: Edge-aware point set resampling. ACM
+Trans. on Graphics (2013). 11
+[JKS08]
+JENKE P., KRÜCKEBERG B., STRASSER W.: Surface
+reconstruction from ﬁtted shape primitives. In Proc. of Vision
+modeling and Visualization (2008). 7, 15
+[JLSW02]
+JU T., LOSASSO F., SCHAEFER S., WARREN J.: Dual
+contouring of hermite data. In ACM Trans. on Graphics (2002). 7
+[JWS08]
+JENKE P., WAND M., STRASSER W.: Patch-graph recon-
+struction for piecewise smooth surfaces. Proc. of Vision modeling
+and Visualization (2008). 11
+[Kaz05]
+KAZHDAN M.: Reconstruction of solid models from
+oriented point sets. In Proc. of the EG/SIGGRAPH Symposium on
+Geometry processing (2005). 4, 7, 10, 20
+[KBH06]
+KAZHDAN M., BOLITHO M., HOPPE H.: Poisson sur-
+face reconstruction. In Proc. of the EG/SIGGRAPH Symposium
+on Geometry processing (2006). 3, 4, 5, 6, 7, 10, 21
+[KE12]
+KHOSHELHAM K., ELBERINK S. O.: Accuracy and reso-
+lution of kinect depth data for indoor mapping applications. Sen-
+sors (2012). 4
+c
+⃝Author version
+
+
+--- Page 27 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+[KH13]
+KAZHDAN M., HOPPE H.: Screened poisson surface
+reconstruction. ACM Trans. on Graphics (2013). 10, 21
+[KKDH07]
+KAZHDAN M., KLEIN A., DALAL K., HOPPE H.:
+Unconstrained isosurface extraction on arbitrary octrees. In Sym-
+posium on Geometry Processing (2007). 7
+[KMYG12]
+KIM Y. M., MITRA N. J., YAN D.-M., GUIBAS L.:
+Acquiring 3d indoor environments with variability and repetition.
+Proc. of ACM SIGGRAPH Asia (2012). 3, 7, 18, 21
+[KQ04]
+KIRBAS C., QUEK F.: A review of vessel extraction
+techniques and algorithms. ACM Computing Surveys (2004). 14
+[KSO04]
+KOLLURI R., SHEWCHUK J. R., O’BRIEN J. F.: Spec-
+tral surface reconstruction from noisy point clouds. In Proc. of
+the EG/SIGGRAPH Symposium on Geometry processing (2004).
+10, 11, 12
+[KTB07]
+KATZ S., TAL A., BASRI R.: Direct visibility of point
+sets. ACM Trans. Graph. (Proc. SIGGRAPH) (2007). 12, 13
+[LA11]
+LAW A. J., ALIAGA D. G.: Single viewpoint model
+completion of symmetric objects for digital inspection. Computer
+Vision Image Understanding (2011). 16
+[LA13]
+LAFARGE F., ALLIEZ P.: Surface reconstruction through
+point set structuring. Computer Graphics Forum (Proc. of Euro-
+graphics) (2013). 3, 16
+[LB07]
+LEMPITSKY V., BOYKOV Y.: Global optimization for
+shape ﬁtting. In CVPR (2007). 12
+[LC87]
+LORENSEN W. E., CLINE H. E.: Marching cubes: A high
+resolution 3d surface construction algorithm. In Proc. of ACM
+SIGGRAPH (1987). 7
+[LCDF10]
+LIPMAN
+Y.,
+CHEN
+X.,
+DAUBECHIES
+I.,
+FUNKHOUSER T.:
+Symmetry factored embedding and
+distance. ACM Trans. on Graphics (2010). 16
+[LCOL06]
+LIPMAN Y., COHEN-OR D., LEVIN D.: Error bounds
+and optimal neighborhoods for mls approximation. In Computer
+Graphics Forum (Proc. of the Symposium on Geometry Process-
+ing) (2006). 4, 5, 8
+[LCOL07]
+LIPMAN Y., COHEN-OR D., LEVIN D.:
+Data-
+dependent MLS for faithful surface approximation. In Computer
+Graphics Forum (Proc. of the Symposium on Geometry Process-
+ing) (2007). 11
+[LCOLTE07]
+LIPMAN Y., COHEN-OR D., LEVIN D., TAL-EZER
+H.: Parameterization-free projection for geometry reconstruction.
+ACM Trans. Graph. (Proc. SIGGRAPH) (2007). 3, 4, 7, 9, 11
+[LLR13]
+LUO L., LI H., RUSINKIEWICZ S.: Structure-aware hair
+capture. ACM Trans. Graph. (Proc. SIGGRAPH) (2013). 21
+[LLZM10]
+LI G., LIU L., ZHENG H., MITRA N. J.: Analysis,
+reconstruction and manipulation using arterial snakes. Proc. of
+ACM SIGGRAPH Asia (2010). 3, 7, 14, 20
+[LPK09]
+LABATUT P., PONS J.-P., KERIVEN R.: Robust and efﬁ-
+cient surface reconstruction from range data. Computer Graphics
+Forum (2009). 12, 16
+[LW10]
+LIU S., WANG C. C.: Orienting unorganized points for
+surface reconstruction. Computers & Graphics (2010). 5, 6
+[LWC∗11]
+LI Y., WU X., CHRYSATHOU Y., SHARF A., COHEN-
+OR D., MITRA N. J.: Globﬁt: consistently ﬁtting primitives
+by discovering global relations. ACM Trans. Graph. (Proc. SIG-
+GRAPH) (2011). 3, 4, 6, 17, 18
+[LYO∗10]
+LIVNY Y., YAN F., OLSON M., CHEN B., ZHANG H.,
+EL-SANA J.: Automatic reconstruction of tree skeletal structures
+from point clouds. Proc. of ACM SIGGRAPH Asia (2010). 6, 14,
+15
+[LZS∗11]
+LI Y., ZHENG Q., SHARF A., COHEN-OR D., CHEN
+B., MITRA N. J.: 2d-3d fusion for layer decomposition of urban
+facades. In ICCV (2011). 3, 6, 17, 19
+[MDGD∗10]
+MULLEN P., DE GOES F., DESBRUN M., COHEN-
+STEINER D., ALLIEZ P.: Signing the unsigned: Robust surface
+reconstruction from raw pointsets. Computer Graphics Forum
+(Proc. of the Symposium on Geometry Processing) (2010). 3, 4, 7,
+13, 17
+[MPS08]
+MANSON J., PETROVA G., SCHAEFER S.: Streaming
+surface reconstruction using wavelets. Computer Graphics Forum
+(2008). 7, 10, 20
+[MPWC13]
+MITRA N. J., PAULY M., WAND M., CEYLAN D.:
+Symmetry in 3d geometry: Extraction and applications.
+In
+Computer Graphics Forum (STAR Proceedings of Eurographics)
+(2013). 16
+[MS10]
+MANSON J., SCHAEFER S.: Isosurfaces over simplicial
+partitions of multiresolution grids. In Computer Graphics Forum
+(2010). 7
+[MTSM10]
+MEHRA R., TRIPATHI P., SHEFFER A., MITRA N. J.:
+Visibility of noisy point cloud data. Computers & Graphics (2010).
+12
+[MWA∗13]
+MUSIALSKI P., WONKA P., ALIAGA D. G., WIM-
+MER M., GOOL L., PURGATHOFER W.: A survey of urban
+reconstruction. In Computer Graphics Forum (STAR Proceedings
+of Eurographics) (2013). 2, 7
+[MWZ∗13]
+MITRA N. J., WAND M., ZHANG H., COHEN-OR D.,
+BOKELOH M.: Structure-aware shape processing. In Computer
+Graphics Forum (STAR Proceedings of Eurographics) (2013). 16
+[MZL∗09]
+MEHRA R., ZHOU Q., LONG J., SHEFFER A.,
+GOOCH A., MITRA N. J.: Abstraction of man-made shapes.
+ACM Transactions on Graphics (TOG) (2009). 20
+[NDI∗11]
+NEWCOMBE R. A., DAVISON A. J., IZADI S., KOHLI
+P., HILLIGES O., SHOTTON J., MOLYNEAUX D., HODGES S.,
+KIM D., FITZGIBBON A.: Kinectfusion: Real-time dense surface
+mapping and tracking. In IEEE international symposium on Mixed
+and augmented reality (ISMAR) (2011), IEEE. 21
+[NFD07]
+NEUBERT B., FRANKEN T., DEUSSEN O.: Approxi-
+mate image-based tree-modeling using particle ﬂows. ACM Trans.
+Graph. (Proc. SIGGRAPH) (2007). 14, 15
+[NOS09]
+NAGAI Y., OHTAKE Y., SUZUKI H.: Smoothing of
+partition of unity implicit surfaces for noise robust surface recon-
+struction. Computer Graphics Forum (Proc. of the Symposium on
+Geometry Processing) (2009). 9
+[NSZ∗10]
+NAN L., SHARF A., ZHANG H., COHEN-OR D.,
+CHEN B.: Smartboxes for interactive urban reconstruction. ACM
+Trans. Graph. (Proc. SIGGRAPH) (2010). 3, 19
+[NXS12]
+NAN L., XIE K., SHARF A.:
+A search-classify ap-
+proach for cluttered indoor scene understanding. Proc. of ACM
+SIGGRAPH Asia (2012). 7, 18, 21
+[NZIS13]
+NIESSNER M., ZOLLHÖFER M., IZADI S., STAM-
+MINGER M.: Real-time 3d reconstruction at scale using voxel
+hashing. ACM Transactions on Graphics (TOG) (2013). 21
+[OBA∗03a]
+OHTAKE Y., BELYAEV A., ALEXA M., TURK G.,
+SEIDEL H.: Multi-level partition of unity implicits. ACM Trans.
+Graph. (Proc. SIGGRAPH) (2003). 3, 5, 7, 8
+[OBA∗03b]
+OHTAKE Y., BELYAEV A., ALEXA M., TURK G.,
+SEIDEL H.-P.: Multi-level partition of unity implicits. In ACM
+Trans. Graph. (Proc. SIGGRAPH) (2003). 11
+[OGG09]
+OZTIRELI C., GUENNEBAUD G., GROSS M.: Feature
+preserving point set surfaces based on non-linear kernel regression.
+In Computer Graphics Forum (2009). 4, 11
+c
+⃝Author version
+
+
+--- Page 28 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+[OLA13]
+OESAU S., LAFARGE F., ALLIEZ P.:
+Indoor scene
+reconstruction using primitive-driven space partitioning and graph-
+cut. In Proc. of EG workshop on Urban Data Modeling and Vis.
+(Girona, Spain, 2013). 16
+[PGB03]
+PÉREZ P., GANGNET M., BLAKE A.: Poisson image
+editing. ACM Trans. Graph. (Proc. SIGGRAPH) (2003). 10
+[PKG03]
+PAULY M., KEISER R., GROSS M.: Multi-scale feature
+extraction on point-sampled surfaces. Computer Graphics Forum
+(2003). 11
+[PMG04]
+PAULY M., MITRA N. J., GUIBAS L.: Uncertainty and
+variability in point cloud surface data. In Proc. of the EG conf. on
+Point-Based Graphics (2004). 5
+[PMG∗05]
+PAULY M., MITRA N. J., GIESEN J., GROSS M. H.,
+GUIBAS L. J.: Example-based 3d scan completion. In Proc. of
+the EG/SIGGRAPH Symposium on Geometry processing (2005).
+3, 18
+[PMW∗08]
+PAULY M., MITRA N. J., WALLNER J., POTTMANN
+H., GUIBAS L. J.: Discovering structural regularity in 3d ge-
+ometry. ACM Trans. Graph. (Proc. SIGGRAPH) (2008). 3, 4, 7,
+16
+[PP09]
+PANG X.-F., PANG M.-Y.: An algorithm for extracting ge-
+ometric features from point cloud. Int. Conf. on Inf. Management,
+Innovation Management and Ind. Eng. (2009). 11
+[RFL∗05]
+RUNIONS A., FUHRER M., LANE B., FEDERL P.,
+ROLLAND-LAGAN A.-G., PRUSINKIEWICZ P.: Modeling and
+visualization of leaf venation patterns. ACM Trans. Graph. (Proc.
+SIGGRAPH) 24, 3 (2005), 702–711. 14
+[RKMP13]
+REISNER-KOLLMANN I., MAIERHOFER S., PUR-
+GATHOFER W.: Reconstructing shape boundaries with multi-
+modal constraints. Computers & Graphics (2013). 7, 16
+[SDK09]
+SCHNABEL R., DEGENER P., KLEIN R.: Completion
+and reconstruction with primitive shapes. Computer Graphics
+Forum (Proc. of Eurographics) (2009). 3, 4, 6, 7, 15
+[SFC07]
+SILVA C. T., FREIRE J., CALLAHAN S. P.: Provenance
+for visualizations: Reproducibility and beyond. Comp. in Science
+& Engineering (2007). 21
+[SFCH12]
+SHEN C.-H., FU H., CHEN K., HU S.-M.: Structure
+recovery by part assembly. Proc. of ACM SIGGRAPH Asia (2012).
+2, 3, 6, 7, 19, 20
+[SFS05]
+SCHEIDEGGER C. E., FLEISHMAN S., SILVA C. T.:
+Triangulating point set surfaces with bounded error. In Proc. of
+the EG/SIGGRAPH Symposium on Geometry processing (2005).
+8, 15
+[SHFH11]
+SHEN C.-H., HUANG S.-S., FU H., HU S.-M.: Adap-
+tive partitioning of urban facades. Proc. of ACM SIGGRAPH Asia
+(2011). 17
+[SLS∗06]
+SHARF A., LEWINER T., SHAMIR A., KOBBELT L.,
+COHEN-OR D.: Competing fronts for coarse–to–ﬁne surface re-
+construction. Computer Graphics Forum (Proc. of Eurographics)
+(2006). 14, 15
+[SLS∗07]
+SHARF A., LEWINER T., SHKLARSKI G., TOLEDO S.,
+COHEN-OR D.: Interactive topology-aware surface reconstruc-
+tion. ACM Trans. Graph. (Proc. SIGGRAPH) (2007). 3, 4, 19,
+20
+[SLSK07]
+SHARF A., LEWINER T., SHAMIR A., KOBBELT L.:
+On-the-ﬂy curve-skeleton computation for 3d shapes. In Computer
+Graphics Forum (Proc. of Eurographics) (2007). 14
+[SOS04]
+SHEN C., O’BRIEN J. F., SHEWCHUK J. R.: Interpolat-
+ing and approximating implicit surfaces from polygon soup. ACM
+Trans. on Graphics (2004). 8
+[SSFS06]
+SCHREINER J., SCHEIDEGGER C. E., FLEISHMAN S.,
+SILVA C. T.: Direct (re)meshing for efﬁcient surface processing.
+Computer Graphics Forum (Proc. of Eurographics) (2006). 8
+[SSZCO10]
+SHALOM S., SHAMIR A., ZHANG H., COHEN-OR
+D.: Cone carving for surface reconstruction. Proc. of ACM
+SIGGRAPH Asia (2010). 3, 13
+[SWK07]
+SCHNABEL R., WAHL R., KLEIN R.: Efﬁcient ransac
+for point-cloud shape detection.
+Computer Graphics Forum
+(2007). 5, 15, 17
+[SXZ∗12]
+SHAO T., XU W., ZHOU K., WANG J., LI D., GUO B.:
+An interactive approach to semantic modeling of indoor scenes
+with an rgbd camera. Proc. of ACM SIGGRAPH Asia (2012). 3,
+7, 18, 20, 21
+[SY12]
+SEVERSKY L. M., YIN L.: A global parity measure for
+incomplete point cloud data. Computer Graphics Forum (2012).
+13
+[TKM∗13]
+TANSKANEN P., KOLEV K., MEIER L., CAMPOSECO
+F., SAURER O., POLLEFEYS M.: Live metric 3d reconstruction
+on mobile phones. In ICCV (2013). 21
+[TOZ∗11]
+TAGLIASACCHI
+A.,
+OLSON
+M.,
+ZHANG
+H.,
+HAMARNEH G., COHEN-OR D.: Vase: Volume-aware surface
+evolution for surface reconstruction from incomplete point clouds.
+Computer Graphics Forum (Proc. of the Symposium on Geometry
+Processing) (2011). 3, 6, 12, 15
+[TZCO09]
+TAGLIASACCHI A., ZHANG H., COHEN-OR D.:
+Curve skeleton extraction from incomplete point cloud. ACM
+Trans. Graph. (Proc. SIGGRAPH) (2009). 2, 3, 4, 7, 14
+[UB13]
+UMMENHOFER B., BROX T.: Point-based 3d reconstruc-
+tion of thin objects. In ICCV (2013). 12
+[VAB12]
+VANEGAS C. A., ALIAGA D. G., BENES B.: Automatic
+extraction of manhattan-world building masses from 3d laser
+range scans. Trans. on Visualization and Computer Graphics
+(2012). 7, 17
+[vKvLV13]
+VAN KREVELD M., VAN LANKVELD T., VELTKAMP
+R. C.: Watertight scenes from urban lidar and planar surfaces.
+Computer Graphics Forum (2013). 3, 16
+[vKZHCO11]
+VAN KAICK O., ZHANG H., HAMARNEH G.,
+COHEN-OR D.: A survey on shape correspondence. Computer
+Graphics Forum (STAR Proceedings of Eurographics) (2011). 4
+[Wen95]
+WENDLAND H.: Piecewise polynomial, positive deﬁ-
+nite and compactly supported radial functions of minimal degree.
+Advances in computational Mathematics (1995). 9
+[WFP10]
+WU C., FRAHM J.-M., POLLEFEYS M.: Detecting large
+repetitive structures with salient boundaries. In ECCV (2010). 17
+[Whi98]
+WHITAKER R. T.: A level-set approach to 3D reconstruc-
+tion from range data. International Journal of Computer Vision
+29, 3 (1998), 203–231. 12, 15
+[WS12]
+WAN G., SHARF A.: Grammar-based 3d facade segmen-
+tation and reconstruction. Computers & Graphics (2012). 17
+[WSS09]
+WANG H., SCHEIDEGGER C. E., SILVA C. T.: Band-
+width selection and reconstruction quality in point-based surfaces.
+Trans. on Visualization and Computer Graphics (2009). 4, 5
+[XF12]
+XIAO J., FURUKAWA Y.: Reconstructing the worlds mu-
+seums. In ECCV (2012). 3, 16
+[ZN12]
+ZHOU Q.-Y., NEUMANN U.: 2.5 d building modeling by
+discovering global regularities. In CVPR (2012). 17
+[ZPB07]
+ZACH C., POCK T., BISCHOF H.: A globally optimal
+algorithm for robust tv-l1 range image integration. In ICCV (2007).
+3, 12
+c
+⃝Author version
+
+
+--- Page 29 ---
+
+Berger et al. / State of the Art in Surface Reconstruction from Point Clouds
+[ZST∗10]
+ZHENG Q., SHARF A., TAGLIASACCHI A., CHEN B.,
+ZHANG H., SHEFFER A., COHEN-OR D.: Consensus skeleton
+for non-rigid space-time registration. Computer Graphics Forum
+(Proc. of Eurographics) (2010). 20
+[ZSW∗10]
+ZHENG Q., SHARF A., WAN G., LI Y., MITRA N. J.,
+COHEN-OR D., CHEN B.: Non-local scan consolidation for 3d
+urban scenes. ACM Trans. Graph. (Proc. SIGGRAPH) (2010). 2,
+3, 7, 17
+c
+⃝Author version
+View publication stats

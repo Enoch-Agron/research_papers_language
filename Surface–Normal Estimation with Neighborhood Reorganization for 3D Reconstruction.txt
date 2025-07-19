@@ -1,0 +1,708 @@
+# Surface–Normal Estimation with Neighborhood Reorganization for 3D Reconstruction.pdf
+# Converted: 2025-07-19 12:45:29
+# Method: pymupdf
+# Domain: pixel2physics
+# Source: ../layer2_completion/Surface–Normal Estimation with Neighborhood Reorganization for 3D Reconstruction.pdf
+# Output: ../layer2_completion/txt/Surface–Normal Estimation with Neighborhood Reorganization for 3D Reconstruction.txt
+
+
+--- Page 1 ---
+
+See discussions, stats, and author profiles for this publication at: https://www.researchgate.net/publication/220843031
+Surface–Normal Estimation with Neighborhood Reorganization for 3D
+Reconstruction
+Conference Paper  in  Lecture Notes in Computer Science · November 2007
+DOI: 10.1007/978-3-540-76725-1_34 · Source: DBLP
+CITATIONS
+20
+READS
+1,261
+3 authors:
+Felix Calderon
+Universidad Michoacana de San Nicolás de Hidalgo
+57 PUBLICATIONS   613 CITATIONS   
+SEE PROFILE
+Ubaldo Ruiz
+Center for Scientific Research and Higher Education at Ensenada
+33 PUBLICATIONS   287 CITATIONS   
+SEE PROFILE
+Mariano Rivera
+Mathematics Research Center
+149 PUBLICATIONS   2,262 CITATIONS   
+SEE PROFILE
+All content following this page was uploaded by Ubaldo Ruiz on 05 June 2014.
+The user has requested enhancement of the downloaded file.
+
+
+--- Page 2 ---
+
+Surface–Normal Estimation with Neighborhood
+Reorganization for 3D Reconstruction
+Felix Calderon1, Ubaldo Ruiz1, and Mariano Rivera2
+1 Universidad Michoacana de San Nicol´as de Hidalgo
+Divisi´on de Estudios de Posgrado. Facultad de Ingenier´ıa El´ectrica
+Santiago Tapia 403 Centro. Morelia, Michoac´an, M´exico. CP 58000
+calderon@umich.mx ubaldo@fismat.umich.mx
+2 Centro de Investigacion en Matematicas A.C.
+Apdo. Postal 402, Guanajuato, Gto. Mexico. CP 36000
+mrivera@cimat.mx
+Abstract. Fastest three-dimensional (3D) surface reconstruction algo-
+rithms, from point clouds, require of the knowledge of the surface–normals.
+The accuracy, of state of the art methods, depends on the precision of esti-
+mated surface–normals. Surface–normals are estimated by assuming that
+the surface can be locally modelled by a plane as was proposed by Hoppe
+et. al [1]. Thus, current methods for estimating surface–normals are prone
+to introduce artifacts at the geometric edges or corners of the objects. In
+this paper an algorithm for Normal Estimation with Neighborhood Reor-
+ganization (NENR) is presented. Our proposal changes the characteristics
+of the neighborhood in places with corners or edges by assuming a locally
+plane piecewise surface. The results obtained by NENR improve the qual-
+ity of the normal with respect to the state of the art algorithms. The new
+neighborhood computed by NENR, use only those points that belong to
+the same plane and they are the nearest neighbors. Experiments in syn-
+thetic and real data shown an improvement on the geometric edges of 3D
+reconstructed surfaces when our algorithm is used.
+Keywords: Normal Estimation, Point Cloud, Surface Reconstruction.
+1
+Introduction
+The computational representations of physical objects have large and wide ap-
+plications in distinct areas like industrial design, computer simulations and
+medicine, among others: an object digitalization can be easily studied, modi-
+ﬁed or replicated. In a initial stage, a complex real object is detailed scanned, by
+using of a proper device, for acquiring of a point cloud with thousand or millions
+of points. In a second stage, a reconstruction algorithm is applied on the point
+cloud for producing a, generally triangular, mesh that approximates the object
+surface. Thus the resulting mesh is a suitable representation of the real object.
+The reconstruction algorithms must be able to approximate, at a reasonable
+computational time, the geometric features of the real object. Among the re-
+construction algorithms reported in the literature, Multilevel Partition of Unity
+L. Rueda, D. Mery, and J. Kittler (Eds.): CIARP 2007, LNCS 4756, pp. 321–330, 2007.
+c
+⃝Springer-Verlag Berlin Heidelberg 2007
+
+
+--- Page 3 ---
+
+322
+F. Calderon, U. Ruiz, and M. Rivera
+Implicits (MPUI) [2] deserves our special attention. Currently, the MPUI is con-
+sidered as one of the fastest and most up-to-date algorithms for surface recon-
+struction, however, it is important to notice that the MPUI like the rest of the
+volumetric methods [1,3,4] requires an estimation of the normal at each point.
+Clearly, good normal estimations are necessary for a good surface reconstruction.
+Some complex three–dimensional (3D) scanner devices estimate the surface
+normals at the acquisition time. However, in order to eliminate any dependency
+to those devices it is better to infer such normals from the point set. For in-
+stance, Refs. [1,5] reported algorithms for addressing the surface normal prob-
+lem. But those methods fail, to estimate correctly normals, at sites close to edges
+or corners. In this paper we propose an edge preserving normal regularization
+technique based in an adaptive rest condition spring system proposed by Rivera
+and Marroquin in [6] that allows us to improve the normal-surface estimation at
+points close to edges and, consequently, improving the quality of the ﬁnal surface
+reconstruction.
+The paper is organized as follows. In Sect. 2 we present a brief review of the
+reconstruction algorithms that have been developed. In Sect. 3 we describe a
+pioneering technique [1], that still, is widely used for normal estimation in point
+clouds. In Sect. 4 we propose an algorithm for normal estimation that increase
+the accuracy in regions with edges. In Sect. 5 we compare the performance of
+the MPUI algorithm [2] when the surface–normal are estimated with the method
+presented in [1] and with the method we propose here. Finally, some conclusions
+are discussed in Sect. 6.
+2
+Surface Reconstruction
+Currently, one can distinguish two main lines of research in the ﬁeld of surface
+reconstruction from point clouds. The algorithms developed in the context of
+Computational Geometry (CG) constitute a line of research [7]. In CG-based
+methods the surface is reconstructed from the Delaunay tetrahedrization of the
+point cloud [8,9,10]. Unfortunately, CG-based methods are very sensitive to noise
+and computationally expensive; their computational complexity is of polynomial
+order with respect the number of points. On the other hand, volumetric methods
+constitute the alternative research line [1,2,3,4]. In this case, implicit functions
+are ﬁtted to the point cloud and the surface is extracted (see [11,12,13]) as the
+zero level set of the computed functions. These methods are used extensive be-
+cause their better noise tolerance and because they are able to handle large point
+clouds. However, it is necessary to supply reliable information about the normal
+at each point. The current state of the art in this approach includes the MPUI
+algorithm based on quadratic functions [2]. It is one of the few reconstruction
+algorithms able to process sharp features and also one of the fastest techniques
+available [2].
+The MPUI algorithm works as follows. First it creates an octree-based subdi-
+vision of a box that bounds the point cloud. At each cell of the octree the local
+shape is approximated with a piecewise quadratic function. These functions work
+
+
+--- Page 4 ---
+
+Surface–Normal Estimation with Neighborhood Reorganization
+323
+like a signed distance function taking a positive value inside of the point cloud
+and negative outside of it. The normals of the points are used to distinguish the
+orientation locally. If the local approximation into a cell is not accurate, then
+the cell is subdivided; such a procedure is repeated until a desirable accuracy
+level is reached. The global implicit function describing the surface is given by
+assembling the local approximations using local weights.
+The MPUI algorithm has three types of quadratic functions that allows to
+model a large variety of point set conﬁgurations. Additionally, MPUI provides
+test–rule for choosing the appropriated quadratic form to ﬁt at each cell. These
+test–rule give to the algorithm the ability to deal with surface edges. The MPUI
+algorithm input are the point cloud and the respective surface–normals. In the
+case were only the point cloud is given (surface normals are not provided), Ohtake
+et al. [2] suggest to compute such surface–normals with the technique proposed
+by Hoppe et al. in [1]. The surface-normal estimation method is described in
+next section.
+3
+Standard Surface–Normal Estimation
+The estimation of surface–normals from a point cloud is usually done in two
+stages, as proposed Hoppe et al. in [1] (NE–Hoppe). In the ﬁrst stage the Tangent
+Plane (TP) is estimated at each point. Thus the Orthogonal unitary vector to
+the Tangent Plane (OTP) will be used as an approximation of the normal at
+such point. In the second stage the orientation of the OTP, spatially coherent,
+is computed.
+Given a point set P = {p1, . . . , pN} and let be Vi the set of k nearest neighbors
+(neighborhood) of the point pi. Then the TP at pi is obtained by ﬁtting a plane
+to the points in Vi by using a least-squares procedure, then the surface–normal,
+ni, is the normal to the TP. Hoppe et al. [1] proposed to compute, ni, as the
+third eigenvector (associated with the smallest eigenvalue) of the local covariance
+matrix:
+Ci =
+
+j∈Vi
+(pj −ci) ⊗(pj −ci)
+(1)
+where ⊗denotes the outer product vector operator1. If λ1
+i ≥λ2
+i ≥λ3
+i are the
+eigenvalues of Ci, their associated eigenvectors v1
+i , v2
+i , v3
+i , respectively, form an
+orthonormal basis. Then ni is either v3
+i or −v3
+i . The neighborhood size is chosen
+manually based on visual inspection of the resulting normals and it is the same
+for each point in the set.
+The Oriented OTP (OOTP) is computed such that nearby planes are consis-
+tently oriented. The NE–Hoppe algorithm, proposed in [1], considered the state
+of the art, is following described. First, an Euclidean Minimum Spanning Tree
+is created over the TP centers {c1, . . . , cn} and it is enriched adding the edge
+< i, j > if either ci ∈Vj, or cj ∈Vi. Then the edge cost is equaled to 1−|ni·nj|.
+1 If v and u have components vi and uj respectively, then the matrix v ⊗u has uivj
+as its ij-th entry.
+
+
+--- Page 5 ---
+
+324
+F. Calderon, U. Ruiz, and M. Rivera
+Next, the Minimum Spanning Tree of this graph is computed. The OTP whose
+TP center has the largest z coordinate is forced to point towards +z axis. Root-
+ing the tree at this node, then the tree is traversed in depth ﬁrst order, if during
+traversal the current node i has been assigned the orientation ni and the node
+j is the next node to be visited, then nj is replaced with −nj if ni · nj < 0.
+Pauly et al. [5] noticed that nearby points in the neighborhood of a point
+pi should have a stronger inﬂuence than distant points. Therefore, they assign
+diﬀerent weights to elements in the neighborhood by depending on their distance
+to pi. The weighting function is proposed to be the Gaussian: w(pj −pi) =
+exp(−∥pj −pi∥2/(2σ2)), where σ is chosen as one third of the square distance
+between pi and its farthest neighbor: σ2 = (1/6) maxpj∈Vi ∥pj −pi∥2.
+Although the previous algorithms [1,5] work well in the presence of smooth
+regions and moderate noise, they perform poorly in those regions near corners
+or edges. If the neighborhood at each of the points has a ﬁxed size and it is
+constructed using only the Euclidean distance then it is possible that points
+considered as outliers for a certain region be used in the computation of the
+normal. Hence, it is important to develop a new robust strategy that estimate
+the local surface–normal by discarding neighbor points that lay beyond of a
+surface edge or a corner. Figure 1 shows the normal estimation by diﬀerent
+approaches for a step function in two dimensions. Figure 1(a) shows the ground
+truth and Fig. 1(b) shows the computed normals using neighborhoods based
+only in a proximity measure, note the eﬀect in corners of the step function. On
+the other hand, Fig. 1(c) shows the results applying our approach (that will be
+introduced in next section).
+−2
+0
+2
+4
+6
+8
+10
+12
+−1
+0
+1
+2
+3
+4
+5
+6
+7
+8
+(a)
+−2
+0
+2
+4
+6
+8
+10
+12
+−1
+0
+1
+2
+3
+4
+5
+6
+7
+8
+(b)
+−2
+0
+2
+4
+6
+8
+10
+12
+−1
+0
+1
+2
+3
+4
+5
+6
+7
+8
+(c)
+Fig. 1. Normal estimation comparison in two dimensions for a step function. (a)
+Ground Truth, (b) NE–Hoppe algorithm and (c) NENR algorithm.
+4
+Normal Estimation with Neighborhood Reorganization
+(NENR)
+The normal estimation using the OOTP is equivalent to apply a low-pass band
+ﬁlter to the point cloud, so the resulting normal, will have a smoothness degree
+which is proportional to the neighborhood size. If OOTP is used, one is implicitly
+assumed that the neighborhood around each point may be modelled by simple
+plane. Such assumption is incorrect at points close to edges or corners. An al-
+ternative approach could be to weight each point in the neighborhood; however
+
+
+--- Page 6 ---
+
+Surface–Normal Estimation with Neighborhood Reorganization
+325
+the underlying representation of each neighborhood still it is a unique plane. A
+more appropriated model is to assume a plane–piecewise model. Half-quadratic
+regularization (HQR) is an edge-preserving regularization technique for restor-
+ing piecewise smooth signals [14,15,16,17]; the general HQR energy function is
+given by
+U(h, l) =
+
+i∈Ω
+
+(hi −gi)2 + α∥∇hi∥2 (1 −li)2 + αβl2
+i
+
+;
+(2)
+where g is a given signal, h is the ﬁltering signal with edge-preserving and α,
+β are parameters which control the signal smoothness. li acts as an indicator
+variable which disconnects the ∇hi terms with a huge contribution to the general
+cost function. This technique is also applied by Calderon in [18,19], for Image
+Registration.
+In case of a piecewise constant surface, for a given neighborhood, we ap-
+proximate this surface by TPs and it is desirable to get out points of the cloud
+belonging to diﬀerent TPs. So a new neighborhood is computed considering only
+the nearest neighbors who belong to the same TP. Figure 2(a) shows the stan-
+dard plane estimation, for the case of three points on a corner, and Fig. 2(b)
+shows the plane estimation when a point is rejected, a desirable condition in
+those cases. We propose a HQR cost function for this purpose and the indicator
+variable in our case, is used as non-membership term, lij = 1 means that the
+j −th point, in the original neighborhood, it is not in the same TP that i −th
+point. The OOTP smoothness is controlled with the parameters α and β. We
+proposed to compute the surface-normal as the minimization of a constrained
+HRQ cost function. The additional constraint imposes a unitary norm to the ﬂat
+piecewise normal vector mi:
+U(m, l) =
+
+i∈Ω
+⎧
+⎨
+⎩∥mi −ni∥2 + α
+
+j∈Vi
+
+∥mi −mj∥2 (1 −lij)2 + βl2
+ij
+
+⎫
+⎬
+⎭, (3)
+s.t.
+∥mi∥= 1,
+∀i ∈Ω;
+where ni is the normal vector computed with the NE–Hoppe algorithm described
+in Sect. 3 for some neighborhood size. Then by using the Lagrange multipliers,
+γ, we include the constraint in the Lagrangian:
+L (m, l, γ) = U(m, l) −
+
+i∈Ω
+γi
+ 3
+
+d=1
+m2
+i,d −1
+
+(4)
+Then the solution is computed solving the Karush-Khun-Tucker conditions:
+∇mL (m, l, γ) = 0,
+(5)
+∇lL (m, l, γ) = 0,
+(6)
+∥mi∥= 1;
+(7)
+where ∇x denotes the partial gradient operator. We propose to use the Gauss-
+Seidel algorithm, for solving this system of equation, due the fact that the system
+
+
+--- Page 7 ---
+
+326
+F. Calderon, U. Ruiz, and M. Rivera
+of equation has a banded, diagonally dominant and semi-positive deﬁned matrix,
+so the t-th Gauss-Seidel Iteration is given by the equations (8, 9 and 10):
+m(t)
+i,d =
+m(t)
+i,d
+
+
+k
+
+m(t)
+i,d
+2
+∀i ∈Ω,
+(8)
+l(t)
+ij =
+
+m(t)
+i
+−
+m(t)
+j
+
+2
+β +
+
+m(t)
+i
+−
+m(t)
+j
+
+2
+∀< i, j >∈Ω2,
+(9)
+m(t+1)
+i,d
+=
+ni,d + α 
+j∈Vi m(t)
+j,d
+
+1 −l(t)
+ij
+2
+1 + γi + α 
+j∈Vi
+
+1 −l(t)
+ij
+2 .
+(10)
+4
+5
+6
+7
+8
+9
+10
+11
+4
+5
+6
+7
+8
+9
+10
+11
+p
+h 
+p
+i 
+p
+j 
+(a)
+4
+5
+6
+7
+8
+9
+10
+11
+4
+5
+6
+7
+8
+9
+10
+11
+p 
+h 
+p 
+i 
+p 
+j 
+(b)
+Fig. 2. Diﬀerent plane estimations using three points on a corner. (a) Plane over the
+three points and (b) plane over points pi and ph when pj is not included.
+The restriction for the equation (3) is fulﬁll at each iteration according with
+equation (8), so the Lagrange multiplier γ can take any value, because their
+contribution to the constrained HRQ cost function will be zero at each iteration,
+for simplicity we put γi = 0 in equation (10).
+The NENR algorithm is resumed in the next steps:
+1. Compute the OOTP ni for some neighborhood with size k
+2. Compute the reorganized neighborhood and the ﬁlter normal mi doing
+– (a) Set m(0)
+i
+= ni and t = 0
+(b) Normalize the vectors m(t)
+i
+applying (8)
+(c) Compute the memberships l(t)
+ij using (9)
+(d) Update the normal vectors m(t+1)
+i
+applying (10)
+(e) Set t ←t + 1
+(f) Repeat steps (b-e) until
+m(t+1)
+i
+−m(t)
+i
+ < ε
+
+
+--- Page 8 ---
+
+Surface–Normal Estimation with Neighborhood Reorganization
+327
+3. Finally compute the robust OTP with the weighted covariance matrix:
+Ci =
+
+j∈Vi
+
+1 −l∗
+ij
+
+[(pj −c∗
+i ) ⊗(pj −c∗
+i )]
+(11)
+with
+c∗
+i =
+
+j∈Vi
+
+1 −l∗
+ij
+
+pj
+
+j∈Vi
+
+1 −l∗
+ij
+
+(12)
+using the ﬁnals (optimum) memberships l∗
+ij, then compute the OOTP as was
+described in Sect. 3.
+5
+Experimental Results
+We perform experiments in both synthetic and real data, for comparing NE–
+Hoppe and NENR algorithms. The synthetic data corresponds to a step function
+and a 3D model with a ground truth while the real data corresponds to 3D models
+widely used in the literature. All the 3D models were reconstructed using the
+Ohtake’s MPUI implementation available at [20].
+The results for the step function in two dimensions are presented in Fig. 1.
+The normal vectors in Fig. 1(a) were assigned manually according with the step
+function and the normal ﬁeld estimated by NE–Hoppe and NENR are shown
+in Figs. 1(b) and 1(c), respectively. The neighborhood sizes for both algorithms
+were k = 2 and the NENR parameters were α = 50000 and β = 0.001. Note the
+similarity between the NENR (Fig. 1(c)) and the original normals (Fig. 1(a))
+also note the problem presented by NE–Hoppe algorithm in corners of the step
+function.
+For the synthetic 3D model, the normals have been assigned manually accord-
+ing to the characteristics of the surface object and its surface reconstruction is
+shown in Fig. 3(a). The resulting surface is used as a reference for a qualitative
+comparison. The MPUI parameters in this case were a grid size of 0.005, and
+a max error of 0.005 at each cell. For the rest of the parameters we took the
+default conﬁguration of Ohtake’s MPUI implementation. The neighborhood size
+was taken equal to 15 for both normal estimation algorithms. Additionally, for
+the NERN algorithm, we took α = 1000 and β = 0.01. The surface reconstructed
+using the NE–Hoppe is presented in Fig. 3(b). Note that the edges of the re-
+constructed surface are over–smoothed as a direct consequence of bad normal
+estimation near these regions. Finally, Fig. 3(c) shows the surface reconstructed
+using the NENR algorithm. We must notice that NENR algorithm increases the
+quality of the reconstruction, shown sharped geometric edges without aﬀecting
+the smooth areas, as you can see comparing Figs. 3(b) and 3(c).
+For a quantitative comparison between NERN and NE-Hoppe algorithms, we
+compute the angle between the ground truth surfaces normals and the estimated
+normals using both algorithms. The mean angle and standard deviation are
+shown in Table 1 for the step function (Fig. 1) and the synthetic 3D model
+(Fig. 3). Note the better results for the normal estimation using NERN than
+NE-Hoppe in both cases.
+
+
+--- Page 9 ---
+
+328
+F. Calderon, U. Ruiz, and M. Rivera
+(a) Ground Truth
+(b) NE–Hoppe
+(c) NENR
+Fig. 3. Surface reconstruction using MPUI and diﬀerent Surface–Normal Estimations
+Table 1. Normal estimation angle between ground truth normals and the estimated
+normals of both methods
+Algorithm
+Step Function
+Synthetic Model
+Mean Angle Std. Deviation Mean Angle Std. Deviation
+NE-Hoppe
+5.7169◦
+15.2029◦
+7.5544◦
+13.5544◦
+NERN
+0.1764◦
+0.1852◦
+0.9973◦
+2.0968◦
+(a) Bunny
+(b) Golf club
+Fig. 4. Surface reconstruction using MPUI and NENR for real models
+Figures 4(a) and 4(b) show reconstructions, using the MPUI method with
+NENR–computed normal, from a couple of real 3D models widely used in the
+literature. The MPUI parameters for both models were, a grid size of 0.004, and
+a max error of 0.002 at each cell. The rest of the parameters took the default
+values setting by the Ohtake’s MPUI implementation. For the bunny model the
+NERN parameters were k = 15, α = 100, β = 0.01 and in the case of the golf
+club model were k = 12, α = 1000, β = 0.01.
+
+
+--- Page 10 ---
+
+Surface–Normal Estimation with Neighborhood Reorganization
+329
+6
+Conclusions
+In general, the normal estimation algorithms based on the covariance matrix
+as NE–Hoppe approximate a neighborhood by a unique plane independently of
+its local shape. Some algorithms, in order to improve the approximation by a
+unique plane, reduce the neighborhood size or weight the covariance matrix,
+nevertheless the approximation continues to be a unique plane.
+The NENR algorithm produces a reduction in the neighborhood size, rejecting
+the neighbors that have large diﬀerences. This condition warranties that the
+neighbors have the same smoothness degree between them. The NERN algorithm
+was tested using synthetic examples building with shape discontinuities. The
+experiments presented better quantitative and qualitative results using NENR
+than NE–Hoppe.
+In cases of real models, a couple of experiments were done and the results were
+very similar for both algorithm, therefore, using NENR in real smooth models
+does not represent a lost in quality for surface reconstruction. In general, NENR
+produces a better normal estimation than NE–Hoppe, in places located near
+to edges, corners and geometric discontinuities. The NERN algorithm does not
+have troubles with smooth regions or smooth models.
+References
+1. Hoppe, H., DeRose, T., Duchamp, T., McDonald, J., Stuetzle, W.: Surface recon-
+struction from unorganized points. In: SIGGRAPH 1992: Proceedings of the 19th
+annual conference on Computer graphics and interactive techniques, pp. 71–78.
+ACM Press, New York (1992)
+2. Ohtake, Y., Belyaev, A., Alexa, M., Turk, G., Seidel, H.P.: Multi-level partition of
+unity implicits. In: SIGGRAPH 2003: ACM SIGGRAPH 2003 Papers, pp. 463–470.
+ACM Press, New York (2003)
+3. Bajaj, C.L., Bernardini, F., Xu, G.: Automatic reconstruction of surfaces and scalar
+ﬁelds from 3d scans. In: SIGGRAPH 1995: Proceedings of the 22nd annual confer-
+ence on Computer graphics and interactive techniques, pp. 109–118. ACM Press,
+New York (1995)
+4. Carr, J.C., Beatson, R.K., Cherrie, J.B., Mitchell, T.J., Fright, W.R., McCallum,
+B.C., Evans, T.R.: Reconstruction and representation of 3d objects with radial
+basis functions. In: SIGGRAPH 2001: Proceedings of the 28th annual conference
+on Computer graphics and interactive techniques, pp. 67–76. ACM Press, New
+York (2001)
+5. Pauly, M., Keiser, R., Kobbelt, L.P., Gross, M.: Shape modeling with point-sampled
+geometry. In: SIGGRAPH 2003: ACM SIGGRAPH 2003 Papers, pp. 641–650.
+ACM Press, New York (2003)
+6. Rivera, M., Marroquin, J.L.: The adaptive rest-condition spring system: An edge-
+preserving regularization techique. In: ICIP-2000, vol. II, pp. 805–807. IEEE Signal
+Processing Society, Vancouver, BC, Canada (2000)
+7. O’Rourke, J.: Computational geometry in C. Cambridge University Press, New
+York (2000)
+
+
+--- Page 11 ---
+
+330
+F. Calderon, U. Ruiz, and M. Rivera
+8. Amenta, N., Bern, M., Kamvysselis, M.: A new voronoi-based surface reconstruc-
+tion algorithm. In: SIGGRAPH 1998: Proceedings of the 25th annual conference
+on Computer graphics and interactive techniques, pp. 415–421. ACM Press, New
+York (1998)
+9. Amenta, N., Choi, S., Kolluri, R.K.: The power crust. In: SMA 2001: Proceedings
+of the sixth ACM symposium on Solid modeling and applications, pp. 249–266.
+ACM Press, New York (2001)
+10. Dey, T.K., Goswami, S.: Tight cocone: a water-tight surface reconstructor. In: SM
+2003: Proceedings of the eighth ACM symposium on Solid modeling and applica-
+tions, pp. 127–134. ACM Press, New York (2003)
+11. Lorensen, W.E., Cline, H.E.: Marching cubes: A high resolution 3d surface con-
+struction algorithm. In: SIGGRAPH 1987: Proceedings of the 14th annual confer-
+ence on Computer graphics and interactive techniques, pp. 163–169. ACM Press,
+New York (1987)
+12. Bloomenthal, J.: An implicit surface polygonizer, 324–349 (1994)
+13. Hart, J.C.: Sphere tracing: A geometric method for the antialiased ray tracing of
+implicit surfaces. The Visual Computer 12, 527–545 (1996)
+14. Black, M., Rangarajan, A.: On the uniﬁcation of line processes, outlier rejection,
+and robust statistics with applications in early vision. Int’l J. Computer Vision 19,
+57–92 (1996)
+15. Charbonnier, P., Blanc-Feraud, L., Aubert, G., Barluad, M.: Deterministic edge-
+preserving regularization in computed imaging. IEEE Trans. Image Processing 6,
+298–311 (1997)
+16. Rivera, M., Marroquin, J.L.: Adaptive rest condition potentials: ﬁrst and second
+order edge-preserving regularization. Journal of Computer Vision and Image Un-
+derstanding 88, 76–93 (2002)
+17. Rivera, M., Marroquin, J.: Half–quadratic cost functions with granularity control.
+Image and Vision Computing 21, 345–357 (2003)
+18. Calderon, F., Romero, L.: Non-parametric image registration as a way to obtain
+an accurate camera calibration. In: Monroy, R., Arroyo-Figueroa, G., Sucar, L.E.,
+Sossa, H. (eds.) MICAI 2004. LNCS (LNAI), vol. 2972, pp. 584–591. Springer,
+Heidelberg (2004)
+19. Calderon, F., Romero, L., Flores, J.: Ga-ssd-arc-nlm for parametric image registra-
+tion. In: Mart´ınez-Trinidad, J.F., Carrasco Ochoa, J.A., Kittler, J. (eds.) CIARP
+2006. LNCS, vol. 4225, pp. 227–236. Springer, Heidelberg (2006)
+20. Ohtake,
+Y.:
+Mpui implementation
+in
+(2003),
+http://www.mpi-inf.mpg.de/
+~ohtake/mpu implicits/
+View publication stats
